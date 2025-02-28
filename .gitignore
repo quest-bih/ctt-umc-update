@@ -19,6 +19,9 @@
 # R Environment Variables
 .Renviron
 
+# Ignore raw files
+data/raw/
+
 # macOS
 .DS_Store
 scripts/.DS_Store
