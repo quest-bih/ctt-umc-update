@@ -23,3 +23,6 @@
 .DS_Store
 scripts/.DS_Store
 data/.DS_Store
+data/raw/.DS_Store
+data/processed/.DS_Store
+data/umc_search_terms/.DS_Store
