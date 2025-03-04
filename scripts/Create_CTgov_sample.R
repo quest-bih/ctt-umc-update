@@ -1,16 +1,20 @@
 #----------------------------------------------------------------------------------------------------------------------
 #
 # The following script creates the sample of trials with contributing German university medical centers (UMC)
-# from the clinicaltrials.gov registry. Due to size, the raw registry data is stored in Zenodo and downloaded into the local project via a separate script.
+# from the clinicaltrials.gov registry. Due to size, the raw registry data 
+# will be stored in Zenodo and downloaded into the local project via a separate script.
 # 
 # The script searches the AACT dataset for affiliations of the sponsor/PI/responsible party/facilities
 # associated with the different UMCs (keywords are loaded from city_search_terms.csv). It also filters
 # the relevant completion years and study status (Completed, Terminated, Suspended, Unknown status).
 #
-# The script saves a filtered version of the dataset, containing only relevant trials. Please be
+# The script saves a filtered version of the dataset, containing only relevant trials. 
+# Please be
 # aware that the filtered dataset still contains false positives (i.e. trials that were found with the
 # keywords but that were not associated with the UMCs - e.g. when a communal hospital in Berlin was found
-# by the keyword "Berlin"). All trial affiliations were checked during the manual publication search to
+# by the keyword "Berlin"). 
+# This sentence above does not hold true with the current regular expressions, we should rephrase
+#All trial affiliations were checked during the manual publication search to
 # remove false positives.
 #
 #----------------------------------------------------------------------------------------------------------------------
@@ -22,11 +26,9 @@ library(here)
 # Loading of AACT dataset
 #----------------------------------------------------------------------------------------------------------------------
 
-# Get registry data if not already downloaded/unzipped
-source(here("code", "0_get_registry_data.R"))
+# the complete AACT was downloaded with the timestamp given and saved in the data/raw folder
 
-# AACT_folder <- here::here("data", "raw-registries", "2020-06-03_ctgov")
-AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
+# AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
 #AACT filenames that we need to load
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
@@ -47,7 +49,7 @@ city_search_terms <- readLines(here("data", "umc_search_terms", "city_search_ter
   str_split(";")
 cities <- city_search_terms |> map_chr(1)
 city_search_terms <- city_search_terms  |> 
-  map(function(x) paste0("\\b", x, "\\b", collapse = "|"))
+  map(\(x) paste0("\\b", x, "\\b", collapse = "|"))
 names(city_search_terms) <- cities
 
 
@@ -85,10 +87,8 @@ city_grep_indices <- function(dataset, colname, grep_terms)
 
 #search the different affilation datasets for the city search terms
 grep_PI <- city_grep(AACT_datasets$overall_officials, "affiliation", city_search_terms)
-grep_sponsor <- city_grep(AACT_datasets$sponsors 
-                          # |> 
-                          #   filter(lead_or_collaborator == "lead")
-                          , "name", city_search_terms)
+grep_sponsor <- city_grep(AACT_datasets$sponsors |>
+                            filter(lead_or_collaborator == "lead"), "name", city_search_terms)
 grep_resp_party_org <- city_grep(AACT_datasets$responsible_parties, "organization", city_search_terms)
 grep_resp_party_affil <- city_grep(AACT_datasets$responsible_parties, "affiliation", city_search_terms)
 
@@ -153,8 +153,7 @@ get_city_per_NCT <- function(cities_nct_list, unique_ncts)
 nct_cities_lead <- get_city_per_NCT(affil_ncts_lead, unique_ncts_lead)
 
 #prepare for joining with main table
-nct_cities_lead_tbl <- as_tibble(cbind(unique_ncts_lead, nct_cities_lead))
-names(nct_cities_lead_tbl) <- c("nct_id", "cities_lead")
+nct_cities_lead_tbl <- tibble(nct_id = unique_ncts_lead, cities_lead = nct_cities_lead)
 
 #add columns to main table
 CTgov_sample <- CTgov_sample |>
