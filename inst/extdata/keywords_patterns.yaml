@@ -1,0 +1,6 @@
+euctr:
+  - "20\\d{2}-\\d{6}-\\d{2}"
+ctgov:
+  - "NCT\\d{8}"
+drks:
+  - "DRKS\\d{8}"

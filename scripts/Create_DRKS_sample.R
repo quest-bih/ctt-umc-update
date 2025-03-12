@@ -17,6 +17,7 @@
 library(tidyverse)
 library(here)
 library(jsonlite)
+library(yaml)
 
 #----------------------------------------------------------------------------------------------------------------------
 # Data loading and transformation
@@ -30,15 +31,19 @@ library(jsonlite)
 
 drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
+regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
+
 drks_sponsors <- drks_tib |> 
   select(drksId, materialSupports) |> 
   unnest(materialSupports) |> 
-  unnest(contact)
+  unnest(contact) |> 
+  mutate(across(where(is.character), \(x) na_if(x, "")))
 
 drks_affils <- drks_tib |> 
   select(drksId, trialContacts) |> 
   unnest(trialContacts) |> 
-  unnest(c(contact, idContactIdType))
+  unnest(c(contact, idContactIdType)) |> 
+  mutate(across(where(is.character), \(x) na_if(x, "")))
 
 drks_recruitment_umcs <- drks_tib |> 
   select(drksId, recruitment) |> 
@@ -47,11 +52,57 @@ drks_recruitment_umcs <- drks_tib |>
   mutate(country_code = unlist(idCountry)) |> 
   unnest(institutes) |> 
   filter(type == "UNI_MEDICAL_CENTER") |> 
+  mutate(across(where(is.character), \(x) na_if(x, ""))) |> 
   select(drksId, country_code, name, status, actualCompletionDate)
+
+
 
 drks_secondary_ids <- drks_tib |> 
   select(drksId, secondaryIds) |> 
-  unnest(secondaryIds)
+  unnest(secondaryIds) |> 
+  mutate(across(where(is.character), \(x) na_if(x, "") |> 
+                  str_remove_all("\\s") |> 
+                  na_if("-"))) |> 
+  mutate(otherPrimaryRegisterName = case_when(
+    str_detect(otherPrimaryRegisterId, "(?<!S)NCT") ~ "ClinicalTrials.gov",
+    str_detect(otherPrimaryRegisterId, regexes$euctr) ~ "EUCTR",
+    .default = otherPrimaryRegisterName
+  ))
+
+
+qa_euctr <- drks_secondary_ids |> 
+  mutate(extracted_euctr = str_extract(otherPrimaryRegisterId, regexes$euctr)) |> 
+  select(drksId, otherPrimaryRegisterId, extracted_euctr, eudraCtNumber, otherPrimaryRegisterName) |> 
+  filter(str_detect(otherPrimaryRegisterId, regexes$euctr),
+         eudraCtNumber != extracted_euctr)
+
+### All of these extracted euctr do not resolve! 
+
+qa_ctgov <- drks_secondary_ids |> 
+  mutate(extracted_ctgov = coalesce(str_extract(otherPrimaryRegisterId, regexes$ctgov),
+                                    str_extract(otherPrimaryRegisterName, regexes$ctgov))) |> 
+  select(drksId, otherPrimaryRegisterId, extracted_ctgov, otherPrimaryRegisterName) |> 
+  filter(extracted_ctgov != otherPrimaryRegisterId)
+
+### clean extraction of trns achieved for ctgov
+
+##### now clean secondary id tibble
+
+drks_secondary_ids <- drks_secondary_ids |> 
+  mutate(ctgovNumber = coalesce(str_extract(otherPrimaryRegisterId, regexes$ctgov),
+                                    str_extract(otherPrimaryRegisterName, regexes$ctgov))) |> 
+  select(drksId, ctgovNumber, euctrNumber = eudraCtNumber) |> 
+  filter(!is.na(ctgovNumber) | !is.na(euctrNumber))
+
+
+# cross-registrations from DRKS to the two other registries (in the full DRKS registry!):
+drks_secondary_ids |> 
+  mutate(has_ctgovNumber = !is.na(ctgovNumber),
+         has_euctrNumber = !is.na(euctrNumber)) |> 
+  count(has_ctgovNumber, has_euctrNumber) |> 
+  mutate(prop = n / nrow(drks_tib))
+
+### 444 have euctr, 206 have ctgov, 129 have both
 
 # drks_tib_filtered <- drks_tib |> 
 #   arrange(drksId) |>
