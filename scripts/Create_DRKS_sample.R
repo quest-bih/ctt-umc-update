@@ -55,8 +55,6 @@ drks_recruitment_umcs <- drks_tib |>
   mutate(across(where(is.character), \(x) na_if(x, ""))) |> 
   select(drksId, country_code, name, status, actualCompletionDate)
 
-
-
 drks_secondary_ids <- drks_tib |> 
   select(drksId, secondaryIds) |> 
   unnest(secondaryIds) |> 
@@ -66,8 +64,73 @@ drks_secondary_ids <- drks_tib |>
   mutate(otherPrimaryRegisterName = case_when(
     str_detect(otherPrimaryRegisterId, "(?<!S)NCT") ~ "ClinicalTrials.gov",
     str_detect(otherPrimaryRegisterId, regexes$euctr) ~ "EUCTR",
+    str_detect(otherPrimaryRegisterId, regexes$drks) ~ "DRKS",
     .default = otherPrimaryRegisterName
-  ))
+  ),
+  euctr_clean = case_when(
+    !is.na(eudraCtNumber) ~ eudraCtNumber,
+    .default = otherPrimaryRegisterId |>
+      str_extract(regexes$euctr) 
+  ),
+  ctgov_clean = otherPrimaryRegisterId |>
+    str_extract(regexes$ctgov),
+  drks_clean = case_when(
+    # if the "secondary ID" just repeats the trial number return NA
+    otherPrimaryRegisterId |>
+      str_extract(regexes$drks) == drksId ~ NA_character_,
+    .default = otherPrimaryRegisterId |>
+      str_extract(regexes$drks)
+  ),
+  has_alias = !is.na(drks_clean))
+
+drks_other_secondary_ids <- drks_tib |>
+  select(drksId, otherSecondaryIds) |> 
+  unnest(otherSecondaryIds) |> 
+  rename(secondaryId = value, secondaryRegister = description) |> 
+  filter(!is.na(secondaryId),
+         str_length(secondaryId) > 1) |> 
+  mutate(euctr_clean2 = secondaryId |>
+      str_extract(regexes$euctr),
+         ctgov_clean2 = secondaryId |>
+           str_extract(regexes$ctgov),
+         drks_clean2 = case_when(
+           # if the "secondary ID" just repeats the trial number return NA
+           secondaryId |>
+             str_extract(regexes$drks) == drksId ~ NA_character_,
+           .default = secondaryId |>
+             str_extract(regexes$drks)
+         ),
+         has_alias2 = !is.na(drks_clean2),
+         # drks2_exists = drks_clean2 %in% drks_tib$drksId,
+         secondaryRegisterName = case_when(
+           str_detect(secondaryId, regexes$ctgov) ~ "ClinicalTrials.gov",
+           str_detect(secondaryId, regexes$euctr) ~ "EUCTR",
+           str_detect(secondaryId, regexes$drks) ~ "DRKS",
+           .default = secondaryRegister
+         ))
+
+
+drks_secondary_ids <- drks_secondary_ids |> 
+  left_join(drks_other_secondary_ids |> 
+              filter(!is.na(ctgov_clean2) | !is.na(drks_clean2) | !is.na(euctr_clean2)), by = "drksId") |> 
+  mutate(euctr_clean2 = if_else(euctr_clean2 == euctr_clean, NA_character_, euctr_clean2),
+         ctgov_clean2 = if_else(ctgov_clean2 == ctgov_clean, NA_character_, ctgov_clean2),
+         drks_alias_exists = drks_clean %in% drksId)
+
+drks_secondary_ids |> 
+  filter(euctr_clean != euctr_clean2) |> 
+  select(drksId, contains("euctr"))
+
+drks_secondary_ids |> 
+  # filter(drks_clean != drksId) |> 
+  mutate(has_any_euctr = !is.na(euctr_clean)  | !is.na(euctr_clean2),
+         has_any_ctgov = !is.na(ctgov_clean) | !is.na(ctgov_clean2),
+         has_any_alias = !is.na(drks_clean) | !is.na(drks_clean2),
+         has_multiple_euctr = !is.na(euctr_clean) & !is.na(euctr_clean2),
+         has_multiple_ctgov = !is.na(ctgov_clean) & !is.na(ctgov_clean2)) |> 
+  count(has_any_alias) |> 
+  mutate(prop = n / sum(n))
+
 
 
 qa_euctr <- drks_secondary_ids |> 
