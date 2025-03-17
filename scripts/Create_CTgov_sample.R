@@ -32,7 +32,7 @@ library(here)
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
 #AACT filenames that we need to load
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
-                        "facilities", "interventions", "calculated_values")
+                        "facilities", "interventions", "calculated_values", "id_information")
 
 AACT_dataset_files <- file.path(AACT_folder, paste0(AACT_dataset_names, ".txt"))
 AACT_datasets <- AACT_dataset_files |> 
@@ -92,6 +92,26 @@ grep_sponsor <- city_grep(AACT_datasets$sponsors |>
 grep_resp_party_org <- city_grep(AACT_datasets$responsible_parties, "organization", city_search_terms)
 grep_resp_party_affil <- city_grep(AACT_datasets$responsible_parties, "affiliation", city_search_terms)
 
+pi_umcs <- enframe(grep_PI, name = "umc", value = "nct_id") |> 
+  unnest(nct_id)
+sponsor_umcs <- enframe(grep_sponsor, name = "umc", value = "nct_id") |> 
+  unnest(nct_id)
+resp_party_org_umcs <- enframe(grep_resp_party_org, name = "umc", value = "nct_id") |> 
+  unnest(nct_id)
+qa_pi <- AACT_datasets$overall_officials |> 
+  inner_join(pi_umcs, by = "nct_id") |> 
+  select(umc, affiliation, nct_id, everything())
+qa_sponsor <- AACT_datasets$sponsors |>
+  filter(lead_or_collaborator == "lead") |> 
+  inner_join(sponsor_umcs, by = "nct_id") |> 
+  select(umc, name, nct_id, everything())
+gmbh_sponsor <- qa_sponsor |> 
+  filter(str_detect(name, "GmbH"))
+qa_resp_org <- AACT_datasets$responsible_parties |> 
+  inner_join(resp_party_org_umcs, by = "nct_id") |> 
+  select(umc, organization, nct_id, everything())
+gmbh_resp_org <- qa_resp_org |> 
+  filter(str_detect(organization, "GmbH"))
 
 #joining of the different grep results
 affil_join <- function(affil_nct_list)
@@ -131,6 +151,12 @@ CTgov_sample <- CTgov_sample |>
          grepl(completion_years, completion_date),
          grepl(study_status, overall_status),
          study_type == "INTERVENTIONAL")
+
+
+qa_gmbh <- CTgov_sample |> 
+  filter(nct_id %in% gmbh_sponsor$nct_id)
+qa_gmbh_resp_org <- CTgov_sample |> 
+  filter(nct_id %in% gmbh_resp_org$nct_id)
 
 #----------------------------------------------------------------------------------------------------------------------
 # create for each study a list of affiliated cities and add to main table
@@ -184,8 +210,6 @@ CTgov_sample <- CTgov_sample |>
 CTgov_sample <- CTgov_sample |>
   left_join(AACT_datasets$calculated_values, by = "nct_id")
 
-
-
 CTgov_sample_save <- CTgov_sample |>
   rename(PI_name = name,
          PI_affiliation = affiliation,
@@ -196,6 +220,138 @@ CTgov_sample_save <- CTgov_sample |>
          PI_affiliation, interventions, overall_status,
          phase, enrollment, enrollment_type, were_results_reported)
 
+#----------------------------------------------------------------------------------------------------------------------
+# extract and clean secondary trns for drks, euctr, and aliases (secondary ctgov trns)
+#----------------------------------------------------------------------------------------------------------------------
+
+
+regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
+
+#drks_ids <- read_csv() 
+drks_ids <- drks_tib$drksId
+
+id_info <- AACT_datasets$id_information |>
+  mutate(id_value = str_squish(id_value) |>
+           str_remove_all("\\s"),
+         drks_clean = case_when(
+           str_detect(id_type_description, "DRKS") &
+             !str_detect(id_value, "DRKS") ~ paste0("DRKS", id_value),
+           
+           .default = str_replace(id_value, "DRKSID", "DRKS") |>
+             str_remove("DRKS-ID:") |>
+             str_extract(regexes$drks)
+         ),
+         euctr_clean = case_when(
+           id_type == "EUDRACT_NUMBER" ~ id_value,
+           .default = id_value |>
+             str_extract(regexes$euctr)
+         ),
+         ctgov_clean = case_when(
+           id_source == "nct_alias" ~ id_value,
+           # if the "secondary ID" just repeats the trial number return NA
+           id_value |>
+             str_extract(regexes$ctgov) == nct_id ~ NA_character_,
+           .default = id_value |>
+             str_extract(regexes$ctgov)
+         ),
+         ctgov_exists = ctgov_clean %in% nct_id,
+         drks_exists = drks_clean %in% drks_ids)
+
+# these are all malformed trial ids:
+qa_euctr <- id_info |>
+  filter(is.na(euctr_clean),
+         str_detect(id_value, "\\d-\\d"),
+         str_detect(id_type_description, "EUDRA|Eudra|CTIS|EU"))
+
+
+id_info |> 
+  mutate(has_ctgov = !is.na(ctgov_clean)) |> 
+  count(id_source, has_ctgov, ctgov_exists)
+
+###### so now a table of cross-regs from secondary ids:
+id_crossreg <- id_info |>
+  mutate(is_alias = id_source == "nct_alias") |>
+  # filter(!is.na(ctgov_clean) | !is.na(drks_clean) | !is.na(euctr_clean)) |>
+  group_by(nct_id) |>
+  summarise(has_ctgov = any(!is.na(ctgov_clean), na.rm = TRUE),
+            has_alias = any(is_alias, na.rm = TRUE),
+            has_secondary_id = any(id_source == "secondary_id", na.rm = TRUE),
+            has_org_study_id = any(id_source == "org_study_id", na.rm = TRUE),
+            has_crossreg_drks = any(!is.na(drks_clean), na.rm = TRUE),
+            has_crossreg_euctr = any(!is.na(euctr_clean), na.rm = TRUE),
+            ctgov_ids = paste(na.omit(ctgov_clean) |> unique(), collapse = ";"),
+            drks_ids = paste(na.omit(drks_clean) |> unique(), collapse = ";"),
+            euctr_ids = paste(na.omit(euctr_clean) |> unique(), collapse = ";"),
+            id_sources = paste(na.omit(id_source) |> unique(), collapse = ";")
+  ) |> 
+  mutate(across(where(is.character), \(x) na_if(x, "")))
+
+id_crossreg |>
+  count(has_ctgov, has_crossreg_drks, has_crossreg_euctr) |> 
+  mutate(prop = n / sum(n))
+
+id_crossreg |>
+  filter(has_ctgov) |> 
+  count(has_alias, has_secondary_id, has_org_study_id) |> 
+  mutate(prop = n / sum(n))
+
+id_crossreg |> 
+  count()
+
+qa_crossreg <- id_crossreg |> 
+  mutate(has_multiple_drks = str_detect(drks_ids, ";"),
+         n_drks = str_count(drks_ids, ";") + 1,
+         has_multiple_euctr = str_detect(euctr_ids, ";"),
+         n_euctr = str_count(euctr_ids, ";") + 1,
+         has_multiple_ctgov = str_detect(ctgov_ids, ";"),
+         n_ctgov = str_count(ctgov_ids, ";") + 1) |> 
+  # filter(has_crossreg_drks | has_crossreg_euctr | has_alias) |> 
+  mutate(across(where(is.logical), \(x) ifelse(is.na(x), FALSE, x)))
+
+qa_crossreg |> 
+  count(has_multiple_drks)
+qa_crossreg |> 
+  count(has_multiple_euctr)
+qa_crossreg |> 
+  count(has_multiple_ctgov)
+
+qa_aliases <- id_crossreg |> 
+  filter(has_ctgov)
+
+qa_aliases <- id_info |> 
+  filter(!is.na(ctgov_clean), na.rm = TRUE) |> 
+  mutate(is_alias = id_source == "nct_alias",
+         alias_id_exists = ctgov_clean %in% id_info) |> 
+  group_by(nct_id) |>
+  summarise(has_ctgov = any(!is.na(ctgov_clean), na.rm = TRUE),
+            has_alias = any(is_alias, na.rm = TRUE),
+            has_secondary_id = any(id_source == "secondary_id", na.rm = TRUE),
+            has_org_study_id = any(id_source == "org_study_id", na.rm = TRUE),
+            has_crossreg_drks = any(!is.na(drks_clean), na.rm = TRUE),
+            has_crossreg_euctr = any(!is.na(euctr_clean), na.rm = TRUE),
+            ctgov_ids = paste(na.omit(ctgov_clean) |> unique(), collapse = ";"),
+            drks_ids = paste(na.omit(drks_clean) |> unique(), collapse = ";"),
+            euctr_ids = paste(na.omit(euctr_clean) |> unique(), collapse = ";"),
+            id_sources = paste(na.omit(id_source) |> unique(), collapse = ";")
+  ) |> 
+  mutate(across(where(is.character), \(x) na_if(x, "")))
+
+qa_aliases |> 
+  count(id_sources) |> 
+  mutate(prop = n / sum(n))
+
+id_info |> 
+  filter(!is.na(ctgov_clean), na.rm = TRUE) |> 
+  count(id_source, ctgov_exists) |> 
+  mutate(prop = n / sum(n))
+
+qa_trn_length <- id_info |> 
+  filter(!is.na(ctgov_clean), na.rm = TRUE) |> 
+  mutate(alias_id_exists = ctgov_clean %in% id_info$nct_id,
+         trn_too_long = str_detect(id_value, "NCT\\d{9,}"))
+
+qa_trn_length |> 
+  count(id_source, trn_too_long, alias_id_exists)
 
 #save CT.gov trial sample
 #please be aware that not all associations of the trials to the cites are correct (there are still false positives)
