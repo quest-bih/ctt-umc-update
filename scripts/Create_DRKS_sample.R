@@ -101,7 +101,7 @@ drks_other_secondary_ids <- drks_tib |>
              str_extract(regexes$drks)
          ),
          has_alias2 = !is.na(drks_clean2),
-         # drks2_exists = drks_clean2 %in% drks_tib$drksId,
+         #drks2_exists = drks_clean2 %in% drks_tib$drksId, # all of the drks_clean 2 exist
          secondaryRegisterName = case_when(
            str_detect(secondaryId, regexes$ctgov) ~ "ClinicalTrials.gov",
            str_detect(secondaryId, regexes$euctr) ~ "EUCTR",
@@ -113,59 +113,45 @@ drks_other_secondary_ids <- drks_tib |>
 drks_secondary_ids <- drks_secondary_ids |> 
   left_join(drks_other_secondary_ids |> 
               filter(!is.na(ctgov_clean2) | !is.na(drks_clean2) | !is.na(euctr_clean2)), by = "drksId") |> 
-  mutate(euctr_clean2 = if_else(euctr_clean2 == euctr_clean, NA_character_, euctr_clean2),
-         ctgov_clean2 = if_else(ctgov_clean2 == ctgov_clean, NA_character_, ctgov_clean2),
-         drks_alias_exists = drks_clean %in% drksId)
+  mutate(euctr_clean2 = case_when(
+    euctr_clean2 == euctr_clean ~ NA_character_,
+    str_extract(otherPrimaryRegisterId, regexes$euctr) != eudraCtNumber ~ str_extract(otherPrimaryRegisterId, regexes$euctr),
+    .default = euctr_clean2),
+    ctgov_clean2 = case_when(
+      ctgov_clean2 == ctgov_clean ~ NA_character_,
+      .default = ctgov_clean2),
+    drks_alias_exists = drks_clean %in% drksId,
+    ctgov_exists = ctgov_clean %in% id_info$nct_id, # all of the ctgov_clean exist (one was from 2024-11-12 so not in earlier data set, but exists on CT.gov)
+    ctgov2_exists = ctgov_clean2 %in% id_info$nct_id) # all of the ctgov2_clean exist
 
+# explore multiple euctr trial numbers
 drks_secondary_ids |> 
   filter(euctr_clean != euctr_clean2) |> 
   select(drksId, contains("euctr"))
 
-drks_secondary_ids |> 
-  # filter(drks_clean != drksId) |> 
+drks_secondary_ids <- drks_secondary_ids |> 
   mutate(has_any_euctr = !is.na(euctr_clean)  | !is.na(euctr_clean2),
          has_any_ctgov = !is.na(ctgov_clean) | !is.na(ctgov_clean2),
          has_any_alias = !is.na(drks_clean) | !is.na(drks_clean2),
          has_multiple_euctr = !is.na(euctr_clean) & !is.na(euctr_clean2),
-         has_multiple_ctgov = !is.na(ctgov_clean) & !is.na(ctgov_clean2)) |> 
+         has_multiple_ctgov = !is.na(ctgov_clean) & !is.na(ctgov_clean2)) 
+
+# proportion of aliases
+drks_secondary_ids |> 
   count(has_any_alias) |> 
   mutate(prop = n / sum(n))
 
+# proportion of potential cross-registrations
+drks_secondary_ids |> 
+  count(has_any_ctgov, has_any_euctr) |> 
+  mutate(prop = n / sum(n))
 
-
-qa_euctr <- drks_secondary_ids |> 
-  mutate(extracted_euctr = str_extract(otherPrimaryRegisterId, regexes$euctr)) |> 
-  select(drksId, otherPrimaryRegisterId, extracted_euctr, eudraCtNumber, otherPrimaryRegisterName) |> 
-  filter(str_detect(otherPrimaryRegisterId, regexes$euctr),
-         eudraCtNumber != extracted_euctr)
-
-### All of these extracted euctr do not resolve! 
-
-qa_ctgov <- drks_secondary_ids |> 
-  mutate(extracted_ctgov = coalesce(str_extract(otherPrimaryRegisterId, regexes$ctgov),
-                                    str_extract(otherPrimaryRegisterName, regexes$ctgov))) |> 
-  select(drksId, otherPrimaryRegisterId, extracted_ctgov, otherPrimaryRegisterName) |> 
-  filter(extracted_ctgov != otherPrimaryRegisterId)
-
-### clean extraction of trns achieved for ctgov
-
-##### now clean secondary id tibble
+### now filter secondary id tibble and later join on the main table to generate DRKS data set
 
 drks_secondary_ids <- drks_secondary_ids |> 
-  mutate(ctgovNumber = coalesce(str_extract(otherPrimaryRegisterId, regexes$ctgov),
-                                    str_extract(otherPrimaryRegisterName, regexes$ctgov))) |> 
-  select(drksId, ctgovNumber, euctrNumber = eudraCtNumber) |> 
-  filter(!is.na(ctgovNumber) | !is.na(euctrNumber))
-
-
-# cross-registrations from DRKS to the two other registries (in the full DRKS registry!):
-drks_secondary_ids |> 
-  mutate(has_ctgovNumber = !is.na(ctgovNumber),
-         has_euctrNumber = !is.na(euctrNumber)) |> 
-  count(has_ctgovNumber, has_euctrNumber) |> 
-  mutate(prop = n / nrow(drks_tib))
-
-### 444 have euctr, 206 have ctgov, 129 have both
+  filter(!is.na(ctgov_clean) | !is.na(euctr_clean) | !is.na(ctgov_clean))
+# TODO: update the rest when filter criteria are set
+#### the remaining code below is from previous GTL
 
 # drks_tib_filtered <- drks_tib |> 
 #   arrange(drksId) |>
