@@ -19,7 +19,6 @@
 #
 #----------------------------------------------------------------------------------------------------------------------
 
-
 library(tidyverse)
 library(here)
 #----------------------------------------------------------------------------------------------------------------------
@@ -152,11 +151,15 @@ CTgov_sample <- CTgov_sample |>
          grepl(study_status, overall_status),
          study_type == "INTERVENTIONAL")
 
-
 qa_gmbh <- CTgov_sample |> 
   filter(nct_id %in% gmbh_sponsor$nct_id)
 qa_gmbh_resp_org <- CTgov_sample |> 
   filter(nct_id %in% gmbh_resp_org$nct_id)
+
+unique_gmbh <- gmbh_sponsor |> 
+  distinct(name, .keep_all = TRUE) |> 
+  bind_rows(gmbh_resp_org |> 
+              distinct(name, .keep_all = TRUE))
 
 #----------------------------------------------------------------------------------------------------------------------
 # create for each study a list of affiliated cities and add to main table
@@ -224,8 +227,8 @@ CTgov_sample_save <- CTgov_sample |>
 # extract and clean secondary trns for drks, euctr, and aliases (secondary ctgov trns)
 #----------------------------------------------------------------------------------------------------------------------
 
-
-regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
+regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
+# drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
 #drks_ids <- read_csv() 
 drks_ids <- drks_tib$drksId
@@ -239,20 +242,20 @@ id_info <- AACT_datasets$id_information |>
            
            .default = str_replace(id_value, "DRKSID", "DRKS") |>
              str_remove("DRKS-ID:") |>
-             str_extract(regexes$drks)
+             str_extract(regexes$DRKS)
          ),
          euctr_clean = case_when(
            id_type == "EUDRACT_NUMBER" ~ id_value,
            .default = id_value |>
-             str_extract(regexes$euctr)
+             str_extract(regexes$EudraCT)
          ),
          ctgov_clean = case_when(
            id_source == "nct_alias" ~ id_value,
            # if the "secondary ID" just repeats the trial number return NA
            id_value |>
-             str_extract(regexes$ctgov) == nct_id ~ NA_character_,
+             str_extract(regexes$ClinicalTrials.gov) == nct_id ~ NA_character_,
            .default = id_value |>
-             str_extract(regexes$ctgov)
+             str_extract(regexes$ClinicalTrials.gov)
          ),
          ctgov_exists = ctgov_clean %in% nct_id,
          drks_exists = drks_clean %in% drks_ids)
@@ -261,7 +264,9 @@ id_info <- AACT_datasets$id_information |>
 qa_euctr <- id_info |>
   filter(is.na(euctr_clean),
          str_detect(id_value, "\\d-\\d"),
-         str_detect(id_type_description, "EUDRA|Eudra|CTIS|EU"))
+         !str_detect(id_value, "20\\d{2}-5"),
+         # is.na(id_type_description) |
+         str_detect(id_type_description, "EUDRA|Eudra|CTIS|EU(?!DAM)"))
 
 
 id_info |> 
