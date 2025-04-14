@@ -31,13 +31,22 @@ library(yaml)
 
 drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
-regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
+source(here("scripts", "utils.R"))
+# regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
+regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 
-drks_sponsors <- drks_tib |> 
+drks_material_support <- drks_tib |> 
   select(drksId, materialSupports) |> 
   unnest(materialSupports) |> 
   unnest(contact) |> 
   mutate(across(where(is.character), \(x) na_if(x, "")))
+
+drks_sponsors <- drks_tib |> 
+  select(drksId, trialContacts) |> 
+  unnest(trialContacts) |> 
+  unnest(c(idContactIdType, contact))
+
+
 
 drks_affils <- drks_tib |> 
   select(drksId, trialContacts) |> 
@@ -63,23 +72,23 @@ drks_secondary_ids <- drks_tib |>
                   na_if("-"))) |> 
   mutate(otherPrimaryRegisterName = case_when(
     str_detect(otherPrimaryRegisterId, "(?<!S)NCT") ~ "ClinicalTrials.gov",
-    str_detect(otherPrimaryRegisterId, regexes$euctr) ~ "EUCTR",
-    str_detect(otherPrimaryRegisterId, regexes$drks) ~ "DRKS",
+    str_detect(otherPrimaryRegisterId, regexes$EudraCT) ~ "EUCTR",
+    str_detect(otherPrimaryRegisterId, regexes$DRKS) ~ "DRKS",
     .default = otherPrimaryRegisterName
   ),
   euctr_clean = case_when(
     !is.na(eudraCtNumber) ~ eudraCtNumber,
     .default = otherPrimaryRegisterId |>
-      str_extract(regexes$euctr) 
+      str_extract(regexes$EudraCT) 
   ),
   ctgov_clean = otherPrimaryRegisterId |>
-    str_extract(regexes$ctgov),
+    str_extract(regexes$ClinicalTrials.gov),
   drks_clean = case_when(
     # if the "secondary ID" just repeats the trial number return NA
     otherPrimaryRegisterId |>
-      str_extract(regexes$drks) == drksId ~ NA_character_,
+      str_extract(regexes$DRKS) == drksId ~ NA_character_,
     .default = otherPrimaryRegisterId |>
-      str_extract(regexes$drks)
+      str_extract(regexes$DRKS)
   ),
   has_alias = !is.na(drks_clean))
 
@@ -90,22 +99,22 @@ drks_other_secondary_ids <- drks_tib |>
   filter(!is.na(secondaryId),
          str_length(secondaryId) > 1) |> 
   mutate(euctr_clean2 = secondaryId |>
-      str_extract(regexes$euctr),
+           str_extract(regexes$EudraCT),
          ctgov_clean2 = secondaryId |>
-           str_extract(regexes$ctgov),
+           str_extract(regexes$ClinicalTrials.gov),
          drks_clean2 = case_when(
            # if the "secondary ID" just repeats the trial number return NA
            secondaryId |>
-             str_extract(regexes$drks) == drksId ~ NA_character_,
+             str_extract(regexes$DRKS) == drksId ~ NA_character_,
            .default = secondaryId |>
-             str_extract(regexes$drks)
+             str_extract(regexes$DRKS)
          ),
          has_alias2 = !is.na(drks_clean2),
          #drks2_exists = drks_clean2 %in% drks_tib$drksId, # all of the drks_clean 2 exist
          secondaryRegisterName = case_when(
-           str_detect(secondaryId, regexes$ctgov) ~ "ClinicalTrials.gov",
-           str_detect(secondaryId, regexes$euctr) ~ "EUCTR",
-           str_detect(secondaryId, regexes$drks) ~ "DRKS",
+           str_detect(secondaryId, regexes$ClinicalTrials.gov) ~ "ClinicalTrials.gov",
+           str_detect(secondaryId, regexes$EudraCT) ~ "EUCTR",
+           str_detect(secondaryId, regexes$DRKS) ~ "DRKS",
            .default = secondaryRegister
          ))
 
@@ -115,14 +124,15 @@ drks_secondary_ids <- drks_secondary_ids |>
               filter(!is.na(ctgov_clean2) | !is.na(drks_clean2) | !is.na(euctr_clean2)), by = "drksId") |> 
   mutate(euctr_clean2 = case_when(
     euctr_clean2 == euctr_clean ~ NA_character_,
-    str_extract(otherPrimaryRegisterId, regexes$euctr) != eudraCtNumber ~ str_extract(otherPrimaryRegisterId, regexes$euctr),
+    str_extract(otherPrimaryRegisterId, regexes$EudraCT) != eudraCtNumber ~ str_extract(otherPrimaryRegisterId, regexes$EudraCT),
     .default = euctr_clean2),
     ctgov_clean2 = case_when(
       ctgov_clean2 == ctgov_clean ~ NA_character_,
       .default = ctgov_clean2),
     drks_alias_exists = drks_clean %in% drksId,
-    ctgov_exists = ctgov_clean %in% id_info$nct_id, # all of the ctgov_clean exist (one was from 2024-11-12 so not in earlier data set, but exists on CT.gov)
-    ctgov2_exists = ctgov_clean2 %in% id_info$nct_id) # all of the ctgov2_clean exist
+    # ctgov_exists = ctgov_clean %in% id_info$nct_id, # all of the ctgov_clean exist (one was from 2024-11-12 so not in earlier data set, but exists on CT.gov)
+    # ctgov2_exists = ctgov_clean2 %in% id_info$nct_id # all of the ctgov2_clean exist
+  ) 
 
 # explore multiple euctr trial numbers
 drks_secondary_ids |> 
@@ -150,218 +160,37 @@ drks_secondary_ids |>
 
 drks_secondary_ids <- drks_secondary_ids |> 
   filter(!is.na(ctgov_clean) | !is.na(euctr_clean) | !is.na(ctgov_clean))
-# TODO: update the rest when filter criteria are set
-#### the remaining code below is from previous GTL
 
-# drks_tib_filtered <- drks_tib |> 
-#   arrange(drksId) |>
-#   rowwise() |> 
-#   mutate(recruitment_status = pluck(recruitment, "status"),
-#          recruitment_countries = pluck(recruitment, "countries") |>
-#            map_chr(\(x) unlist(x) |> paste(collapse = ";")),
-#          has_umc_info = pluck(recruitment, "institutes") |>
-#            map_lgl(\(x) nrow(x) > 0),
-#          umcs_institutes = ifelse(has_umc_info == FALSE, "",
-#                        pluck(recruitment, "institutes") |>
-#                          map_chr(\(x) x |>
-#                                    filter(type == "UNI_MEDICAL_CENTER") |> 
-#                                    pull(city) |> 
-#                                    paste(collapse = ";")))) |> 
-#   filter(grepl(completion_years, pluck(recruitment, "actualCompletionDate"))) |> 
-#   # mutate(recruitment_status = pluck(recruitment, "status")) |> 
-#   filter(pluck(recruitment, "status") %in% c("COMPLETE_FOLLOW_UP_COMPLETE", "DISCONTINUED",
-#                                              "SUSPENDED", "NA"))
-  
+#### GmbH exceptions : Universitätsklinikum Giessen und Marburg GmbH
 
-  
-# NOTE: Warning appears when reading in `DRKS_sample`, which seems to have some misaligned cells
-# Run `problems(DRKS_sample)` to see problems listed
-# Note: `DRKS_sample |> filter(drksId == "DRKS00008870") |> pull(studyEnd)` is not corrupted data but rather an error on the registry: https://drks.de/search/en/trial/DRKS00008870
+umc_search_terms <- read_yaml(here("data", "umc_search_terms", "umc_search_terms.yaml")) |> 
+  (\(x) paste0("\\b", x, "\\b", collapse = "|"))()
 
-completion_years <- 2013:2019 |> 
-  paste(collapse="|")
-
-#### updated until here (old code that needs to be updated follows)
-
-# DRKS_sample <- DRKS_sample |>
-DRKS_sample <- drks_recruitment_umcs |> 
-  arrange(drksId) |>
-  filter(grepl(completion_years, actualCompletionDate))
-names(DRKS_sample)
-drks_recruitment_umcs |> filter(drksId == "DRKS00008870") |> pull(actualCompletionDate)
-#----------------------------------------------------------------------------------------------------------------------
-# Affiliation search
-#----------------------------------------------------------------------------------------------------------------------
-
-get_drks_id <- function(affil_indices, dataset)
-{
-  drks_id <- dataset |>
-    slice(affil_indices) |>
-    select(drksId)
-  return(drks_id[[1]])
-}
-
-#affiliation columns used for the search
-affil_columns <- paste0("address.affiliation",0:4)
-
-#affiliations of different columns pasted together to simplify search
-affiliations <- apply(DRKS_sample[affil_columns], 1, paste, collapse = " ")
-
-# Load search terms for the affiliations/cities
-city_search_terms <- readLines(here("data", "umc_search_terms", "city_search_terms.csv"), encoding = "UTF-8") |>
-  str_split(";")
-cities <- city_search_terms |> map_chr(1)
-city_search_terms <- city_search_terms |>
-  map(function(x) paste0("\\b", x, "\\b", collapse = "|"))
-names(city_search_terms) <- cities
+qa_umc_terms <- drks_sponsors |> 
+  filter(str_detect(affiliation, umc_search_terms),
+         type %in% c("PRIMARY_SPONSOR", "PRINCIPAL_COORDINATING_INVESTIGATOR",
+                     "SECONDARY_SPONSOR"),
+         str_detect(affiliation, " GmbH"),
+         str_detect(affiliation, " Uni")) |> # space to exclude gGmbH
+  distinct(affiliation, .keep_all = TRUE)
 
 
-#actual search
-affil_grep_idx <- map(city_search_terms, grep, x=affiliations)
-affil_grep <- map(affil_grep_idx, get_drks_id, dataset=DRKS_sample)
+drks_recruitment_vs_sponsor_affil <- drks_recruitment_umcs |> 
+  filter(str_detect(name, umc_search_terms)) |> 
+  left_join(drks_affils |> 
+              filter(type %in% c("PRIMARY_SPONSOR", "PRINCIPAL_COORDINATING_INVESTIGATOR") |
+                       otherType == "OTHER_SECONDARY_SPONSOR",
+                     str_detect(affiliation, umc_search_terms) |
+                       str_detect(city, umc_search_terms))) |> 
+  filter(country_code == "DE", is.na(affiliation))
+
+drks_recruitment_vs_sponsor_affil |> 
+  distinct(drksId) |> 
+  nrow()
 
 
-drks_affils_res <- drks_affils |> 
-  mutate(umc = map_chr(affiliation, \(affil) names(city_search_terms)
-                       [map_lgl(city_search_terms, \(x) str_detect(affil, x))] |> 
-                         paste(collapse = ";")))
-    
-#affiliation <- drks_affils$affiliation[21]
-affiliation <- drks_affils$affiliation[1]
-map_chr(affiliation, \(affil) names(city_search_terms)
-        [map_lgl(city_search_terms, \(x) str_detect(affil, x))] |> 
-          paste(collapse = ";"))
-
-names(city_search_terms)[]
-city_search_terms[names(city_search_terms)]
-
-map_chr(affiliation, \(affil) names(city_search_terms)[map_lgl(city_search_terms, \(x) str_detect(affiliation, x))] |> 
-          paste(collapse = ";"))
-#for each study we want to know which city has
-#a lead (PI/sponsor/responsible_party) or facility affiliation or any affil
-affil_drks_ids_lead <- affil_grep
-
-unique_drks_ids_lead <- unique(unlist(affil_drks_ids_lead))
-
-#filter cases for affiliation
-DRKS_sample <- DRKS_sample |>
-  filter(drksId %in% unique_drks_ids_lead)
-
-
-#----------------------------------------------------------------------------------------------------------------------
-# create for each study a list of affiliated cities and add to main table
-#----------------------------------------------------------------------------------------------------------------------
-
-get_city_per_drks_id <- function(cities_drks_id_list, unique_drks_ids)
-{
-  cities_col <- vector("list", length(unique_drks_ids))
-  names(cities_col) <- unique_drks_ids
-  for (city in names(cities_drks_id_list)) {
-    cities_col[cities_drks_id_list[[city]]] <-
-      paste(cities_col[cities_drks_id_list[[city]]], city, sep = " ")
-  }
-  cities_col <- substring(cities_col, first = 6)
-  names(cities_col) <- unique_drks_ids
-  return(cities_col)
-}
-
-#create columns that list which cities are affiliated with the studies
-drks_id_cities_lead <- get_city_per_drks_id(affil_drks_ids_lead, unique_drks_ids_lead)
-
-#prepare for joining with main table
-drks_id_cities_lead_tbl <- as_tibble(cbind(unique_drks_ids_lead, drks_id_cities_lead))
-names(drks_id_cities_lead_tbl) <- c("drksId", "cities_lead")
-
-#add columns to main table
-DRKS_sample <- DRKS_sample |>
-  left_join(drks_id_cities_lead_tbl, by = "drksId")
-
-
-#----------------------------------------------------------------------------------------------------------------------
-# Comparison with CT.gov dataset to get double entries
-#----------------------------------------------------------------------------------------------------------------------
-
-#check the columns for the secondary IDs for NCT ids
-id_columns <- DRKS_sample[,grep("secId.id",colnames(DRKS_sample))]
-nct_entries_columns <- apply(id_columns, 2, str_detect, pattern = "NCT")
-nct_entries <- apply(nct_entries_columns, 1, any, na.rm = TRUE)
-
-#extract the NCTs
-nct_pos <- apply(nct_entries_columns, 1, which)
-nct_pos[sapply(nct_pos, length) ==  0] <- NA
-nct_pos <- unlist(nct_pos)
-
-entry_num <- dim(DRKS_sample)[1]
-ncts <- rep("", entry_num)
-for(i in 1:entry_num) {
-  if(is.na(nct_pos[i])) {
-    ncts[i] <- NA
-  } else {
-    ncts[i] <- id_columns[[i, nct_pos[i]]]
-  }
-}
-
-# All NCTs in DRKS sample (n = 29)
-ncts_exist <- ncts[complete.cases(ncts)]
-
-#add information on NCT-ids and filter studies with NCT (and thus are already registered on CT.gov)
-DRKS_sample <- DRKS_sample |>
-  add_column(has_nct_id = nct_entries) |>
-  add_column(nct_id = ncts) 
-
-#add information on whether NCTs in ctgov sample
-ctgov_sample <- readr::read_csv2(here::here("data", "1_sample_generation", "IntoValue2_CTgov_sample.csv"))
-
-DRKS_sample <- DRKS_sample |>
-  mutate(in_ctgov_sample = if_else(nct_id %in% ctgov_sample$nct_id, TRUE, FALSE))
-
-#get counts of drks trials with NCTs and those in ctgov sample
-# 29 trials in drks with NCTs in drks secondary identifiers
-# 1 of these not in ctgov sample, but remove from drks anyways
-count(DRKS_sample, has_nct_id, in_ctgov_sample)
-
-
-#remove trials with NCT from drks sample
-DRKS_sample <- DRKS_sample |>
-  filter(has_nct_id == FALSE)
-
-DRKS_sample_save <- DRKS_sample |>
-  rename(startDate_plannedActual = plannedActual) |> 
-  mutate(
-    startDate = as.Date(startDate),
-    studyEnd = as.Date(studyEnd),
-    targetSize = as.numeric(targetSize)
-  ) |> 
-  select(drksId, cities_lead, title,
-         firstDrksPublishDate, startDate,
-         startDate_plannedActual, studyEnd,
-         intervention.category0, intervention.value0,
-         intervention.category1, intervention.value1,
-         intervention.category2, intervention.value2,
-         address.type0, address.affiliation0, 
-         address.firstname0, address.lastname0,
-         address.type1, address.affiliation1, 
-         address.firstname1, address.lastname1,
-         targetSize, recruitmentStatus,
-         investorInitiated, monoMultiCentric,
-         publication.category0, publication.type0, publication.value0,
-         publication.category1, publication.type1, publication.value1,
-         publication.category2, publication.type2, publication.value2,
-         publication.category3, publication.type3, publication.value3,
-         publication.category4, publication.type4, publication.value4)
-
-
-#save DRKS trial sample
-write_csv2(DRKS_sample_save, here::here("data", "1_sample_generation", "IntoValue2_DRKS_sample.csv"), na = "")
-
-# NOTE: For manual searches, additional columns later added
-# [1] "publication_PMID"                    
-# [2] "publication_DOI"                     
-# [3] "publication_URL"                     
-# [4] "article_yes_no"                      
-# [5] "publication_date"                    
-# [6] "unsure_about_publ_yes_no"            
-# [7] "reason"                              
-# [8] "other_comments"                      
-# [9] "Publication identified in which step"
-# [10] "manual_validation_cities_lead"   
+qa_city <- drks_affils |> 
+  filter(type %in% c("PRIMARY_SPONSOR", "PRINCIPAL_COORDINATING_INVESTIGATOR") |
+           otherType == "OTHER_SECONDARY_SPONSOR",
+         !str_detect(affiliation, umc_search_terms),
+         str_detect(city, umc_search_terms))
