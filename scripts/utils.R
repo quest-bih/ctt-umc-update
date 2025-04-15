@@ -26,3 +26,46 @@ deduplicate_collapsed <- function(str_vec, collapse = ";") {
     paste(collapse = collapse) |> 
     dplyr::na_if("")
 }
+
+get_umc_terms <- function() {
+  yaml::read_yaml(here::here("data", "umc_search_terms", "umc_search_terms.yaml")) |> 
+    (\(x) paste0("\\b", x, "\\b", collapse = "|"))()
+}
+
+
+
+# extract and collapse all umc terms from a string
+which_umc <- function(umc_str, collapse = ";") {
+  
+  stopifnot("which_umc takes only a single string as input and you supplied a vector" =
+              length(umc_str) == 1)
+  
+  regexes <- yaml::read_yaml(here::here("data", "umc_search_terms", "umc_search_terms.yaml"))
+  
+  hits <- purrr::map_lgl(regexes, \(x) str_detect(umc_str, x))
+  return(
+    regexes[hits] |>
+      names() |>
+      paste(collapse = collapse)
+  )
+}
+
+# vectorized version of which_umc
+which_umcs <- function(umc_vec, collapse = ";") {
+
+  furrr::future_map_chr(umc_vec, which_umc, .progress = TRUE) |> 
+    paste(collapse = collapse)
+    
+}
+
+# which_umc(umc_str)
+umc_vec <- c("Munich", "Wuerzburg", "Ulm and Rostock")
+umc_str <- "Ulm and Rostock"
+# 
+# tibble(umc_str1 = umc_vec, umc_str2 = c("Jena", "Kiel and Charite", "Regensburg")) |>
+#   rowwise() |>
+#   mutate(umcs = which_umcs(umc_str1),
+#          umcs_all = which_umcs(c(umc_str1, umc_str2)))
+# 
+# 
+

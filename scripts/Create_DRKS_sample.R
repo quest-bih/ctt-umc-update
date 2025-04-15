@@ -46,9 +46,7 @@ drks_sponsors <- drks_tib |>
   unnest(trialContacts) |> 
   unnest(c(idContactIdType, contact))
 
-
-
-drks_affils <- drks_tib |> 
+drks_trial_contacts <- drks_tib |> 
   select(drksId, trialContacts) |> 
   unnest(trialContacts) |> 
   unnest(c(contact, idContactIdType)) |> 
@@ -163,8 +161,46 @@ drks_secondary_ids <- drks_secondary_ids |>
 
 #### GmbH exceptions : Universitätsklinikum Giessen und Marburg GmbH
 
-umc_search_terms <- read_yaml(here("data", "umc_search_terms", "umc_search_terms.yaml")) |> 
-  (\(x) paste0("\\b", x, "\\b", collapse = "|"))()
+################ UMC fields to search according to protocol
+
+umc_search_terms <- get_umc_terms()
+
+plan(multisession)
+
+### 1. Trial contacts
+
+umc_sponsors <- drks_trial_contacts |> 
+  filter(type == "PRIMARY_SPONSOR",
+    str_detect(city, umc_search_terms) |
+      str_detect(affiliation, umc_search_terms)) |> 
+  unite("affil_city", c(affiliation, city), sep = ", ") |> 
+  rowwise() |> 
+  mutate(umc = which_umcs(affil_city),
+         field = "primary_sponsor_affil_city",
+         validation = NA) |> 
+  ungroup() |> 
+  select(id = drksId, umc, affil_city, field, validation)
+  
+umc_pcis <- drks_trial_contacts |> 
+  filter(type == "PRINCIPAL_COORDINATING_INVESTIGATOR" |
+           otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR",
+         str_detect(city, umc_search_terms) |
+           str_detect(affiliation, umc_search_terms)) |> 
+  unite("affil_city", c(affiliation, city), sep = ", ") |> 
+  rowwise() |> 
+  mutate(umc = which_umcs(affil_city),
+         field = "pci_affil_city",
+         validation = NA) |> 
+  ungroup() |> 
+  select(id = drksId, umc, affil_city, field, validation)
+
+validation_umcs_drks <- umc_sponsors |> 
+  bind_rows(umcs_pis) |> 
+  distinct(affil_city, .keep_all = TRUE)
+
+validation_umcs_drks |>
+  write_excel_csv(here("data", "processed", "validation_umcs_drks.csv"))
+
 
 qa_umc_terms <- drks_sponsors |> 
   filter(str_detect(affiliation, umc_search_terms),
@@ -177,7 +213,7 @@ qa_umc_terms <- drks_sponsors |>
 
 drks_recruitment_vs_sponsor_affil <- drks_recruitment_umcs |> 
   filter(str_detect(name, umc_search_terms)) |> 
-  left_join(drks_affils |> 
+  left_join(drks_trial_contacts |> 
               filter(type %in% c("PRIMARY_SPONSOR", "PRINCIPAL_COORDINATING_INVESTIGATOR") |
                        otherType == "OTHER_SECONDARY_SPONSOR",
                      str_detect(affiliation, umc_search_terms) |
@@ -189,7 +225,7 @@ drks_recruitment_vs_sponsor_affil |>
   nrow()
 
 
-qa_city <- drks_affils |> 
+qa_city <- drks_trial_contacts |> 
   filter(type %in% c("PRIMARY_SPONSOR", "PRINCIPAL_COORDINATING_INVESTIGATOR") |
            otherType == "OTHER_SECONDARY_SPONSOR",
          !str_detect(affiliation, umc_search_terms),
