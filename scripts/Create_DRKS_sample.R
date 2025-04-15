@@ -195,8 +195,11 @@ umc_pcis <- drks_trial_contacts |>
   select(id = drksId, umc, affil_city, field, validation)
 
 validation_umcs_drks <- umc_sponsors |> 
-  bind_rows(umcs_pis) |> 
-  distinct(affil_city, .keep_all = TRUE)
+  bind_rows(umc_pcis) |> 
+  group_by(affil_city) |> 
+  summarise(across(everything(), first),
+            n = n()) |> 
+  arrange(desc(n), umc)
 
 validation_umcs_drks |>
   write_excel_csv(here("data", "processed", "validation_umcs_drks.csv"))
