@@ -1,0 +1,68 @@
+Aachen:
+  - "Aachen"
+Charite:
+  - "Charit(e|é)|charit*|Universit(ä|ae?)tsmedizin Berlin"
+Bochum:
+  - "Bochum"
+Bonn:
+  - "Bonn|Friedrich\\WWilhelms"
+Dresden:
+  - "Dresden|Carus"
+Düsseldorf:
+  - "D(ü|ue?)sseldorf|Heinrich\\WHeine"
+Erlangen:
+  - "Erlangen|N(ü|ue)rnberg|Nuremberg|Friedrich\\WAlexander"
+Dusiburg:
+  - "Duisburg|Essen"
+Frankfurt:
+  - "Frankfurt|Goethe"
+Freiburg:
+  - "Freiburg|Albert\\WLudwigs"
+Giessen:
+  - "Gie(ss|ß)en"
+Göttingen:
+  - "G(ö|oe?)ttingen"
+Greifswald:
+  - "Greifswald|Arndt"
+Halle:
+  - "Halle|Luther"
+Hamburg:
+  - "Hamburg"
+Hannover:
+  - "Hann?over"
+Heidelberg:
+  - "Heidelberg"
+Jena:
+  - "Jena|Friedrich\\WSchiller"
+Schleswig-Holstein:
+  - "Schleswig\\WHolstein|Kiel|L(ü|ue?)beck"
+Köln:
+  - "K(ö|oe)ln|Cologne"
+Leipzig:
+  - "Leipzig"
+Magdeburg:
+  - "Magdeburg|Guericke"
+Mainz:
+  - "Mainz|Gutenberg"
+Mannheim:
+  - "Mannheim"
+Marburg:
+  - "Marburg|Philipps"
+Munich:
+  - "Munich|M(ü|ue)nchen"
+Münster:
+  - "M(ü|ue?)nster"
+Regensburg:
+  - "Regensburg"
+Rostock:
+  - "Rostock"
+Homburg:
+  - "Homburg|Saar(land)?"
+Tübingen:
+  - "T(ü|ue?)bingen|Eberhard"
+Ulm:
+  - "Ulm"
+Würzburg:
+  - "W(ü|ue)rzburg"
+Witten-Herdecke:
+  - "Witten\\WHerdecke"
