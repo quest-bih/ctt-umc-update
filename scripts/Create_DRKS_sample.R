@@ -168,19 +168,19 @@ plan(multisession)
 
 ### 1. Trial contacts
 
-umc_sponsors <- drks_trial_contacts |> 
+umc_drks_sponsors <- drks_trial_contacts |> 
   filter(type == "PRIMARY_SPONSOR",
     str_detect(city, umc_search_terms) |
       str_detect(affiliation, umc_search_terms)) |> 
-  unite("affil_city", c(affiliation, city), sep = ", ") |> 
+  unite("raw_affil", c(affiliation, city), sep = ", ") |> 
   mutate(field = "primary_sponsor_affil_city")
 
-umc_pcis <- drks_trial_contacts |> 
+umc_drks_pcis <- drks_trial_contacts |> 
   filter(type == "PRINCIPAL_COORDINATING_INVESTIGATOR" |
            otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR",
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms)) |> 
-  unite("affil_city", c(affiliation, city), sep = ", ")  |> 
+  unite("raw_affil", c(affiliation, city), sep = ", ")  |> 
   mutate(field = "pci_affil_city")
 
 drks_study_characteristic <- drks_tib |> 
@@ -197,21 +197,23 @@ drks_2018_2020 <- drks_tib |>
   filter(between(actualCompletionDate, "2018-01-01", "2020-12-31")) |> 
   pull(drksId)
 
-validation_umcs_drks <- umc_sponsors |> 
-  bind_rows(umc_pcis) |>
+validation_umcs_drks <- umc_drks_sponsors |> 
+  bind_rows(umc_drks_pcis) |>
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
          drksId %in% drks_2018_2020) |>  
   rowwise() |> 
-  mutate(umc = which_umcs(affil_city),
+  mutate(umc = which_umcs(raw_affil),
          validation = NA) |> 
   ungroup() |> 
-  select(id = drksId, umc, affil_city, field, validation)
+  select(id = drksId, umc, raw_affil, field, validation)
 
 validation_umcs_drks_deduplicated <- validation_umcs_drks |> 
-  group_by(affil_city) |> 
+  group_by(raw_affil) |> 
   summarise(across(everything(), first),
-            n = n()) |> 
-  arrange(umc, desc(n))
+            n = n()) |>
+  ungroup() |> 
+  arrange(umc, desc(n)) |> 
+  relocate(id, .before = everything())
 
 validation_umcs_drks_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_drks.csv"))

@@ -27,11 +27,24 @@ deduplicate_collapsed <- function(str_vec, collapse = ";") {
     dplyr::na_if("")
 }
 
-get_umc_terms <- function() {
-  yaml::read_yaml(here::here("data", "umc_search_terms", "umc_search_terms.yaml")) |> 
-    (\(x) paste0("\\b", x, "\\b", collapse = "|"))()
+get_umc_terms <- function(collapsed = TRUE) {
+  regex_list <- yaml::read_yaml(here::here("data",
+                                           "umc_search_terms",
+                                           "umc_search_terms.yaml"))
+  
+  if (collapsed == FALSE) {
+    return(
+      regex_list |> 
+        map(\(x) paste0("\\b(", x, ")\\b"))
+    )
+    
+  } else {
+    return(
+      regex_list |> 
+        (\(x) paste0("\\b", x, "\\b", collapse = "|"))()
+    )
+  }
 }
-
 
 
 # extract and collapse all umc terms from a string
