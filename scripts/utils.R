@@ -59,8 +59,8 @@ which_umcs <- function(umc_vec, collapse = ";") {
 }
 
 # which_umc(umc_str)
-umc_vec <- c("Munich", "Wuerzburg", "Ulm and Rostock")
-umc_str <- "Ulm and Rostock"
+# umc_vec <- c("Munich", "Wuerzburg", "Ulm and Rostock")
+# umc_str <- "Ulm and Rostock"
 # 
 # tibble(umc_str1 = umc_vec, umc_str2 = c("Jena", "Kiel and Charite", "Regensburg")) |>
 #   rowwise() |>

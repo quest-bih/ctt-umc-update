@@ -16,6 +16,7 @@
 
 library(tidyverse)
 library(here)
+library(furrr)
 library(jsonlite)
 library(yaml)
 
@@ -159,8 +160,6 @@ drks_secondary_ids |>
 drks_secondary_ids <- drks_secondary_ids |> 
   filter(!is.na(ctgov_clean) | !is.na(euctr_clean) | !is.na(ctgov_clean))
 
-#### GmbH exceptions : Universitätsklinikum Giessen und Marburg GmbH
-
 ################ UMC fields to search according to protocol
 
 umc_search_terms <- get_umc_terms()
@@ -174,36 +173,48 @@ umc_sponsors <- drks_trial_contacts |>
     str_detect(city, umc_search_terms) |
       str_detect(affiliation, umc_search_terms)) |> 
   unite("affil_city", c(affiliation, city), sep = ", ") |> 
-  rowwise() |> 
-  mutate(umc = which_umcs(affil_city),
-         field = "primary_sponsor_affil_city",
-         validation = NA) |> 
-  ungroup() |> 
-  select(id = drksId, umc, affil_city, field, validation)
-  
+  mutate(field = "primary_sponsor_affil_city")
+
 umc_pcis <- drks_trial_contacts |> 
   filter(type == "PRINCIPAL_COORDINATING_INVESTIGATOR" |
            otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR",
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms)) |> 
-  unite("affil_city", c(affiliation, city), sep = ", ") |> 
+  unite("affil_city", c(affiliation, city), sep = ", ")  |> 
+  mutate(field = "pci_affil_city")
+
+drks_study_characteristic <- drks_tib |> 
+  select(drksId, studyCharacteristic) |> 
+  unnest(studyCharacteristic)
+
+drks_interventional_trns <- drks_study_characteristic |> 
+  filter(type == "INTERVENTIONAL") |> 
+  pull(drksId)
+
+drks_2018_2020 <- drks_tib |> 
+  select(drksId, recruitment) |> 
+  unnest(recruitment) |>  
+  filter(between(actualCompletionDate, "2018-01-01", "2020-12-31")) |> 
+  pull(drksId)
+
+validation_umcs_drks <- umc_sponsors |> 
+  bind_rows(umc_pcis) |>
+  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+         drksId %in% drks_2018_2020) |>  
   rowwise() |> 
   mutate(umc = which_umcs(affil_city),
-         field = "pci_affil_city",
          validation = NA) |> 
   ungroup() |> 
   select(id = drksId, umc, affil_city, field, validation)
 
-validation_umcs_drks <- umc_sponsors |> 
-  bind_rows(umc_pcis) |> 
+validation_umcs_drks_deduplicated <- validation_umcs_drks |> 
   group_by(affil_city) |> 
   summarise(across(everything(), first),
             n = n()) |> 
-  arrange(desc(n), umc)
+  arrange(umc, desc(n))
 
-validation_umcs_drks |>
+validation_umcs_drks_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_drks.csv"))
-
 
 qa_umc_terms <- drks_sponsors |> 
   filter(str_detect(affiliation, umc_search_terms),
