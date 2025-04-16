@@ -193,8 +193,8 @@ drks_interventional_trns <- drks_study_characteristic |>
 
 drks_2018_2020 <- drks_tib |> 
   select(drksId, recruitment) |> 
-  unnest(recruitment) |>  
-  filter(between(actualCompletionDate, "2018-01-01", "2020-12-31")) |> 
+  unnest(recruitment) |>
+  filter(between(as_date(actualCompletionDate), as_date("2018-01-01"), as_date("2020-12-31"))) |> 
   pull(drksId)
 
 validation_umcs_drks <- umc_drks_sponsors |> 

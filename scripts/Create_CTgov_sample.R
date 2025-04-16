@@ -4,7 +4,7 @@
 # from the clinicaltrials.gov registry. Due to size, the raw registry data 
 # will be stored in Zenodo and downloaded into the local project via a separate script.
 # 
-# The script searches the AACT dataset for affiliations of the sponsor/PI/responsible party/facilities
+# The script searches the AACT dataset for affiliations of the sponsor/PI/responsible party
 # associated with the different UMCs (keywords are loaded from city_search_terms.csv). It also filters
 # the relevant completion years and study status (Completed, Terminated, Suspended, Unknown status).
 #
@@ -21,6 +21,11 @@
 
 library(tidyverse)
 library(here)
+library(yaml)
+library(janitor)
+library(furrr)
+library(progressr)
+
 #----------------------------------------------------------------------------------------------------------------------
 # Loading of AACT dataset
 #----------------------------------------------------------------------------------------------------------------------
@@ -31,7 +36,9 @@ library(here)
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
 #AACT filenames that we need to load
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
-                        "facilities", "interventions", "calculated_values", "id_information")
+                        "facilities", 
+                        "facility_investigators",
+                        "interventions", "calculated_values", "id_information")
 
 AACT_dataset_files <- file.path(AACT_folder, paste0(AACT_dataset_names, ".txt"))
 AACT_datasets <- AACT_dataset_files |> 
@@ -44,14 +51,16 @@ names(AACT_datasets) <- AACT_dataset_names
 #----------------------------------------------------------------------------------------------------------------------
 
 #different seach terms for each university medical center are stored loaded from this csv
-city_search_terms <- readLines(here("data", "umc_search_terms", "city_search_terms.csv"), encoding = "UTF-8") |> 
-  str_split(";")
-cities <- city_search_terms |> map_chr(1)
-city_search_terms <- city_search_terms  |> 
-  map(\(x) paste0("\\b", x, "\\b", collapse = "|"))
-names(city_search_terms) <- cities
+# city_search_terms <- readLines(here("data", "umc_search_terms", "city_search_terms.csv"), encoding = "UTF-8") |>
+#   str_split(";")
+# cities <- city_search_terms |> map_chr(1)
+# city_search_terms <- city_search_terms  |>
+#   map(\(x) paste0("\\b", x, "\\b", collapse = "|"))
+# names(city_search_terms) <- cities
 
-
+city_search_terms <- get_umc_terms(collapse = FALSE)
+facilities <- AACT_datasets$facilities
+facility_inv <- AACT_datasets$facility_investigators
 #----------------------------------------------------------------------------------------------------------------------
 #  search for studies affiliated with a german medical faculty and get NCTs of those studies
 #----------------------------------------------------------------------------------------------------------------------
@@ -91,12 +100,80 @@ grep_sponsor <- city_grep(AACT_datasets$sponsors |>
 grep_resp_party_org <- city_grep(AACT_datasets$responsible_parties, "organization", city_search_terms)
 grep_resp_party_affil <- city_grep(AACT_datasets$responsible_parties, "affiliation", city_search_terms)
 
+#### responsible parties either give organization or affiliation, never both!!!
+
+resp_party_affil_and_org <- AACT_datasets$responsible_parties |> 
+  filter(!is.na(organization) & !is.na(affiliation))
+
 pi_umcs <- enframe(grep_PI, name = "umc", value = "nct_id") |> 
-  unnest(nct_id)
+  unnest(nct_id) |> 
+  group_by(nct_id) |> 
+  summarise(umc = paste(umc, collapse = ";"))
 sponsor_umcs <- enframe(grep_sponsor, name = "umc", value = "nct_id") |> 
-  unnest(nct_id)
+  unnest(nct_id) |> 
+  group_by(nct_id) |> 
+  summarise(umc = paste(umc, collapse = ";"))
 resp_party_org_umcs <- enframe(grep_resp_party_org, name = "umc", value = "nct_id") |> 
-  unnest(nct_id)
+  unnest(nct_id) |> 
+  group_by(nct_id) |> 
+  summarise(umc = paste(umc, collapse = ";"))
+resp_party_affil_umcs <- enframe(grep_resp_party_affil, name = "umc", value = "nct_id") |> 
+  unnest(nct_id) |> 
+  group_by(nct_id) |> 
+  summarise(umc = paste(umc, collapse = ";"))
+
+# therefore coalesce to org_affil and proceed with single column
+umc_resp_party <- AACT_datasets$responsible_parties |> 
+  mutate(raw_affil = coalesce(organization, affiliation)) |> 
+  filter(!is.na(raw_affil),
+         raw_affil != "[Redacted]") |>
+  inner_join(bind_rows(resp_party_org_umcs, resp_party_affil_umcs), by = "nct_id") |>
+  select(id = "nct_id", umc, raw_affil) |> 
+  mutate(field = "responsible_parties_org_affil",
+         validation = NA)
+
+umc_ctgov_sponsors <- AACT_datasets$sponsors |> 
+  filter(!is.na(name),
+         name != "[Redacted]") |>
+  inner_join(sponsor_umcs, by = "nct_id") |>
+  select(id = "nct_id", umc, raw_affil = name) |> 
+  mutate(field = "sponsor_name",
+         validation = NA)
+
+umc_ctgov_pi_host <- AACT_datasets$overall_officials |> 
+  filter(!is.na(affiliation),
+         affiliation != "[Redacted]") |>
+  inner_join(pi_umcs, by = "nct_id") |>
+  select(id = "nct_id", umc, raw_affil = affiliation) |> 
+  mutate(field = "overall_officials_affiliation",
+         validation = NA)
+
+###### interventional filter plus date filter
+inclusion_filter_trns <- AACT_datasets$studies |>
+  filter(study_type == "INTERVENTIONAL",
+         between(as_date(primary_completion_date), as_date("2018-01-01"), as_date("2020-12-31"))) |> 
+  pull(nct_id)
+  
+validation_umcs_ctgov <- umc_ctgov_sponsors |>
+  bind_rows(umc_resp_party) |>
+  bind_rows(umc_ctgov_pi_host) |> 
+  filter(id %in% inclusion_filter_trns) |>  # apply interventional and time filter here
+  rowwise() |> 
+  mutate(umc = which_umcs(raw_affil)) |> 
+  ungroup()
+
+validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
+  filter(!is.na(umc), umc != "") |> 
+  group_by(raw_affil) |>
+  summarise(across(everything(), first),
+            n = n()) |>
+  ungroup() |>
+  arrange(umc, desc(n)) |>
+  relocate(id, .before = everything())
+
+validation_umcs_ctgov_deduplicated |>
+  write_excel_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
+
 qa_pi <- AACT_datasets$overall_officials |> 
   inner_join(pi_umcs, by = "nct_id") |> 
   select(umc, affiliation, nct_id, everything())
