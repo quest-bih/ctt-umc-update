@@ -187,7 +187,7 @@ validation_umcs_ctgov_deduplicated |>
 # similar to tibble below, with umc affiliation split by field and trns
 # deduplicated.
 # If we want to merge in later processing for e.g. harmonization with
-# ther registries, combine fields into the different filter categories
+# other registries, combine fields into the different filter categories
 # we want here:
 
 umcs_ctgov <- validation_umcs_ctgov |>
@@ -288,6 +288,8 @@ CTgov_sample <- CTgov_sample |>
 CTgov_sample <- CTgov_sample |>
   left_join(AACT_datasets$calculated_values, by = "nct_id")
 
+#TODO: Potentially add inclusion filter only at this stage, right before export
+
 CTgov_sample_save <- CTgov_sample |>
   # TODO: This code below is now broken.
   # decide which affil columns to keep/standardize for comparison with
@@ -313,6 +315,7 @@ drks_tib <- jsonlite::fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
 drks_ids <- drks_tib$drksId
 
+# TODO: replace code below potentially with new ctregistries function which_trns
 id_info <- AACT_datasets$id_information |>
   mutate(id_value = str_squish(id_value) |>
            str_remove_all("\\s"),
@@ -364,10 +367,10 @@ id_crossreg <- id_info |>
             has_org_study_id = any(id_source == "org_study_id", na.rm = TRUE),
             has_crossreg_drks = any(!is.na(drks_clean), na.rm = TRUE),
             has_crossreg_euctr = any(!is.na(euctr_clean), na.rm = TRUE),
-            ctgov_ids = paste(na.omit(ctgov_clean) |> unique(), collapse = ";"),
-            drks_ids = paste(na.omit(drks_clean) |> unique(), collapse = ";"),
-            euctr_ids = paste(na.omit(euctr_clean) |> unique(), collapse = ";"),
-            id_sources = paste(na.omit(id_source) |> unique(), collapse = ";")
+            ctgov_ids = deduplicate_collapsed(ctgov_clean),
+            drks_ids = deduplicate_collapsed(drks_clean),
+            euctr_ids = deduplicate_collapsed(na.omit(euctr_clean),
+            id_sources = deduplicate_collapsed(id_source))
   ) |> 
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
