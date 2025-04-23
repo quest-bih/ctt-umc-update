@@ -50,6 +50,8 @@ names(AACT_datasets) <- AACT_dataset_names
 # Load search terms for the affiliations/cities
 #----------------------------------------------------------------------------------------------------------------------
 
+source(here("scripts", "utils.R"))
+
 #different seach terms for each university medical center are stored loaded from this csv
 # city_search_terms <- readLines(here("data", "umc_search_terms", "city_search_terms.csv"), encoding = "UTF-8") |>
 #   str_split(";")
@@ -59,6 +61,7 @@ names(AACT_datasets) <- AACT_dataset_names
 # names(city_search_terms) <- cities
 
 city_search_terms <- get_umc_terms(collapse = FALSE)
+### if the facilities are to be used later, but we decided not to:
 facilities <- AACT_datasets$facilities
 facility_inv <- AACT_datasets$facility_investigators
 #----------------------------------------------------------------------------------------------------------------------
@@ -93,36 +96,37 @@ city_grep_indices <- function(dataset, colname, grep_terms)
   return(indices)
 }
 
-#search the different affilation datasets for the city search terms
+#search the different affiliation datasets for the city search terms
 grep_PI <- city_grep(AACT_datasets$overall_officials, "affiliation", city_search_terms)
 grep_sponsor <- city_grep(AACT_datasets$sponsors |>
                             filter(lead_or_collaborator == "lead"), "name", city_search_terms)
 grep_resp_party_org <- city_grep(AACT_datasets$responsible_parties, "organization", city_search_terms)
 grep_resp_party_affil <- city_grep(AACT_datasets$responsible_parties, "affiliation", city_search_terms)
 
-#### responsible parties either give organization or affiliation, never both!!!
+# long_format umc hits from the different fields, for easier join later
 
-resp_party_affil_and_org <- AACT_datasets$responsible_parties |> 
-  filter(!is.na(organization) & !is.na(affiliation))
+enframe_umc_list <- function(grep_ls) {
+  grep_ls |> 
+    tibble::enframe(name = "umc", value = "nct_id") |> 
+    tidyr::unnest(nct_id) |> 
+    dplyr::group_by(nct_id) |> 
+    dplyr::summarise(umc = paste(umc, collapse = ";"))
+}
+pi_umcs <- enframe_umc_list(grep_PI)
 
-pi_umcs <- enframe(grep_PI, name = "umc", value = "nct_id") |> 
-  unnest(nct_id) |> 
-  group_by(nct_id) |> 
-  summarise(umc = paste(umc, collapse = ";"))
-sponsor_umcs <- enframe(grep_sponsor, name = "umc", value = "nct_id") |> 
-  unnest(nct_id) |> 
-  group_by(nct_id) |> 
-  summarise(umc = paste(umc, collapse = ";"))
-resp_party_org_umcs <- enframe(grep_resp_party_org, name = "umc", value = "nct_id") |> 
-  unnest(nct_id) |> 
-  group_by(nct_id) |> 
-  summarise(umc = paste(umc, collapse = ";"))
-resp_party_affil_umcs <- enframe(grep_resp_party_affil, name = "umc", value = "nct_id") |> 
-  unnest(nct_id) |> 
-  group_by(nct_id) |> 
-  summarise(umc = paste(umc, collapse = ";"))
+sponsor_umcs <- enframe_umc_list(grep_sponsor)
+resp_party_org_umcs <- enframe_umc_list(grep_resp_party_org)
+resp_party_affil_umcs <- enframe_umc_list(grep_resp_party_affil)
+
+# responsible parties either give organization or affiliation, never both!!!
+
+AACT_datasets$responsible_parties |> 
+  filter(!is.na(organization) & !is.na(affiliation)) |> 
+  nrow()
 
 # therefore coalesce to org_affil and proceed with single column
+# prepare umc_validation templates, at this stage unfiltered for inclusion/exclusion
+# criteria and with blank validation column
 umc_resp_party <- AACT_datasets$responsible_parties |> 
   mutate(raw_affil = coalesce(organization, affiliation)) |> 
   filter(!is.na(raw_affil),
@@ -148,16 +152,20 @@ umc_ctgov_pi_host <- AACT_datasets$overall_officials |>
   mutate(field = "overall_officials_affiliation",
          validation = NA)
 
-###### interventional filter plus date filter
-inclusion_filter_trns <- AACT_datasets$studies |>
+# TODO: specify inclusion/exclusion filters further, e.g. status, dates, etc.
+# extract TRNs that correspond to the inclusion criteria only
+inclusion_trns <- AACT_datasets$studies |>
   filter(study_type == "INTERVENTIONAL",
+         overall_status %in% c("COMPLETED" , "TERMINATED" , "SUSPENDED", "UNKNOWN"), 
          between(as_date(primary_completion_date), as_date("2018-01-01"), as_date("2020-12-31"))) |> 
   pull(nct_id)
+
+plan(multisession) # parallelize processing here, but still takes a long time!
   
-validation_umcs_ctgov <- umc_ctgov_sponsors |>
-  bind_rows(umc_resp_party) |>
-  bind_rows(umc_ctgov_pi_host) |> 
-  filter(id %in% inclusion_filter_trns) |>  # apply interventional and time filter here
+validation_umcs_ctgov <- bind_rows(list(umc_ctgov_sponsors,
+                                        umc_resp_party,
+                                        umc_ctgov_pi_host)) |> 
+  filter(id %in% inclusion_trns) |>  # apply inclusion filter here
   rowwise() |> 
   mutate(umc = which_umcs(raw_affil)) |> 
   ungroup()
@@ -174,6 +182,21 @@ validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
 validation_umcs_ctgov_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
 
+# TODO:
+# after manual revision, there should be a csv with validated umc affils
+# similar to tibble below, with umc affiliation split by field and trns
+# deduplicated.
+# If we want to merge in later processing for e.g. harmonization with
+# ther registries, combine fields into the different filter categories
+# we want here:
+
+umcs_ctgov <- validation_umcs_ctgov |>
+  filter(!is.na(umc), umc != "") |> 
+  pivot_wider(names_from = field, values_from = c(umc, raw_affil),
+              values_fn = deduplicate_collapsed,
+              values_fill = NA_character_)
+
+### some exploration of the umc output here for quality assurance (qa)
 qa_pi <- AACT_datasets$overall_officials |> 
   inner_join(pi_umcs, by = "nct_id") |> 
   select(umc, affiliation, nct_id, everything())
@@ -189,95 +212,71 @@ qa_resp_org <- AACT_datasets$responsible_parties |>
 gmbh_resp_org <- qa_resp_org |> 
   filter(str_detect(organization, "GmbH"))
 
-#joining of the different grep results
-affil_join <- function(affil_nct_list)
-{
-  affil_indices_joined <- affil_nct_list  |> 
-    pmap(c) |> 
-    map(unique) |> 
-    map(sort)
-}
+# #joining of the different grep results
+# affil_join <- function(affil_nct_list)
+# {
+#   affil_indices_joined <- affil_nct_list  |> 
+#     pmap(c) |> 
+#     map(unique) |> 
+#     map(sort)
+# }
 
-#combine the results for the different columns to get the studies with a match for
-#a lead (PI/sponsor/responsible_party) or facility affiliation
-grep_results_lead <- list(grep_PI, grep_sponsor, grep_resp_party_org, grep_resp_party_affil)
-
-#for each study we want to know which city has
-#a lead (PI/sponsor/responsible_party) or facility affiliation or any affil
-affil_ncts_lead <- affil_join(grep_results_lead)
-
-#get the unique study IDs
-unique_ncts_lead <- unique(unlist(affil_ncts_lead))
+# TODO: move inclusion filter later in the workflow. decide where.
 
 #----------------------------------------------------------------------------------------------------------------------
 # reduce the CTgov dataset to those studies that are indeed affiliated
 # and filter for lead completion years & study status
 #----------------------------------------------------------------------------------------------------------------------
 
-CTgov_sample <- AACT_datasets$studies
 
-completion_years <- 2013:2019 |> 
-  paste(collapse="|")
-study_status <- c("COMPLETED" , "TERMINATED" , "SUSPENDED", "UNKNOWN") |> 
-  paste(collapse="|")
-
-#filter cases for affiliation, years, study status, and study type
-CTgov_sample <- CTgov_sample |>
-  filter(nct_id %in% unique_ncts_lead,
-         grepl(completion_years, completion_date),
-         grepl(study_status, overall_status),
-         study_type == "INTERVENTIONAL")
-
-qa_gmbh <- CTgov_sample |> 
-  filter(nct_id %in% gmbh_sponsor$nct_id)
-qa_gmbh_resp_org <- CTgov_sample |> 
-  filter(nct_id %in% gmbh_resp_org$nct_id)
-
-unique_gmbh <- gmbh_sponsor |> 
-  distinct(name, .keep_all = TRUE) |> 
-  bind_rows(gmbh_resp_org |> 
-              distinct(name, .keep_all = TRUE))
 
 #----------------------------------------------------------------------------------------------------------------------
-# create for each study a list of affiliated cities and add to main table
+# new: apply inclusion filter and add affiliation columns directly
+# deprecated: create for each study a list of affiliated cities and add to main table
 #----------------------------------------------------------------------------------------------------------------------
 
-get_city_per_NCT <- function(cities_nct_list, unique_ncts)
-{
-  cities_col <- vector("list", length(unique_ncts))
-  names(cities_col) <- unique_ncts
-  for (city in names(cities_nct_list)) {
-    cities_col[cities_nct_list[[city]]] <-
-      paste(cities_col[cities_nct_list[[city]]], city, sep = " ")
-  }
-  cities_col <- substring(cities_col, first = 6)
-  names(cities_col) <- unique_ncts
-  return(cities_col)
-}
+#filter cases for affiliation, years, study status, and study type, etc.
+CTgov_sample <- AACT_datasets$studies |> 
+  filter(nct_id %in% umcs_ctgov$id) |> # apply inclusion filter here, incl. umc
+  left_join(umcs_ctgov, by = c("nct_id" = "id"), copy = TRUE)
 
-#create columns that list which cities are affiliated with the studies
-nct_cities_lead <- get_city_per_NCT(affil_ncts_lead, unique_ncts_lead)
+######### In previous code now commented out (see below) only the first PI was taken
+# from each study, regardless if others may have been UMC-related or not?
 
-#prepare for joining with main table
-nct_cities_lead_tbl <- tibble(nct_id = unique_ncts_lead, cities_lead = nct_cities_lead)
-
-#add columns to main table
-CTgov_sample <- CTgov_sample |>
-  left_join(nct_cities_lead_tbl, by = "nct_id")
-
+# get_city_per_NCT <- function(cities_nct_list, unique_ncts)
+# {
+#   cities_col <- vector("list", length(unique_ncts))
+#   names(cities_col) <- unique_ncts
+#   for (city in names(cities_nct_list)) {
+#     cities_col[cities_nct_list[[city]]] <-
+#       paste(cities_col[cities_nct_list[[city]]], city, sep = " ")
+#   }
+#   cities_col <- substring(cities_col, first = 6)
+#   names(cities_col) <- unique_ncts
+#   return(cities_col)
+# }
+# 
+# #create columns that list which cities are affiliated with the studies
+# nct_cities_lead <- get_city_per_NCT(affil_ncts_lead, unique_ncts_lead)
+# 
+# #prepare for joining with main table
+# nct_cities_lead_tbl <- tibble(nct_id = unique_ncts_lead, cities_lead = nct_cities_lead)
+# 
+# #add columns to main table
+# CTgov_sample <- CTgov_sample |>
+#   left_join(nct_cities_lead_tbl, by = "nct_id")
 
 
 #add PI affil info to main table
 #first get only affils of relevant PIs from full table
-grep_PI_indices <- city_grep_indices(AACT_datasets$overall_officials, "affiliation", city_search_terms) |> 
-  unlist() |> unique() |> sort() 
-PI_affils_table_filtered <- AACT_datasets$overall_officials[grep_PI_indices,] |>
-  distinct(nct_id, .keep_all = TRUE) #only take first relevant PI for each study to allow a clean join
+# grep_PI_indices <- city_grep_indices(AACT_datasets$overall_officials, "affiliation", city_search_terms) |>
+#   unlist() |> unique() |> sort()
+# PI_affils_table_filtered <- AACT_datasets$overall_officials[grep_PI_indices,] |>
+#   distinct(nct_id, .keep_all = TRUE) #only take first relevant PI for each study to allow a clean join
+# CTgov_sample <- CTgov_sample |>
+#   left_join(PI_affils_table_filtered, by = "nct_id")
 
-CTgov_sample <- CTgov_sample |>
-  left_join(PI_affils_table_filtered, by = "nct_id")
-
-#add intervantion name
+#add intervention name
 interventions_combined <- AACT_datasets$interventions |>
   group_by(nct_id) |>
   summarise(intervention_names_comb = paste(name, collapse=" | "))
@@ -285,12 +284,15 @@ interventions_combined <- AACT_datasets$interventions |>
 CTgov_sample <- CTgov_sample |>
   left_join(interventions_combined, by = "nct_id")
 
-
 #add calculated values
 CTgov_sample <- CTgov_sample |>
   left_join(AACT_datasets$calculated_values, by = "nct_id")
 
 CTgov_sample_save <- CTgov_sample |>
+  # TODO: This code below is now broken.
+  # decide which affil columns to keep/standardize for comparison with
+  # data from other registries, in place of old PI_name and PI_affiliation 
+  # variables here 
   rename(PI_name = name,
          PI_affiliation = affiliation,
          interventions = intervention_names_comb) |> 
@@ -305,9 +307,10 @@ CTgov_sample_save <- CTgov_sample |>
 #----------------------------------------------------------------------------------------------------------------------
 
 regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
-# drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
+### TODO: perhaps export a slimmer table with just the DRKS TRNs as csv to prevent
+# having to load the whole json here again
+drks_tib <- jsonlite::fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
-#drks_ids <- read_csv() 
 drks_ids <- drks_tib$drksId
 
 id_info <- AACT_datasets$id_information |>
@@ -434,6 +437,12 @@ qa_trn_length <- id_info |>
 
 qa_trn_length |> 
   count(id_source, trn_too_long, alias_id_exists)
+
+# TODO: write a function that replaces obsolete CTgov TRNs with the most current
+# TRN in the database
+
+
+# TODO: include secondary trn info into CTgov_sample before final export
 
 #save CT.gov trial sample
 #please be aware that not all associations of the trials to the cites are correct (there are still false positives)
