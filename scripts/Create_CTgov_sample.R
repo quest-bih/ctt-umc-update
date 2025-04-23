@@ -369,8 +369,8 @@ id_crossreg <- id_info |>
             has_crossreg_euctr = any(!is.na(euctr_clean), na.rm = TRUE),
             ctgov_ids = deduplicate_collapsed(ctgov_clean),
             drks_ids = deduplicate_collapsed(drks_clean),
-            euctr_ids = deduplicate_collapsed(na.omit(euctr_clean),
-            id_sources = deduplicate_collapsed(id_source))
+            euctr_ids = deduplicate_collapsed(euctr_clean),
+            id_sources = deduplicate_collapsed(id_source)
   ) |> 
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
