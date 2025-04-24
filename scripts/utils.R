@@ -81,4 +81,3 @@ which_umcs <- function(umc_vec, collapse = ";") {
 #          umcs_all = which_umcs(c(umc_str1, umc_str2)))
 # 
 # 
-
