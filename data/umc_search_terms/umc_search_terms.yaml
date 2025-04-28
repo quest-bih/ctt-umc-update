@@ -12,7 +12,7 @@ Düsseldorf:
   - "D(ü|ue?)sseldorf|Heinrich\\WHeine"
 Erlangen:
   - "Erlangen|N(ü|ue)rnberg|Nuremberg|Friedrich\\WAlexander"
-Dusiburg:
+Duisburg-Essen:
   - "Duisburg|Essen"
 Frankfurt:
   - "Frankfurt|Goethe"
@@ -24,7 +24,7 @@ Göttingen:
   - "G(ö|oe?)ttingen"
 Greifswald:
   - "Greifswald|Arndt"
-Halle:
+Halle-Wittenberg:
   - "Halle|Luther"
 Hamburg:
   - "Hamburg"
@@ -64,5 +64,5 @@ Ulm:
   - "Ulm"
 Würzburg:
   - "W(ü|ue)rzburg"
-Witten-Herdecke:
+Witten/Herdecke:
   - "Witten\\WHerdecke"
