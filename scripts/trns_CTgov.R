@@ -11,15 +11,20 @@ library(progressr)
 # extract and clean secondary trns for drks, euctr, and aliases (secondary ctgov trns)
 #----------------------------------------------------------------------------------------------------------------------
 
-regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
-### TODO: perhaps export a slimmer table with just the DRKS TRNs as csv to prevent
-# having to load the whole json here again
-drks_tib <- jsonlite::fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
+# AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
+AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
 
-drks_ids <- drks_tib$drksId
+id_info <- file.path(AACT_folder, "id_information.txt") |> 
+  read_delim(delim = "|")
+
+regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
+
+drks_ids <- read_csv(here("data", "raw", "drks_ids.csv")) |> 
+  pull(drksId)
 
 # TODO: replace code below potentially with new ctregistries function which_trns
-id_info <- AACT_datasets$id_information |>
+# however code runs very fast as is, compared to which_trns
+id_info <- id_info |>
   mutate(id_value = str_squish(id_value) |>
            str_remove_all("\\s"),
          drks_clean = case_when(

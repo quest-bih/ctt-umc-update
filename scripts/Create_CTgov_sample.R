@@ -42,9 +42,8 @@ AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible
 
 AACT_dataset_files <- file.path(AACT_folder, paste0(AACT_dataset_names, ".txt"))
 AACT_datasets <- AACT_dataset_files |> 
-  map(read_delim, delim = "|")
-names(AACT_datasets) <- AACT_dataset_names
-
+  map(read_delim, delim = "|") |> 
+  set_names(AACT_dataset_names)
 
 #----------------------------------------------------------------------------------------------------------------------
 # Load search terms for the affiliations/cities

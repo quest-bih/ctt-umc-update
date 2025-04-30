@@ -32,6 +32,11 @@ library(yaml)
 
 drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
+# save the existent DRKS TRNs for easier existence and cross-reference checks later
+drks_tib |> 
+  select(drksId) |> 
+  write_excel_csv(here("data", "raw", "drks_ids.csv"))
+
 source(here("scripts", "utils.R"))
 # regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
 regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))

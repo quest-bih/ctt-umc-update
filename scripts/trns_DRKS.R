@@ -11,6 +11,15 @@ drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
 
 source(here("scripts", "utils.R"))
 
+# AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
+AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
+
+ctgov_id_info <- file.path(AACT_folder, "id_information.txt") |> 
+  read_delim(delim = "|")
+
+### TODO: import euctr secondary TRN tables for existence check and
+# obsolete TRN update (for ctgov only)
+
 drks_secondary_ids <- drks_tib |> 
   select(drksId, secondaryIds) |> 
   unnest(secondaryIds) |> 
@@ -77,8 +86,8 @@ drks_secondary_ids <- drks_secondary_ids |>
       ctgov_clean2 == ctgov_clean ~ NA_character_,
       .default = ctgov_clean2),
     drks_alias_exists = drks_clean %in% drksId,
-    # ctgov_exists = ctgov_clean %in% id_info$nct_id, # all of the ctgov_clean exist (one was from 2024-11-12 so not in earlier data set, but exists on CT.gov)
-    # ctgov2_exists = ctgov_clean2 %in% id_info$nct_id # all of the ctgov2_clean exist
+    ctgov_exists = ctgov_clean %in% ctgov_id_info$nct_id, # all of the ctgov_clean exist (one was from 2024-11-12 so not in earlier data set, but exists on CT.gov)
+    ctgov2_exists = ctgov_clean2 %in% ctgov_id_info$nct_id # all of the ctgov2_clean exist
   ) 
 
 # explore multiple euctr trial numbers
@@ -107,3 +116,6 @@ drks_secondary_ids |>
 
 drks_secondary_ids <- drks_secondary_ids |> 
   filter(!is.na(ctgov_clean) | !is.na(euctr_clean) | !is.na(ctgov_clean))
+
+
+
