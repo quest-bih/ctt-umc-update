@@ -66,7 +66,11 @@ which_umc <- function(umc_str, collapse = ";") {
 # vectorized version of which_umc
 which_umcs <- function(umc_vec, collapse = ";") {
 
-  furrr::future_map_chr(umc_vec, which_umc, .progress = TRUE) |> 
+  p <- progressr::progressor(along = umc_vec)
+  furrr::future_map_chr(umc_vec, \(x) {
+    p()
+    which_umc(x)
+  }) |> 
     paste(collapse = collapse)
     
 }

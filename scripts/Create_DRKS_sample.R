@@ -30,7 +30,7 @@ library(yaml)
 # DRKS_sample <- read_csv2(here::here("data", "raw", "2020-06-03_drks.csv"))
 # DRKS_full <- read_json(here("data", "raw", "DRKS_search_20250303.json"))
 
-drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
+drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250513.json"))
 
 # save the existent DRKS TRNs for easier existence and cross-reference checks later
 drks_tib |> 
@@ -99,16 +99,16 @@ drks_interventional_trns <- drks_study_characteristic |>
   filter(type == "INTERVENTIONAL") |> 
   pull(drksId)
 
-drks_2018_2020 <- drks_tib |> 
+drks_2018_2021 <- drks_tib |> 
   select(drksId, recruitment) |> 
   unnest(recruitment) |>
-  filter(between(as_date(actualCompletionDate), as_date("2018-01-01"), as_date("2020-12-31"))) |> 
+  filter(between(as_date(actualCompletionDate), as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   pull(drksId)
 
 validation_umcs_drks <- umc_drks_sponsors |> 
   bind_rows(umc_drks_pcis) |>
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
-         drksId %in% drks_2018_2020) |>  
+         drksId %in% drks_2018_2021) |> 
   rowwise() |> 
   mutate(umc = which_umcs(raw_affil),
          validation = NA) |> 
