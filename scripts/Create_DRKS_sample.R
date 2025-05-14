@@ -17,6 +17,7 @@
 library(tidyverse)
 library(here)
 library(furrr)
+library(progressr)
 library(jsonlite)
 library(yaml)
 
@@ -73,7 +74,7 @@ drks_recruitment_umcs <- drks_tib |>
 umc_search_terms <- get_umc_terms()
 
 plan(multisession)
-
+handlers(global = TRUE)
 ### 1. Trial contacts
 
 umc_drks_sponsors <- drks_trial_contacts |> 
@@ -109,10 +110,8 @@ validation_umcs_drks <- umc_drks_sponsors |>
   bind_rows(umc_drks_pcis) |>
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
          drksId %in% drks_2018_2021) |> 
-  rowwise() |> 
   mutate(umc = which_umcs(raw_affil),
          validation = NA) |> 
-  ungroup() |> 
   select(id = drksId, umc, raw_affil, field, validation)
 
 validation_umcs_drks_deduplicated <- validation_umcs_drks |> 
