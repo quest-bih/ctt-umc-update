@@ -97,3 +97,18 @@ which_umcs <- function(umc_vec, collapse = ";") {
 #   rowwise() |> 
 #   mutate(umc = which_umcs(raw_affil)) |> 
 #   ungroup()
+
+# update obsolete alias TRNs with up-to-date TRNs, if available
+update_ctgov_alias <- function(trn, trn_tib) {
+  if (trn %in% trn_tib$alias) {
+    trn_updated <- trn_tib |> 
+      dplyr::filter(alias == trn) |> 
+      dplyr::pull(nct_id)
+  } else {
+    trn_updated <- trn
+  }
+ return(trn_updated) 
+}
+
+# usage example
+# update_ctgov_alias("NCT00006065", id_aliases)

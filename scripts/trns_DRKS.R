@@ -7,18 +7,18 @@ library(progressr)
 library(jsonlite)
 library(yaml)
 
-drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250303.json"))
+drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250513.json"))
 
 source(here("scripts", "utils.R"))
 
 # AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
-AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
+AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
 
 ctgov_id_info <- file.path(AACT_folder, "id_information.txt") |> 
   read_delim(delim = "|")
+ctgov_aliases <- read_csv(here("data", "processed", "ctgov_aliases.csv"))
 
-### TODO: import euctr secondary TRN tables for existence check and
-# obsolete TRN update (for ctgov only)
+### TODO: import euctr secondary TRN tables for existence check
 
 drks_secondary_ids <- drks_tib |> 
   select(drksId, secondaryIds) |> 
@@ -37,8 +37,13 @@ drks_secondary_ids <- drks_tib |>
     .default = otherPrimaryRegisterId |>
       str_extract(regexes$EudraCT) 
   ),
+  ##### tihs part commented out because no obsolete ctgov TRNs were in the dataset
+  # ctgov_clean_preupdate = otherPrimaryRegisterId |>
+  #   str_extract(regexes$ClinicalTrials.gov),
+  # ctgov_clean = map_chr(ctgov_clean_preupdate, \(x) update_ctgov_alias(x, ctgov_aliases)),
+  # ctgov_updated = ctgov_clean != ctgov_clean_preupdate,
   ctgov_clean = otherPrimaryRegisterId |>
-    str_extract(regexes$ClinicalTrials.gov),
+      str_extract(regexes$ClinicalTrials.gov),
   drks_clean = case_when(
     # if the "secondary ID" just repeats the trial number return NA
     otherPrimaryRegisterId |>
@@ -86,9 +91,9 @@ drks_secondary_ids <- drks_secondary_ids |>
       ctgov_clean2 == ctgov_clean ~ NA_character_,
       .default = ctgov_clean2),
     drks_alias_exists = drks_clean %in% drksId,
-    ctgov_exists = ctgov_clean %in% ctgov_id_info$nct_id, # all of the ctgov_clean exist (one was from 2024-11-12 so not in earlier data set, but exists on CT.gov)
+    ctgov_exists = ctgov_clean %in% ctgov_id_info$nct_id, # all of the ctgov_clean exist
     ctgov2_exists = ctgov_clean2 %in% ctgov_id_info$nct_id # all of the ctgov2_clean exist
-  ) 
+  )
 
 # explore multiple euctr trial numbers
 drks_secondary_ids |> 

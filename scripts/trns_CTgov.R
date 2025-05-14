@@ -12,7 +12,7 @@ library(progressr)
 #----------------------------------------------------------------------------------------------------------------------
 
 # AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
-AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
+AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
 
 id_info <- file.path(AACT_folder, "id_information.txt") |> 
   read_delim(delim = "|")
@@ -22,8 +22,6 @@ regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 drks_ids <- read_csv(here("data", "raw", "drks_ids.csv")) |> 
   pull(drksId)
 
-# TODO: replace code below potentially with new ctregistries function which_trns
-# however code runs very fast as is, compared to which_trns
 id_info <- id_info |>
   mutate(id_value = str_squish(id_value) |>
            str_remove_all("\\s"),
@@ -46,7 +44,8 @@ id_info <- id_info |>
            id_value |>
              str_extract(regexes$ClinicalTrials.gov) == nct_id ~ NA_character_,
            .default = id_value |>
-             str_extract(regexes$ClinicalTrials.gov)
+             str_extract(regexes$ClinicalTrials.gov) |> 
+             str_remove_all("[:punct:]")
          ),
          ctgov_exists = ctgov_clean %in% nct_id,
          drks_exists = drks_clean %in% drks_ids)
@@ -114,8 +113,11 @@ qa_crossreg |>
 qa_aliases <- id_crossreg |> 
   filter(has_ctgov)
 
-qa_aliases <- id_info |> 
-  filter(!is.na(ctgov_clean), na.rm = TRUE) |> 
+ctgov_aliases <- id_info |> 
+  filter(
+    # nct_id %in% inclusion_trns, # inclusion criteria from sample generation!
+    !is.na(ctgov_clean)
+    ) |> 
   mutate(is_alias = id_source == "nct_alias",
          alias_id_exists = ctgov_clean %in% id_info) |> 
   group_by(nct_id) |>
@@ -132,9 +134,24 @@ qa_aliases <- id_info |>
   ) |> 
   mutate(across(where(is.character), \(x) na_if(x, "")))
 
-qa_aliases |> 
+id_aliases <- ctgov_aliases |> 
+  filter(has_alias == TRUE) |> 
+  select(nct_id, alias = ctgov_ids) |> 
+  mutate(alias = strsplit(alias, ";")) |> 
+  unnest(alias) |> 
+  write_excel_csv(here("data", "processed", "ctgov_aliases.csv"))
+
+ctgov_aliases |> 
   count(id_sources) |> 
   mutate(prop = n / sum(n))
+
+# the very few secondary ids that are not aliases seem to be other related studies,
+# ignore for now, potentially verify as number is small,
+# especially after applying inclusion criteria
+qa_org_study <- ctgov_aliases |> 
+  filter(id_sources == "org_study_id") |> 
+  mutate(secondary_exists = ctgov_ids %in% id_info$nct_id) |> 
+  filter(secondary_exists == FALSE)
 
 id_info |> 
   filter(!is.na(ctgov_clean), na.rm = TRUE) |> 
@@ -148,9 +165,6 @@ qa_trn_length <- id_info |>
 
 qa_trn_length |> 
   count(id_source, trn_too_long, alias_id_exists)
-
-# TODO: write a function that replaces obsolete CTgov TRNs with the most current
-# TRN in the database
 
 
 # TODO: include secondary trn info into CTgov_sample before final export
