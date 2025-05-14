@@ -33,7 +33,7 @@ library(progressr)
 # the complete AACT was downloaded with the timestamp given and saved in the data/raw folder
 
 # AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
-AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_240927")
+AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
 #AACT filenames that we need to load
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
                         "facilities", 
@@ -154,18 +154,17 @@ umc_ctgov_pi_host <- AACT_datasets$overall_officials |>
 # extract TRNs that correspond to the inclusion criteria only
 inclusion_trns <- AACT_datasets$studies |>
   filter(study_type == "INTERVENTIONAL",
-         between(as_date(completion_date), as_date("2018-01-01"), as_date("2020-12-31"))) |> 
+         between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   pull(nct_id)
 
 plan(multisession) # parallelize processing here, but still takes a long time!
-  
+handlers(global = TRUE)
+
 validation_umcs_ctgov <- bind_rows(list(umc_ctgov_sponsors,
                                         umc_resp_party,
                                         umc_ctgov_pi_host)) |> 
   filter(id %in% inclusion_trns) |>  # apply inclusion filter here
-  rowwise() |> 
-  mutate(umc = which_umcs(raw_affil)) |> 
-  ungroup()
+  mutate(umc = which_umcs(raw_affil))
 
 validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
   filter(!is.na(umc), umc != "") |> 

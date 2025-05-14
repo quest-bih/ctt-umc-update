@@ -1,78 +1,108 @@
 ﻿"id","raw_affil","umc","field","validation","n"
-"NCT03668665","RWTH Aachen University","Aachen","sponsor_name",NA,37
-"NCT03378817","University Hospital, Aachen","Aachen","sponsor_name",NA,5
-"NCT04518514","RWTH Aachen University Hospital","Aachen","overall_officials_affiliation",NA,4
+"NCT02812862","RWTH Aachen University","Aachen","sponsor_name",NA,56
+"NCT03124641","University Hospital, Aachen","Aachen","sponsor_name",NA,7
+"NCT02002247","RWTH Aachen University Hospital","Aachen","overall_officials_affiliation",NA,5
+"NCT02530788","Dep. of Thoracic and Cardiovascular Surgery, University Hospital RWTH Aachen","Aachen","overall_officials_affiliation",NA,2
 "NCT02617875","Department of Anesthesiology, University Hospital Aachen, Germany","Aachen","overall_officials_affiliation",NA,2
 "NCT02722915","University Hospital RWTH Aachen, Department of Psychiatry, Psychotherapy and Psychosomatics","Aachen","overall_officials_affiliation",NA,2
+"NCT04172363","Aachen University Hospital","Aachen","overall_officials_affiliation",NA,1
 "NCT03022877","Cardiology, RWTH University Hospital Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT03137589","Clinic for Operative Intensive Care and Intermediate Care, University Hospital RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT03833778","Clinic for Pediatrics and Youth Medicine, University Hospital of RWTH Aachen University","Aachen","overall_officials_affiliation",NA,1
+"NCT03939286","Clinic for neurology University Hospital Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT02142166","Department of Neurosurgery, University Hospital RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT02435095","Department of Psychiatry, Psychotherapy and Psychosomatics, University Hospital RWTH Aachen, Germany","Aachen","overall_officials_affiliation",NA,1
 "NCT02934009","Institute for Technical and Macromolecular Chemistry, RWTH Aachen University","Aachen","sponsor_name",NA,1
+"NCT05073796","Klinik für Hals- Nasen-Ohrenheilkunde, Uniklinik RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT03748160","RTWH Aachen University","Aachen","overall_officials_affiliation",NA,1
 "NCT03095872","RWTH Aachen University, Department of Dermatology and Allergology","Aachen","overall_officials_affiliation",NA,1
 "NCT03033316","RWTH University Clinic Aachen","Aachen","overall_officials_affiliation",NA,1
+"NCT02232828","Rheinisch-Westfälische Technische Hochschule RWTH Aachen, Germany","Aachen","sponsor_name",NA,1
+"NCT02232828","Uniklinic RWTH Aachen, Germany","Aachen","overall_officials_affiliation",NA,1
 "NCT03511040","Uniklinik RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT02781194","Uniklink RWTH Aachen, Klinik für Gynäkologie und Geburtsmedizin","Aachen","overall_officials_affiliation",NA,1
 "NCT03900000","Universitiy hospital RWTH Aachen, Department of Neurology","Aachen","overall_officials_affiliation",NA,1
+"NCT02812862","University Hospital RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT01742273","University Hospital of RWTH Aachen -Department of Medicine II, Nephrology and Clinical Immunology","Aachen","overall_officials_affiliation",NA,1
 "NCT02022592","University RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT03205267","University of Aachen Medical Faculty","Aachen","overall_officials_affiliation",NA,1
+"NCT02715466","Universitätsklinikum Aachen,Klinik für Operative Intensivmedizin","Aachen","overall_officials_affiliation",NA,1
 "NCT03509233","Universitätsklinikum RWTH Aachen","Aachen","overall_officials_affiliation",NA,1
 "NCT03124641","RWTH Aachen University I Charité-Universitätsmedizin Berlin","Aachen;Charite","overall_officials_affiliation",NA,1
-"NCT04205942","Ruhr University of Bochum","Bochum","sponsor_name",NA,17
-"NCT03900065","Berufsgenossenschaftliches Universitätsklinikum Bergmannsheil Bochum","Bochum","overall_officials_affiliation",NA,4
+"NCT02958228","Ruhr University of Bochum","Bochum","sponsor_name",NA,27
+"NCT03900078","Berufsgenossenschaftliches Universitätsklinikum Bergmannsheil Bochum","Bochum","overall_officials_affiliation",NA,4
 "NCT02253771","Department of Orthopaedics and Trauma Surgery, University Hospital, Ruhr University Bochum","Bochum","overall_officials_affiliation",NA,2
 "NCT03893214","Ruhr-University Bochum","Bochum","overall_officials_affiliation",NA,2
-"NCT04205942","Herz- und Diabeteszentrum NRW, Ruhr-Universität Bochum","Bochum","overall_officials_affiliation",NA,1
+"NCT05326958","Herz- und Diabeteszentrum NRW, UKRUB, Universitätsklinik der Ruhr Universität Bochum","Bochum","overall_officials_affiliation",NA,1
 "NCT02669511","Neurologische UniversitätsklinikKnappschaftskrankenhaus Bochum GmbH","Bochum","overall_officials_affiliation",NA,1
 "NCT02475772","Ruhr University Bochum","Bochum","overall_officials_affiliation",NA,1
+"NCT03098134","Ruhr University of Bochum (Dr. Andre Wannemüller)","Bochum","sponsor_name",NA,1
+"NCT03098134","Ruhr University of Bochum (Prof. Dr. Jürgen Margraf)","Bochum","sponsor_name",NA,1
+"NCT04933487","Ruhr-Universitat Bochum, Bochum, Germany","Bochum","overall_officials_affiliation",NA,1
 "NCT02231658","St. Josef Hospital Bochum","Bochum","overall_officials_affiliation",NA,1
 "NCT03771352","University Eye Clinic- Bochum, Germany","Bochum","overall_officials_affiliation",NA,1
 "NCT02506322","University Hospital Bergmannsheil Bochum","Bochum","sponsor_name",NA,1
 "NCT02560233","University of Basel; Ruhr-University Bochum","Bochum","overall_officials_affiliation",NA,1
 "NCT01921088","University of Basel;Ruhr-University Bochum","Bochum","overall_officials_affiliation",NA,1
-"NCT01539746","University Hospital, Bonn","Bonn","sponsor_name",NA,18
-"NCT03045198","University of Bonn","Bonn","sponsor_name",NA,12
+"NCT03098134","Zahnklinik Bochum, Augusta Hospital (Prof. Dr. Peter Jöhren)","Bochum","sponsor_name",NA,1
+"NCT01539746","University Hospital, Bonn","Bonn","sponsor_name",NA,25
+"NCT03585413","University of Bonn","Bonn","sponsor_name",NA,7
+"NCT02902237","Deutsche Krebshilfe e.V., Bonn (Germany)","Bonn","sponsor_name",NA,5
 "NCT01539746","Department of Medicine II, University Hospital Bonn","Bonn","overall_officials_affiliation",NA,2
-"NCT02902237","Deutsche Krebshilfe e.V., Bonn (Germany)","Bonn","sponsor_name",NA,2
+"NCT03938272","KindernierenZentrum, Bonn, Germany","Bonn","overall_officials_affiliation",NA,2
 "NCT03045198","University Childrens' Hospital (Zentrum für Kinderheilkunde des Universitätsklinikum Bonn)","Bonn","sponsor_name",NA,2
 "NCT04081519","Clemens Mielacher, University Hospital, Bonn","Bonn","sponsor_name",NA,1
+"NCT02339649","Department of Anesthesiology and Intensive Care Medicine, University Hospital Bonn","Bonn","overall_officials_affiliation",NA,1
 "NCT03077165","Department of Dermatology University of Bonn","Bonn","overall_officials_affiliation",NA,1
 "NCT03606122","Dermatologisches Zentrum Bonn","Bonn","overall_officials_affiliation",NA,1
 "NCT01360320","Federal Institute for Drugs and Medical Devices, Bonn, Germany","Bonn","overall_officials_affiliation",NA,1
 "NCT01694836","Klinik für Dermatologie und Allergologie der Universität Bonn","Bonn","overall_officials_affiliation",NA,1
+"NCT02339649","Research Unit Pulmonary Dysfunction and Sepsis, Department of Anesthesiology and Intensive Care Medicine, University Hospital Bonn","Bonn","overall_officials_affiliation",NA,1
 "NCT02537054","University Clinic Bonn","Bonn","overall_officials_affiliation",NA,1
-"NCT02732691","University Hospital Bonn, Germany","Bonn","overall_officials_affiliation",NA,1
 "NCT03205267","University of Bonn Medical Faculty","Bonn","overall_officials_affiliation",NA,1
+"NCT02611778","University of Bonn, Department of Ophthalmology","Bonn","overall_officials_affiliation",NA,1
 "NCT02825784","Universitätsklinik Bonn","Bonn","overall_officials_affiliation",NA,1
 "NCT03571646","Universitätsklinikum Bonn (AöR), D-53127 Bonn - Germany","Bonn","overall_officials_affiliation",NA,1
 "NCT03585413","Bonn Education Association for Dietetics r.A., Cologne, Germany","Bonn;Köln","sponsor_name",NA,2
 "NCT03585413","St. Franziskus Hospital, Cologne and Bonn Education Association for Dietetics r.A., Cologne, Germany","Bonn;Köln","overall_officials_affiliation",NA,1
-"NCT00750971","Charite University, Berlin, Germany","Charite","sponsor_name",NA,180
-"NCT03875391","Charité","Charite","overall_officials_affiliation",NA,5
-"NCT02096068","Charité-University Medicine (Berlin, Germany)","Charite","overall_officials_affiliation",NA,3
-"NCT03062150","NeuroCure Clinical Research Center, Charite, Berlin","Charite","sponsor_name",NA,3
-"NCT02710721","Charite Centrum Epidemiologie und Gesundheitsökonomie, CC1: Gesundheitswissenschaften","Charite","overall_officials_affiliation",NA,2
-"NCT02710721","Charité Centrum Chirurgische Medizin, CC 8 Klinik für Urologie","Charite","overall_officials_affiliation",NA,2
+"NCT04695184","Charite University, Berlin, Germany","Charite","sponsor_name",NA,270
+"NCT02869386","Charité","Charite","overall_officials_affiliation",NA,5
+"NCT04499417","Charité-Universitätsmedizin Berlin - Department of Psychiatry and Psychotherapy","Charite","overall_officials_affiliation",NA,4
+"NCT03062150","NeuroCure Clinical Research Center, Charite, Berlin","Charite","sponsor_name",NA,4
+"NCT04750759","Charité Research Organisation GmbH","Charite","sponsor_name",NA,3
+"NCT02740361","Charité University, Berlin","Charite","overall_officials_affiliation",NA,3
+"NCT04114188","Charité-University Medicine (Berlin, Germany)","Charite","overall_officials_affiliation",NA,3
+"NCT02649907","Charite","Charite","overall_officials_affiliation",NA,2
+"NCT03901183","Charite - Universitätsmedizin Berlin","Charite","overall_officials_affiliation",NA,2
+"NCT02232828","Charite Berlin, Germany","Charite","overall_officials_affiliation",NA,2
+"NCT02268695","Charité Campus Benjamin Franklin, Berlin, Germany","Charite","overall_officials_affiliation",NA,2
+"NCT04500418","Charité University, Berlin, Germany","Charite","overall_officials_affiliation",NA,2
+"NCT03467412","Klinik für Dermatologie, Charité-Universitätsmedizin, Berlin","Charite","overall_officials_affiliation",NA,2
+"NCT02631161","Abteilung für Zahnerhaltung und Präventivzahnmedizin, Charité Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02204267","Center for Stroke Research Berlin, Charité University Berlin, Campus Mitte","Charite","overall_officials_affiliation",NA,1
 "NCT01586702","Center for Stroke Research, Charité Universitaetsmedizin Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02456948","Chair: Department of Psychiatry Charité - Campus Benjamn","Charite","overall_officials_affiliation",NA,1
-"NCT03402685","Charite","Charite","overall_officials_affiliation",NA,1
 "NCT02682693","Charite Campus Mitte","Charite","overall_officials_affiliation",NA,1
+"NCT03020368","Charite Centrum Epidemiologie und Gesundheitsökonomie, CC1: Gesundheitswissenschaften","Charite","overall_officials_affiliation",NA,1
 "NCT02470013","Charite Research Group on Geriatrics","Charite","overall_officials_affiliation",NA,1
+"NCT04159285","Charite Universitaetsmedizin","Charite","overall_officials_affiliation",NA,1
 "NCT02453867","Charite Universitaetsmedizin Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02669511","Charite Universitaetsmedizin Berlin, Germany","Charite","overall_officials_affiliation",NA,1
+"NCT00844220","Charite University, Berlin, Eva Schönenberger, MD","Charite","sponsor_name",NA,1
+"NCT03901183","Charite University, Department for Dental Medicine","Charite","sponsor_name",NA,1
 "NCT03094520","Charite Universitätsmedizin","Charite","overall_officials_affiliation",NA,1
 "NCT02906475","Charite Universitätsmedizin Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT04032600","Charite-University Medicine of Berlin, Department of Gynecology","Charite","overall_officials_affiliation",NA,1
 "NCT03260010","Charité - Univeristätsmedizin","Charite","overall_officials_affiliation",NA,1
+"NCT01878630","Charité - Universitaetsmedizin Berlin","Charite","overall_officials_affiliation",NA,1
+"NCT04946110","Charité - Universitätsmedizin Berlin, Berlin, Germany","Charite","overall_officials_affiliation",NA,1
 "NCT03031405","Charité - Universitätsmedizin Berlin, Department of Psychiatry and Psychotherapy, Campus Benjamin Franklin","Charite","overall_officials_affiliation",NA,1
 "NCT02102594","Charité - Universitätsmedizin Berlin, Internal Medicine / Rheumatology","Charite","overall_officials_affiliation",NA,1
 "NCT02102594","Charité - Universitätsmedizin Berlin, NeuroCure Clinical Research Center","Charite","overall_officials_affiliation",NA,1
 "NCT03360734","Charité Benjamin Franklin Comprehensive Cancer Center,Hindenburgdamm 30,12200/12203 Berlin, Germany","Charite","overall_officials_affiliation",NA,1
 "NCT02290028","Charité CBF Berlin, Germany","Charite","overall_officials_affiliation",NA,1
+"NCT02967302","Charité CBF, Rheumatology, Berlin, Germany","Charite","overall_officials_affiliation",NA,1
+"NCT03856190","Charité Hochschulambulanz für Naturheilkunde, Immanuel Krankenhaus Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02747758","Charité University Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02204293","Charité University Berlin Germany","Charite","overall_officials_affiliation",NA,1
 "NCT03019861","Charité University Medical Center","Charite","overall_officials_affiliation",NA,1
@@ -83,22 +113,26 @@
 "NCT02850341","Charité Universitätsmedizin Berlin - Klinik für Psychiatrie und Psychotherapie","Charite","overall_officials_affiliation",NA,1
 "NCT00842920","Charité-CBF","Charite","overall_officials_affiliation",NA,1
 "NCT02113800","Charité-Universitätsmedizin","Charite","overall_officials_affiliation",NA,1
+"NCT01538355","Charité-Universitätsmedizin Berlin, Berlin Germany","Charite","overall_officials_affiliation",NA,1
 "NCT03671447","Department of Anesthesiolgy and Operative Intensive Care Medicine CCM/CVK, Charité - Universitätsmedizin Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02747784","Department of Anesthesiology and Intensive Care Medicine, CVK/CCM, Charité - University Medicine Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02808793","Department of Dermatology and Allergy, Charité - Universitätsmedizin Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT02662803","Department of Psychiatry and Psychotherapy, Charité - Universitätsmedizin Berlin, Campus Mitte","Charite","overall_officials_affiliation",NA,1
 "NCT03547388","Department of Radiation Oncology, Charité Universitätsmedizin Berlin, Augustenburger Platz 1, 13353, Berlin, Germany","Charite","overall_officials_affiliation",NA,1
-"NCT03467412","Klinik für Dermatologie, Charité-Universitätsmedizin, Berlin","Charite","overall_officials_affiliation",NA,1
+"NCT01829347","Germany - Charité Campus Virchow-Klinikum Medizinische Klinik","Charite","overall_officials_affiliation",NA,1
+"NCT02758782","Head of Dpt. for Rheumatology at Charite, Campus Benjamin Franklin","Charite","overall_officials_affiliation",NA,1
 "NCT02395874","Medical Park Berlin, Charité - University Medicine Berlin","Charite","overall_officials_affiliation",NA,1
 "NCT03001960","Prof. Dr. Jochen Fiebach, Center for Stroke Research Berlin (CSB), Charité - Universitaetsmedizin Berlin","Charite","sponsor_name",NA,1
 "NCT02102594","Prof. Dr. med. Falk Hiepe (Charité, Internal Medicine / Rheumathology)","Charite","sponsor_name",NA,1
+"NCT03513744","Universitaetsmedizin Berlin, Charité","Charite","overall_officials_affiliation",NA,1
 "NCT00750971","Universitätsmedizin Charité","Charite","overall_officials_affiliation",NA,1
 "NCT03094546","Charité - Universitätsmedizin Berlin, Greifswald Universitätsmedizin","Charite;Greifswald","overall_officials_affiliation",NA,1
-"NCT02039479","Technische Universität Dresden","Dresden","sponsor_name",NA,29
-"NCT03865225","University Hospital Carl Gustav Carus","Dresden","sponsor_name",NA,5
-"NCT02212015","University Hospital Dresden","Dresden","sponsor_name",NA,3
+"NCT03047564","Technische Universität Dresden","Dresden","sponsor_name",NA,31
+"NCT01246752","University Hospital Carl Gustav Carus","Dresden","sponsor_name",NA,7
+"NCT02452294","University Hospital Dresden","Dresden","sponsor_name",NA,4
 "NCT03211494","Department of Anesthesiology and Intensive Care Medicine, University Hospital Carl Gustav Carus, Technical University Dresden, Germany","Dresden","overall_officials_affiliation",NA,1
 "NCT02232139","Department of Anesthesiology, Hospital Dresden-Friedrichstadt, Dresden, Germany","Dresden","sponsor_name",NA,1
+"NCT02676791","Department of GI, Thoracic and Vascular Surgery, University Hospital Carl Gustav Carus, TU Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT01073358","Department of Gastrointestinal, Thoracic and Vascular Surgery Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT04247438","Department of Prosthetik Dentistry, Faculty of Medicine, TU Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT02588066","Department of Visceral, Thoracic and Vascular Surgery, University Hospital Carl Gustav Carus, TU Dresden, Germany","Dresden","overall_officials_affiliation",NA,1
@@ -106,72 +140,87 @@
 "NCT02039479","Dept. of Psychiatry and Psychotherapy; TU Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT01769053","Dresden University","Dresden","overall_officials_affiliation",NA,1
 "NCT02189967","Dresden University of Technology, University Hospital Carl Gustav Carus, Department of Radiation Therapy and Radiation Oncology","Dresden","overall_officials_affiliation",NA,1
+"NCT01024803","Eye Hospital Dresden-Friedrichstadt, Germany","Dresden","overall_officials_affiliation",NA,1
 "NCT02732626","Heart Center Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT01907828","Herzzentrum Dresden GmbH Universitätsklinik","Dresden","overall_officials_affiliation",NA,1
 "NCT03805711","Klinik für Innere Medizin und Kardiologie, Herzzentrum Dresden Universitätsklinik","Dresden","overall_officials_affiliation",NA,1
+"NCT01956149","Krankenhaus Dresden Friedrichstadt","Dresden","overall_officials_affiliation",NA,1
 "NCT03322124","Med. Fakultät C. G. Carus der TU Dresden, Poliklinik für Parodontologie","Dresden","overall_officials_affiliation",NA,1
 "NCT01830361","Medizinische Fakultät der TU Dresden, Medizinische Klinik und Poliklinik I","Dresden","overall_officials_affiliation",NA,1
 "NCT03089060","Orthopädie- und Rehatechnik Dresden GmbH","Dresden","sponsor_name",NA,1
 "NCT02799043","Praxisklinik Herz und Gefäße Dresden, Germany","Dresden","overall_officials_affiliation",NA,1
 "NCT03065634","Stadtisches Klinikum Dresden","Dresden","sponsor_name",NA,1
-"NCT03672110","TU Dresden","Dresden","overall_officials_affiliation",NA,1
+"NCT03032133","TU Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT03089060","Technical University Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT02615977","Technische Universität Dresden, Dresden, Germany","Dresden","overall_officials_affiliation",NA,1
+"NCT03444974","Technische Universität Dresden, Universitätsklinikum C.G.C. Dresden","Dresden","overall_officials_affiliation",NA,1
+"NCT02731105","Uniklinikum Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT03865225","University Hospital Carl Gustav Carus Dresden, Germany","Dresden","overall_officials_affiliation",NA,1
+"NCT04416048","University Hospital Carl Gustav Carus at the Technical University of Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT01802645","University hospital Carl Gustav Carus Dresden","Dresden","overall_officials_affiliation",NA,1
+"NCT02335268","University of Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT01679990","Universitätsklinikum Carl Gustav Carus, Dresden, Germany","Dresden","overall_officials_affiliation",NA,1
 "NCT01462578","Universitätsklinikum Carl Gustav Carus, Medizinische Klinik und Poliklinik I, 01307 Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT02040441","Universitätsklinikum Carl Gustav Carus, Technischen Universität Dresden","Dresden","overall_officials_affiliation",NA,1
 "NCT02992860","Universitätsklinikum Dresden","Dresden","overall_officials_affiliation",NA,1
-"NCT02446145","Universitätsklinikum Dresden Medizinische Klinik und Poliklinik I","Dresden","overall_officials_affiliation",NA,1
 "NCT01246752","Universitätsklinikum Dresden, Medizinische Klinik und Poliklinik I, Germany","Dresden","overall_officials_affiliation",NA,1
 "NCT02189967","National Center for Radiation Research in Oncology Dresden/Heidelberg","Dresden;Heidelberg","sponsor_name",NA,1
-"NCT03518697","University Hospital, Essen","Dusiburg","sponsor_name",NA,28
-"NCT03114189","Universität Duisburg-Essen","Dusiburg","sponsor_name",NA,21
-"NCT03748121","University of Duisburg-Essen","Dusiburg","overall_officials_affiliation",NA,3
-"NCT01638247","Kliniken Essen-Mitte","Dusiburg","overall_officials_affiliation",NA,2
-"NCT02276404","Chair of Complementary and Integrative Medicine, Universitay of Duisburg-Essen, Germany","Dusiburg","overall_officials_affiliation",NA,1
-"NCT03423602","Contilia Heart and Vascular centre, Essen, Germany","Dusiburg","overall_officials_affiliation",NA,1
-"NCT01406678","Department of Thoracic and Cardiovascular Surgery, West-German Heart Center, University Duisburg-Essen, Essen, Germany","Dusiburg","overall_officials_affiliation",NA,1
-"NCT02539966","Elisabeth-Krankenhaus Essen","Dusiburg","overall_officials_affiliation",NA,1
-"NCT03811418","Essen University Hospital","Dusiburg","overall_officials_affiliation",NA,1
-"NCT01956708","Herzzentrum Essen - Huttrop gGmbH, Einrichtung des Universitätsklinikums Essen, Essen, Germany","Dusiburg","overall_officials_affiliation",NA,1
-"NCT01406678","Institut für Pathophysiologie, Universität Duisburg-Essen, Universitätsklinikum Essen, Essen, Germany","Dusiburg","overall_officials_affiliation",NA,1
-"NCT01406678","Klinik für Anästhesiologie und Intensivmedizin, Universität Duisburg-Essen, Universitätsklinikum Essen, Essen, Germany","Dusiburg","overall_officials_affiliation",NA,1
-"NCT01788189","Klinik für Hämatologie, Universitätsklinikum Essen","Dusiburg","overall_officials_affiliation",NA,1
-"NCT04407949","Kliniken Essen-Mitte, Evang. Huyssens-Stiftung/Knappschaft gGmbH","Dusiburg","overall_officials_affiliation",NA,1
-"NCT03874598","University of Duisburg Essen","Dusiburg","overall_officials_affiliation",NA,1
-"NCT03141229","Universität Duisburg-Essen, Medizinische Fakultät, Klinik für Naturheilkunde und Integrative Medizin","Dusiburg","overall_officials_affiliation",NA,1
-"NCT02378844","Universtätsklinikum Essen","Dusiburg","overall_officials_affiliation",NA,1
-"NCT01792804","Heinrich-Heine University, Duesseldorf","Düsseldorf","sponsor_name",NA,15
-"NCT02965209","Evangelisches Krankenhaus Düsseldorf","Düsseldorf","sponsor_name",NA,3
+"NCT04092972","University Hospital, Essen","Duisburg-Essen","sponsor_name",NA,38
+"NCT03748121","Universität Duisburg-Essen","Duisburg-Essen","sponsor_name",NA,25
+"NCT01638247","Kliniken Essen-Mitte","Duisburg-Essen","overall_officials_affiliation",NA,3
+"NCT03000751","University of Duisburg-Essen","Duisburg-Essen","overall_officials_affiliation",NA,3
+"NCT02276404","Chair of Complementary and Integrative Medicine, Universitay of Duisburg-Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT04613687","Clinic for dermatology, Essen- Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT03423602","Contilia Heart and Vascular centre, Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01406678","Department of Thoracic and Cardiovascular Surgery, West-German Heart Center, University Duisburg-Essen, Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01681381","Essen Technology (Beijing) Co., Ltd.","Duisburg-Essen","sponsor_name",NA,1
+"NCT03811418","Essen University Hospital","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01956708","Herzzentrum Essen - Huttrop gGmbH, Einrichtung des Universitätsklinikums Essen, Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01406678","Institut für Pathophysiologie, Universität Duisburg-Essen, Universitätsklinikum Essen, Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT03482752","Interstitial and Rare Lung Disease Unit, Ruhrlandklinik University Hospital, Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01406678","Klinik für Anästhesiologie und Intensivmedizin, Universität Duisburg-Essen, Universitätsklinikum Essen, Essen, Germany","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01788189","Klinik für Hämatologie, Universitätsklinikum Essen","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT04407949","Kliniken Essen-Mitte, Evang. Huyssens-Stiftung/Knappschaft gGmbH","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT02523313","Studienzentrum Hautklinik Universitätsklinikum Essen Klinik f. Dermatologie","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT03874598","University of Duisburg Essen","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT04867967","University of Duisburg-Essen, Faculty of Medicine","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT03141229","Universität Duisburg-Essen, Medizinische Fakultät, Klinik für Naturheilkunde und Integrative Medizin","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT04670848","Universitätsmedizin Essen Ruhrlandklinik","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT02378844","Universtätsklinikum Essen","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT04745468","Westdeutsches Herz- und Gefäßzentrum Essen, Klinik für Thorax- und Kardiovaskuläre Chirurgie","Duisburg-Essen","overall_officials_affiliation",NA,1
+"NCT01609153","Heinrich-Heine University, Duesseldorf","Düsseldorf","sponsor_name",NA,24
+"NCT03438695","Evangelisches Krankenhaus Düsseldorf","Düsseldorf","sponsor_name",NA,3
+"NCT02797626","Department of Urology, Heinrich Heine University, Duesseldorf, Germany","Düsseldorf","overall_officials_affiliation",NA,2
+"NCT02450266","Department of Urology, University Hospital Düsseldorf","Düsseldorf","overall_officials_affiliation",NA,1
+"NCT03074721","Division of Cardiology, Pulmonology and Vascular Medicine, University Hospital Duesseldorf","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT03488823","Division of Cardiology, Pulmonology and Vascular Medicine, University Hospital Dusseldorf","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT03438695","EVK Düsseldorf, Germany","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT02965209","Evangelisches Krankenhaus Duesseldorf","Düsseldorf","overall_officials_affiliation",NA,1
+"NCT04681430","Klinik für Gastroenterologie, Hepatologie und Infektiologie Universitätsklinikum Düsseldorf","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT03979573","University Düsseldorf, Medical Faculty; Department of Diagnostic and Interventional Radiology","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT03979573","University Düsseldorf, Medical Faculty; Department of Urology","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT02472691","University Hospital Duesseldorf, Dept. for Hematology, Oncology and Clinical Immunology","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT03820154","University pf Düsseldorf, Germany","Düsseldorf","overall_officials_affiliation",NA,1
 "NCT03325920","Universitätsklinikum Düsseldorf/Heinrich-Heine-University Düsseldorf","Düsseldorf","overall_officials_affiliation",NA,1
-"NCT03490214","University of Erlangen-Nürnberg Medical School","Erlangen","sponsor_name",NA,55
-"NCT03886090","University of Erlangen-Nürnberg","Erlangen","sponsor_name",NA,20
-"NCT04637997","University Hospital Erlangen","Erlangen","sponsor_name",NA,7
-"NCT03274388","University Erlangen Nuremberg Medical School","Erlangen","overall_officials_affiliation",NA,5
-"NCT02391051","University Hospital Erlangen, Dept. of Radiooncology","Erlangen","overall_officials_affiliation",NA,4
-"NCT03513159","Friedrich-Alexander-Universität Erlangen-Nürnberg","Erlangen","sponsor_name",NA,3
-"NCT03966690","Institute of Medical Physics, University of Erlangen-Nürnberg, Germany","Erlangen","overall_officials_affiliation",NA,3
-"NCT01849510","Strahlenklinik, Universitätsklinikum Erlangen","Erlangen","overall_officials_affiliation",NA,3
-"NCT02391051","University Hospital Erlangen, Dept. of Urology","Erlangen","overall_officials_affiliation",NA,3
+"NCT03513159","University of Erlangen-Nürnberg Medical School","Erlangen","sponsor_name",NA,66
+"NCT02144129","University of Erlangen-Nürnberg","Erlangen","sponsor_name",NA,20
+"NCT03306056","University Erlangen Nuremberg Medical School","Erlangen","overall_officials_affiliation",NA,8
+"NCT03384758","University Hospital Erlangen","Erlangen","sponsor_name",NA,8
+"NCT03513159","Friedrich-Alexander-Universität Erlangen-Nürnberg","Erlangen","sponsor_name",NA,7
+"NCT01849484","Strahlenklinik, Universitätsklinikum Erlangen","Erlangen","overall_officials_affiliation",NA,5
+"NCT03453463","Institute of Medical Physics, University of Erlangen-Nürnberg, Germany","Erlangen","overall_officials_affiliation",NA,3
+"NCT03795623","University of Erlangen-Nürnberg Medical School, Department of Neurology, Germany","Erlangen","overall_officials_affiliation",NA,3
 "NCT03886090","Department of Molecular Neurology, Faculty of Medicine, University Erlangen-Nürnberg","Erlangen","sponsor_name",NA,2
 "NCT03490214","Department of Pediatrics and Adolescent Medicine, University Hospital Erlangen","Erlangen","overall_officials_affiliation",NA,2
 "NCT03979157","Department of Pediatrics and Adolescent Medicine, University of Erlangen","Erlangen","overall_officials_affiliation",NA,2
 "NCT02966561","Friedrich-Alexander University Erlangen-Nürnberg (FAU), Germany","Erlangen","overall_officials_affiliation",NA,2
 "NCT03104179","Klinikum Nürnberg","Erlangen","sponsor_name",NA,2
 "NCT04115475","University Hospital Erlangen, Department of Pediatric and Adolescent Medicine","Erlangen","overall_officials_affiliation",NA,2
-"NCT02391051","University Hospital Erlangen, Dept. of Radiology","Erlangen","overall_officials_affiliation",NA,2
+"NCT00402519","University Hospital Erlangen, Germany","Erlangen","overall_officials_affiliation",NA,2
 "NCT01864265","University of Erlangen-Nuremberg, Department of Internal Medicine 3, Rheumatology & Immunology","Erlangen","overall_officials_affiliation",NA,2
 "NCT04367389","proMX GmbH Nürnberg","Erlangen","sponsor_name",NA,2
 "NCT03289819","Department of Gynecology and Obstetrics, Erlangen University Hospital","Erlangen","overall_officials_affiliation",NA,1
+"NCT03701789","Department of Internal Medicine 3, Rheumatology and Immunology Universital Hospital Erlangen","Erlangen","overall_officials_affiliation",NA,1
 "NCT02752113","Department of Nephrology and Hypertension, University of Erlangen-Nuremberg","Erlangen","overall_officials_affiliation",NA,1
 "NCT02528955","Dept. of Radiooncology, University Hospital Erlangen","Erlangen","overall_officials_affiliation",NA,1
 "NCT03178669","Friedrich-Alexander University Erlangen-Nuremberg","Erlangen","overall_officials_affiliation",NA,1
@@ -186,68 +235,78 @@
 "NCT04420806","Institute of Medical Physics, Friedrich-Alexander University Erlangen-Nürnberg","Erlangen","overall_officials_affiliation",NA,1
 "NCT02470013","Pfrimmer Nutricia GmbH, Erlangen , Germany","Erlangen","sponsor_name",NA,1
 "NCT02834559","Pharmacy of the University Hospital Erlangen","Erlangen","sponsor_name",NA,1
+"NCT02779114","University Clinic Erlangen, Clinical Trial Unit, Department of Internal Medicine 3, Rheumatology & Immunology","Erlangen","overall_officials_affiliation",NA,1
 "NCT02778906","University Clinic Erlangen, Department of Internal Medicine 3, Rheumatology & Immunology","Erlangen","overall_officials_affiliation",NA,1
 "NCT03661489","University Erlangen-Nürnberg","Erlangen","overall_officials_affiliation",NA,1
-"NCT02391051","University Erlangen; Dept. of Biometrics and Epidemiology","Erlangen","overall_officials_affiliation",NA,1
-"NCT02391051","University Hospital Erlangen, Dept. of Pathology","Erlangen","overall_officials_affiliation",NA,1
+"NCT03215628","University Hospital Erlangen, Department of Pediatric Cardiac Surgery","Erlangen","overall_officials_affiliation",NA,1
+"NCT03215628","University Hospital Erlangen, Department of Pediatrics","Erlangen","overall_officials_affiliation",NA,1
+"NCT02029885","University Hospital of University of Erlangen-Nuremberg","Erlangen","overall_officials_affiliation",NA,1
 "NCT02775838","University of Erlangen, Vascular Surgery","Erlangen","overall_officials_affiliation",NA,1
 "NCT03128528","Universitätsklinikum Erlangen","Erlangen","overall_officials_affiliation",NA,1
 "NCT03163485","Universitätsklinikum Erlangen Neurologische Klinik","Erlangen","overall_officials_affiliation",NA,1
-"NCT01528085","Goethe University","Frankfurt","sponsor_name",NA,21
-"NCT03902275","Johann Wolfgang Goethe University Hospital","Frankfurt","sponsor_name",NA,20
+"NCT02369939","Universitätsklinikum Erlangen, Strahlenklinik","Erlangen","overall_officials_affiliation",NA,1
+"NCT01451268","Johann Wolfgang Goethe University Hospital","Frankfurt","sponsor_name",NA,28
+"NCT01567267","Goethe University","Frankfurt","sponsor_name",NA,24
 "NCT03913338","University Clinic Frankfurt","Frankfurt","sponsor_name",NA,6
+"NCT02172976","Institute of Clinical Cancer Research (IKF), UCT - University Cancer Center, Frankfurt, Germany","Frankfurt","overall_officials_affiliation",NA,3
+"NCT04161456","University Hospital of Goethe-University Frankfurt","Frankfurt","overall_officials_affiliation",NA,2
 "NCT02698059","American Sleep Clinic Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
 "NCT03913338","Augenklinik des Universitätsklinikum der Goethe Unveristät Frankfurt am Main","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02570113","CardioVasculares Centrum (CVC) Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
+"NCT01960491","CardioVaskuläres Centrum Frankfurt, Germany","Frankfurt","overall_officials_affiliation",NA,1
 "NCT03357978","Children's Hospital, Allergology, Pneumology and Cystic Fibrosis, Goethe-University","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02216266","Department of Anesthesiology, Intensive-Care Medicine and Pain Therapy of Goethe-University Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
 "NCT03371810","Department of Child and Adolescent Psychiatry, Psychosomatics and Psychotherapy, University Hospital, Goethe University Frankfurt am Main","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02803177","Department of Trauma-, hand- and reconstructive surgery, Goethe University, Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
 "NCT01567267","EbM Working Group, Institute for General Practice, Faculty of Medicine, Goethe University, Frankfurt/Germany","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02415517","Goethe-Universität Frankfurt am Main","Frankfurt","overall_officials_affiliation",NA,1
-"NCT02363374","Head of Department of Radiation therapy and Oncology, Johann Wolfgang Goethe University Hospital","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02237261","Hematology/Oncology,Bethanien hospital, Im Pruefling 17-19, 60389 Frankfurt/M., Germany","Frankfurt","overall_officials_affiliation",NA,1
-"NCT02172976","Institute of Clinical Cancer Research (IKF), UCT - University Cancer Center, Frankfurt, Germany","Frankfurt","overall_officials_affiliation",NA,1
+"NCT04416048","Johann Wolfgang Goethe-University, Frankfurt am Main, Germany","Frankfurt","overall_officials_affiliation",NA,1
+"NCT01207388","Klinikum der Goethe Universität Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02682420","Univerisity of Frankfurt, Germany","Frankfurt","overall_officials_affiliation",NA,1
 "NCT03710694","Universitaetsklinikum Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
 "NCT02727452","University Hospital Frankfurt-Dept. Obstetrics and Perinatal Medicine","Frankfurt","overall_officials_affiliation",NA,1
-"NCT04087993","University Hospital of Goethe-University Frankfurt","Frankfurt","overall_officials_affiliation",NA,1
 "NCT03399383","University Hospital, Frankfurt, Germany","Frankfurt","sponsor_name",NA,1
-"NCT02633449","University of Freiburg","Freiburg","sponsor_name",NA,13
-"NCT03685383","University Hospital Freiburg","Freiburg","sponsor_name",NA,12
+"NCT03685383","University Hospital Freiburg","Freiburg","sponsor_name",NA,20
+"NCT04290429","University of Freiburg","Freiburg","sponsor_name",NA,12
 "NCT01962571","University Eye Hospital, Freiburg","Freiburg","sponsor_name",NA,4
-"NCT02396628","Medical Center - University of Freiburg","Freiburg","overall_officials_affiliation",NA,2
-"NCT04290429","Medical Center University of Freiburg","Freiburg","overall_officials_affiliation",NA,2
-"NCT06268691","University of Freiburg, Centre for Medicine and Society","Freiburg","overall_officials_affiliation",NA,2
+"NCT02717884","Medical Center - University of Freiburg","Freiburg","overall_officials_affiliation",NA,2
+"NCT04321161","Medical Center University of Freiburg","Freiburg","overall_officials_affiliation",NA,2
+"NCT04385771","University Clinic Freiburg","Freiburg","overall_officials_affiliation",NA,2
 "NCT01962571","Eye Hospital, Medical Center - University of Freiburg","Freiburg","overall_officials_affiliation",NA,1
 "NCT03638115","Universitaets-Herzzentrum Freiburg - Bad Krozingen GmbH","Freiburg","overall_officials_affiliation",NA,1
 "NCT01763476","Universitaets-Herzzentrum Freiburg-Bad Krozingen","Freiburg","overall_officials_affiliation",NA,1
 "NCT02655289","University Medical Center Freiburg","Freiburg","overall_officials_affiliation",NA,1
 "NCT04140422","University of Freiburg, Eye Hospital","Freiburg","overall_officials_affiliation",NA,1
-"NCT02936622","Universitäts Herzzentrum Freiburg - Bad Krozingen","Freiburg","overall_officials_affiliation",NA,1
 "NCT03271710","Universitäts-Herzzentrum Freiburg","Freiburg","overall_officials_affiliation",NA,1
+"NCT02941224","Universitäts-Herzzentrum Freiburg-Bad Krozingen","Freiburg","overall_officials_affiliation",NA,1
 "NCT03086135","Universitätsklinikum Freiburg","Freiburg","overall_officials_affiliation",NA,1
 "NCT01679990","Universtiäts-Herzzentrum Freiburg und Bad-Krozingen","Freiburg","overall_officials_affiliation",NA,1
-"NCT03663270","University of Giessen","Giessen","sponsor_name",NA,23
+"NCT02725021","University of Giessen","Giessen","sponsor_name",NA,26
 "NCT04302883","Department of Neurology, University Hospital Giessen","Giessen","overall_officials_affiliation",NA,1
+"NCT03315624","Georg-Haas-Dialysezentrum der PHV, Giessen, Germany","Giessen","overall_officials_affiliation",NA,1
+"NCT01950130","Giessen University","Giessen","overall_officials_affiliation",NA,1
+"NCT02151812","University Giessen, Germany","Giessen","overall_officials_affiliation",NA,1
 "NCT01136395","University of Giessen, Department of Internal Medicine","Giessen","overall_officials_affiliation",NA,1
 "NCT03431571","Uniklinikum Gießen Marburg","Giessen;Marburg","overall_officials_affiliation",NA,1
 "NCT03884465","Universitatskinikum Giessen und Marburg GmbH","Giessen;Marburg","overall_officials_affiliation",NA,1
 "NCT02697409","Universities of Giessen and Marburg Lung Center","Giessen;Marburg","sponsor_name",NA,1
 "NCT03550430","University Hospital of Gießen and Marburg","Giessen;Marburg","sponsor_name",NA,1
 "NCT04359290","Universitätsklinikum Giessen und Marburg (UKGM)","Giessen;Marburg","overall_officials_affiliation",NA,1
-"NCT02254915","Universitätsklinikum Gießen und Marburg","Giessen;Marburg","overall_officials_affiliation",NA,1
 "NCT03571646","Universitätsklinikum Gießen und Marburg (UKGM) , 20043 Marburg - Germany","Giessen;Marburg","overall_officials_affiliation",NA,1
-"NCT03245138","University Medicine Greifswald","Greifswald","sponsor_name",NA,19
-"NCT02232139","University Medicine of Greifswald","Greifswald","overall_officials_affiliation",NA,3
+"NCT05515510","University Medicine Greifswald","Greifswald","sponsor_name",NA,32
+"NCT04563351","University Medicine of Greifswald","Greifswald","overall_officials_affiliation",NA,5
 "NCT05110534","Department of Preventive and Pediatric Dentistry, University of Greifswald","Greifswald","overall_officials_affiliation",NA,2
+"NCT02232828","University Greifswald, Germany","Greifswald","overall_officials_affiliation",NA,2
 "NCT03513159","Institute for Community Medicine, University of Greifswald, Germany","Greifswald","sponsor_name",NA,1
 "NCT03077373","Institute of Social Medicine and Prevention, University Medicine Greifswald, Greifswald, Germany","Greifswald","overall_officials_affiliation",NA,1
 "NCT00142233","Klinik für Innere Medizin A, Universitätsmedizin Greifswald","Greifswald","overall_officials_affiliation",NA,1
+"NCT04804423","The Department of Preventive and Pediatric Dentistry, University of Greifswald","Greifswald","overall_officials_affiliation",NA,1
+"NCT05515510","Universitätmedizin Greifswald","Greifswald","overall_officials_affiliation",NA,1
 "NCT03616665","University Greifswald and Philipps University Marburg","Greifswald;Marburg","overall_officials_affiliation",NA,1
-"NCT03151603","University Medical Center Goettingen","Göttingen","sponsor_name",NA,11
-"NCT01686321","University of Göttingen","Göttingen","sponsor_name",NA,6
-"NCT03151603","University Medical Center Göttingen","Göttingen","overall_officials_affiliation",NA,2
+"NCT02544360","University Medical Center Goettingen","Göttingen","sponsor_name",NA,14
+"NCT02389153","University of Göttingen","Göttingen","sponsor_name",NA,10
+"NCT02346448","University Medical Center Göttingen","Göttingen","overall_officials_affiliation",NA,2
 "NCT03080155","BrustZentrum, Göttingen","Göttingen","overall_officials_affiliation",NA,1
 "NCT03426475","Department of General Practice, University Medical Center Goettingen","Göttingen","overall_officials_affiliation",NA,1
 "NCT03619993","OSP Göttingen - Gemeinschaftspraxis Dres. Meyer, Ammon, Metz und Müller","Göttingen","overall_officials_affiliation",NA,1
@@ -259,69 +318,90 @@
 "NCT05585892","University Medical Centre Göttingen","Göttingen","overall_officials_affiliation",NA,1
 "NCT01686321","University medicine Goettingen","Göttingen","overall_officials_affiliation",NA,1
 "NCT03720665","University of Goettingen","Göttingen","overall_officials_affiliation",NA,1
+"NCT02389153","University of Goettingen, Department of Psychosomatic Medicine and Psychotherapy","Göttingen","overall_officials_affiliation",NA,1
 "NCT02428062","University of Göttingen, Zentrum Anaesthesiologie-, Rettungs- und Intensivmedizin","Göttingen","overall_officials_affiliation",NA,1
-"NCT03771924","Martin-Luther-Universität Halle-Wittenberg","Halle","sponsor_name",NA,12
-"NCT02754778","Maternity Clinic/Perinatal Treatment Center, Halle university hospital, Martin-Luther-Universität Halle-Wittenberg","Halle","overall_officials_affiliation",NA,2
-"NCT02583373","Centre Hospitalier Universitaire de Limoges CHU Dupuytren 2 Avenue Martin Luther King 87042 Limoges Cedex, France","Halle","overall_officials_affiliation",NA,1
-"NCT03431792","Germany, Center of Fetal Surgery, Martin-Luther University Halle-Wittenberg","Halle","overall_officials_affiliation",NA,1
-"NCT01640457","Hospital BG-Kliniken Bergmannstrost, Halle","Halle","overall_officials_affiliation",NA,1
-"NCT02502968","University Hospital Halle, Germany","Halle","overall_officials_affiliation",NA,1
-"NCT03620812","University of Halle Medical Faculty","Halle","sponsor_name",NA,1
-"NCT02249000","Universitätsklinikum Halle (Saale), Germany","Halle","overall_officials_affiliation",NA,1
-"NCT04537325","Universitätsklinikum Hamburg-Eppendorf","Hamburg","sponsor_name",NA,81
-"NCT03507400","University of Hamburg-Eppendorf","Hamburg","sponsor_name",NA,4
+"NCT01222052","Martin-Luther-Universität Halle-Wittenberg","Halle-Wittenberg","sponsor_name",NA,17
+"NCT02754778","Maternity Clinic/Perinatal Treatment Center, Halle university hospital, Martin-Luther-Universität Halle-Wittenberg","Halle-Wittenberg","overall_officials_affiliation",NA,2
+"NCT02583373","Centre Hospitalier Universitaire de Limoges CHU Dupuytren 2 Avenue Martin Luther King 87042 Limoges Cedex, France","Halle-Wittenberg","overall_officials_affiliation",NA,1
+"NCT01222052","Dpt. Gynecology University Halle Germany","Halle-Wittenberg","overall_officials_affiliation",NA,1
+"NCT03431792","Germany, Center of Fetal Surgery, Martin-Luther University Halle-Wittenberg","Halle-Wittenberg","overall_officials_affiliation",NA,1
+"NCT01640457","Hospital BG-Kliniken Bergmannstrost, Halle","Halle-Wittenberg","overall_officials_affiliation",NA,1
+"NCT03620812","University of Halle Medical Faculty","Halle-Wittenberg","sponsor_name",NA,1
+"NCT01321957","Universitätsklinikum Halle","Halle-Wittenberg","overall_officials_affiliation",NA,1
+"NCT04344080","Universitätsklinikum Hamburg-Eppendorf","Hamburg","sponsor_name",NA,111
+"NCT03863691","University of Hamburg-Eppendorf","Hamburg","sponsor_name",NA,6
+"NCT03991000","University Heart Center Hamburg","Hamburg","overall_officials_affiliation",NA,4
 "NCT03380949","Department of Anesthesiology, Hamburg Eppendorf University Medical Center","Hamburg","overall_officials_affiliation",NA,2
+"NCT03303651","Department of Anesthesiology; Center of Anesthesiology and Intensive Care Medicine, Hamburg Eppendorf University Medical Center","Hamburg","overall_officials_affiliation",NA,2
 "NCT03240380","Department of Psychiatry and Psychotherapy of the University Medical Center Hamburg-Eppendorf","Hamburg","overall_officials_affiliation",NA,2
-"NCT02064114","University Heart Center Hamburg","Hamburg","overall_officials_affiliation",NA,2
+"NCT03459664","University Medical Center Hamburg-Eppendorf, Institute and Outpatients Clinic Medical Psychology","Hamburg","overall_officials_affiliation",NA,2
 "NCT04426175","Zentrumsehstarke Hamburg","Hamburg","sponsor_name",NA,2
+"NCT03459664","AOK Rheinland/Hamburg","Hamburg","sponsor_name",NA,1
 "NCT01679990","ASKLEPIOS Klinik St. Georg, Hamburg Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT02501005","Asklepios Klinik St. Georg, Hamburg (Germany)","Hamburg","overall_officials_affiliation",NA,1
 "NCT03268434","Asklepios Kliniken Hamburg GmbH","Hamburg","sponsor_name",NA,1
+"NCT04625764","Asklepios Kliniken Hamburg gGmbH, Asklepios Klinik St. Georg, Abteilung für Herzchirurgie/ Chefarzt Prof. Michael Schmoeckel, Lohmühlenstr. 5, 20099 Hamburg/Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT03688230","Asklepios Tumorzentrum Hamburg","Hamburg","overall_officials_affiliation",NA,1
+"NCT04798222","CTC North GmbH & Co. KG Martinistrasse 64 20251 Hamburg Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT03326414","Department of Anesthesiology, Center of Anesthesiology and Intensive Care Medicine, University Hospital Hamburg-Eppendorf, Germany","Hamburg","overall_officials_affiliation",NA,1
+"NCT00909714","Department of Neurology, University Medical Center Hamburg-Eppendorf","Hamburg","overall_officials_affiliation",NA,1
 "NCT03795948","Department of Neurology, University Medical Center Hamburg-Eppendorf (UKE), Hamburg, Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT03147105","Deutsche Multiple Sklerose Gesellschaft Hamburg","Hamburg","sponsor_name",NA,1
 "NCT02331927","Hubertus-Wald-Cancer Center Hamburg, Germany","Hamburg","sponsor_name",NA,1
 "NCT04687839","Kiebitzweg 2, 22869 Schenefeld/Hamburg, Germany","Hamburg","overall_officials_affiliation",NA,1
+"NCT03690739","Mammazentrum am Krankenhaus Jerusalem, Hamburg","Hamburg","overall_officials_affiliation",NA,1
 "NCT02624960","Medical Director, Medical Care Center Hamburg; Dept Chief, Percutaneous Treatment of Structural Heart Disease, Albertinen Heart Center, Hamburg Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT03700008","Neuropsychiatrischen Zentrums Hamburg-Altona","Hamburg","sponsor_name",NA,1
 "NCT01720420","Poliklinik für Zahnärztliche Prothetik, University Hamburg","Hamburg","overall_officials_affiliation",NA,1
 "NCT03268707","Universitaeres Herzzentrum Hamburg GmbH","Hamburg","overall_officials_affiliation",NA,1
-"NCT02249000","University Heart Center Hamburg, Germany","Hamburg","overall_officials_affiliation",NA,1
+"NCT02458560","University Heart Center Hamburg (Germany)","Hamburg","overall_officials_affiliation",NA,1
+"NCT04344080","University Hospital Hamburg-Eppendorf, Department of Intensive Care Medicine","Hamburg","overall_officials_affiliation",NA,1
 "NCT03356067","University Medical Center Hamburg- Eppendorf | UKE Department for Interdisciplinary Endoscopy, Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT02791724","University Medical Center Hamburg-Eppendorf (UKE), Department of Psychosomatic Medicine and Psychotherapy","Hamburg","overall_officials_affiliation",NA,1
 "NCT00777998","University Medical Center Hamburg-Eppendorf, Department for Stem Cell Transplantation","Hamburg","overall_officials_affiliation",NA,1
 "NCT03593161","University Medical Center Hamburg-Eppendorf, Department of Stem Cell Transplantation","Hamburg","overall_officials_affiliation",NA,1
 "NCT01404741","University Medical Centre Hamburg-Eppendorf, Stem-Cell-Transplantation","Hamburg","overall_officials_affiliation",NA,1
 "NCT01288352","University of Birmingham Centre for Cardiovascular Sciences, Department of Cardiology, University Heart and Vascular Center UKE Hamburg, Hamburg, Germany","Hamburg","overall_officials_affiliation",NA,1
+"NCT03056222","Universitäres Herz- und Gefäßzentrum UKE Hamburg","Hamburg","overall_officials_affiliation",NA,1
 "NCT03232645","Universitäres Herzzentrum Hamburg","Hamburg","overall_officials_affiliation",NA,1
 "NCT03287856","Universitäres Herzzentrum Hamburg, Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT02501005","Universitäres Herzzentrum, Hamburg (Germany)","Hamburg","overall_officials_affiliation",NA,1
+"NCT02825992","Universitätsklinikum Hamburg-Eppendorf (UKE)","Hamburg","overall_officials_affiliation",NA,1
 "NCT03478527","Universitätsklinikum Hamburg-Eppendorf, Klinik und Poliklinik für Psychiatrie und Psychotherapie, UKE Martinistraße 52, 20246 Hamburg, Germany","Hamburg","overall_officials_affiliation",NA,1
 "NCT03691402","Universtitätsklinikum Hamburg-Eppendorf","Hamburg","overall_officials_affiliation",NA,1
-"NCT02212015","Hannover Medical School","Hannover","sponsor_name",NA,29
+"NCT01289301","Hannover Medical School","Hannover","sponsor_name",NA,40
+"NCT01289301","Hannover Medical School, Nephrology","Hannover","overall_officials_affiliation",NA,3
+"NCT02191943","Department of Conservtive Dentistry, Periodontology and PreventiveDentistry Hannover Medical School","Hannover","overall_officials_affiliation",NA,2
+"NCT01829347","Germany - Medizinische Hochschule Hannover","Hannover","overall_officials_affiliation",NA,2
+"NCT03818308","Hannover Medical School, Clinic for Gastroenterology, Hepatology, and Endocrinology","Hannover","overall_officials_affiliation",NA,2
 "NCT02712398","New Hanover Regional Medical Center","Hannover","overall_officials_affiliation",NA,2
 "NCT03546621","Dept. of Gastroenterology, Hepatology and Endocrinology Medizinische Hochschule Hannover","Hannover","overall_officials_affiliation",NA,1
-"NCT02612428","Germany - Medizinische Hochschule Hannover","Hannover","overall_officials_affiliation",NA,1
 "NCT02728778","Hannover Clinical Trial Center HCTC GmbH","Hannover","overall_officials_affiliation",NA,1
-"NCT03282474","Hannover Medical School, Clinic for Gastroenterology, Hepatology, and Endocrinology","Hannover","overall_officials_affiliation",NA,1
+"NCT01289301","Hannover Medical School, Biometry","Hannover","overall_officials_affiliation",NA,1
 "NCT03087201","Hannover Medical School, Clinic of Psychiatry, Socialpsychiatry and Psychotherapy","Hannover","overall_officials_affiliation",NA,1
 "NCT03003338","Hannover Medical School, Department of Gastroenterology, Hepatology and Endocrinology, Carl-Neuberg-Str. 1, 30625 Hannover, Germany","Hannover","overall_officials_affiliation",NA,1
 "NCT03371173","Hannover Medical School, Department of Pneumology","Hannover","overall_officials_affiliation",NA,1
+"NCT01289301","Hannover Medical School, Pathology","Hannover","overall_officials_affiliation",NA,1
 "NCT02985242","Hannover Medical School, University Eye Hospital","Hannover","overall_officials_affiliation",NA,1
-"NCT02349906","Hannover Medical University","Hannover","overall_officials_affiliation",NA,1
+"NCT01289301","Hannover Medical School, Virology","Hannover","overall_officials_affiliation",NA,1
+"NCT05520580","Hannover medical school (MHH)","Hannover","overall_officials_affiliation",NA,1
+"NCT03674931","Hochschule für Musik, Theater und Medien Hannover","Hannover","overall_officials_affiliation",NA,1
+"NCT01265368","MHH Hannover","Hannover","overall_officials_affiliation",NA,1
 "NCT02605902","Medical school Hannover, Clinic for Psychosomatics and Psychotherapy","Hannover","overall_officials_affiliation",NA,1
+"NCT03572582","Medizinische Hochschule Hannover, Klinik für Gastroenterologie, Hepatologie & Endokrinologie","Hannover","overall_officials_affiliation",NA,1
 "NCT03651726","Medizinische Hochschule Hannover, Klinik für Psychiatrie, Sozialpsychiatrie und Psychotherapie","Hannover","overall_officials_affiliation",NA,1
+"NCT04768985","Parexel Early Phase Clinical Unit Baltimore Harbor Hospital 3001 South Hanover St. Baltimore, MD 21225 USA","Hannover","overall_officials_affiliation",NA,1
 "NCT04224376","Trauma Departement, Hanover Medical School","Hannover","overall_officials_affiliation",NA,1
-"NCT02212015","Heidelberg University","Heidelberg","sponsor_name",NA,65
-"NCT02674360","University Hospital Heidelberg","Heidelberg","sponsor_name",NA,51
-"NCT02310243","National Center for Tumor Diseases, Heidelberg","Heidelberg","sponsor_name",NA,6
-"NCT03075371","University of Heidelberg Medical Center","Heidelberg","sponsor_name",NA,5
-"NCT02907658","Pädagogische Hochschule Heidelberg","Heidelberg","sponsor_name",NA,3
-"NCT02021006","Center for Pediatrics and Adolescent Medicine Division of Pediatric Nephrology, Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,2
+"NCT02270073","Heidelberg University","Heidelberg","sponsor_name",NA,77
+"NCT03317184","University Hospital Heidelberg","Heidelberg","sponsor_name",NA,56
+"NCT04252248","National Center for Tumor Diseases, Heidelberg","Heidelberg","sponsor_name",NA,7
+"NCT02495922","University of Heidelberg Medical Center","Heidelberg","sponsor_name",NA,5
+"NCT03323242","Department of General, Visceral and Transplant Surgery, University Hospital Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,3
+"NCT03582839","Pädagogische Hochschule Heidelberg","Heidelberg","sponsor_name",NA,3
 "NCT02270073","Center for Psychological Psychotherapy - University of Heidelberg","Heidelberg","overall_officials_affiliation",NA,2
-"NCT03317184","Department of General, Visceral and Transplant Surgery, University Hospital Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,2
-"NCT03279939","Heidelberg Engineering GmbH","Heidelberg","sponsor_name",NA,2
+"NCT05326958","Heidelberg Engineering GmbH","Heidelberg","sponsor_name",NA,2
+"NCT04165122","Heidelberg ImmunoTherapeutics GmbH","Heidelberg","sponsor_name",NA,2
+"NCT02055508","Thoracic Oncology Clinic for Thoracic Diseases/University of Heidelberg","Heidelberg","overall_officials_affiliation",NA,2
 "NCT03034421","Thoraxklinik at University of Heidelberg","Heidelberg","overall_officials_affiliation",NA,2
 "NCT01679990","Universitätsklinik Heidelberg","Heidelberg","overall_officials_affiliation",NA,2
 "NCT02869022","Abt. Herzchirugie, Universitätsklinikum Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
@@ -329,8 +409,6 @@
 "NCT02317497","Dep. of Neurology, University of Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02098772","Department of Cardiac Surgery, University of Heidelberg, Im Neuenheimer Feld 110, 69120 Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02270073","Department of Clinical Psychology and Psychotherapy - University of Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
-"NCT03753256","Department of Orthodontics and Dentofacial Orthopaedics, University of Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
-"NCT02095236","Department of Radiooncology, University Hospital of Heidelberg, INF 400, 69120 Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,1
 "NCT03044626","Department of Thoracic Oncology, Thoraxklinik at Heidelberg University Hospital","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02883699","Friederike Rosenberger (University Hospital Heidelberg), Principal Investigator","Heidelberg","sponsor_name",NA,1
 "NCT01027221","German Cancer Research Centre and Clinic for Radiation Oncology of the University of Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
@@ -338,88 +416,122 @@
 "NCT01762592","Heidelberg Pharma AG","Heidelberg","sponsor_name",NA,1
 "NCT03080792","Heidelberg University Hospital, National Center for Tumor Disease, Division of Medical Oncology, Working Group Exercise Oncology","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02883699","Heidelberg University Hospital, National Center for Tumor Diseases, Division of Medical Oncology, Working Group Exercise Oncology","Heidelberg","overall_officials_affiliation",NA,1
+"NCT02988453","Heidelberg University, Clinic for Child and Youth Psychiatry","Heidelberg","sponsor_name",NA,1
+"NCT02988453","Heidelberg University, Psychotherapy Research Department","Heidelberg","sponsor_name",NA,1
 "NCT01005043","Heidelberger Ionenstrahltherapiezentrum, HIT, Im Neuenheimer Feld 400, 69120 Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,1
 "NCT03582839","Institut für Psychologie der Pädagogischen Hochschule Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
+"NCT02988453","Institute for Psychosocial Prevention, Heidelberg University","Heidelberg","overall_officials_affiliation",NA,1
 "NCT03080025","Institute of Medical Psychology, University Hospital Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
+"NCT01190371","KEMRI Centre for Geographic Medicine Research (Coast), Heidelberg University of Medicine, Germany","Heidelberg","overall_officials_affiliation",NA,1
+"NCT02495922","Med. Klinik V, University Hospital Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT03274804","NCT, Med Oncology, University Hospital Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02718430","National Center of Tumor Diseases Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT04471324","Thoraxklinik Universitaetsklinikum Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT04471324","Thoraxklinik-Heidelberg gGmbH","Heidelberg","sponsor_name",NA,1
 "NCT03670121","Univ.-Prof. Felix JF Herth, Thoraxklinik University of Heidelberg Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,1
-"NCT00626990","Universitatsklinikum Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
+"NCT01290939","Universitatsklinikum Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT03771352","University Eye Clinic- Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,1
 "NCT01903408","University Hospital Heidelberg, Department of Radiation Oncology","Heidelberg","overall_officials_affiliation",NA,1
 "NCT01528683","University Hospital of Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
 "NCT01653067","University Hospital of Heidelberg, Department 5 Hematology, Oncology, Rheumatology, Im Neuenheimer Feld 410, 69120 Heidelberg, Germany","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02907658","University of Education Heidelberg","Heidelberg","overall_officials_affiliation",NA,1
+"NCT01322854","University of Heidelberg","Heidelberg","responsible_parties_org_affil",NA,1
 "NCT02948764","University of Heidelberg University Breast Unit, Department of Gynecology","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02638935","University of Heidelberg, Department of Gynecology, Breast Unit","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02208128","University of Heidelberg, Urological Department","Heidelberg","overall_officials_affiliation",NA,1
 "NCT02563145","Department of Child and Adolescent Psychiatry and Psychotherapy, CIMH Medical Faculty Mannheim/ Heidelberg University, Mannheim, Germany","Heidelberg;Mannheim","overall_officials_affiliation",NA,2
+"NCT03860155","Med. Fakultät Mannheim der Universität Heidelberg, II. Med. Klinik, Germany","Heidelberg;Mannheim","overall_officials_affiliation",NA,1
+"NCT04992585","Theresienkrankenhaus Mannheim, University of Heidelberg","Heidelberg;Mannheim","overall_officials_affiliation",NA,1
 "NCT02212015","Universitätsmedizin Mannheim / Heidelberg University","Heidelberg;Mannheim","overall_officials_affiliation",NA,1
-"NCT01489449","University Hospital, Saarland","Homburg","sponsor_name",NA,7
+"NCT03416244","Universitätsmedizin Mannheim, Heidelberg University, II. Medizinische Klinik","Heidelberg;Mannheim","overall_officials_affiliation",NA,1
+"NCT01596114","Universitätsmedizin Mannheim, Universität Heidelberg","Heidelberg;Mannheim","overall_officials_affiliation",NA,1
+"NCT03417986","Zentralinstitut für seelische Gesundheit, Medizinische Fakultät Mannheim, Universität Heidelberg,","Heidelberg;Mannheim","overall_officials_affiliation",NA,1
+"NCT01888315","University Hospital, Saarland","Homburg","sponsor_name",NA,12
 "NCT00278421","Study Office Homburg","Homburg","overall_officials_affiliation",NA,2
 "NCT00278421","Universitaetsklinikum des Saarlandes","Homburg","overall_officials_affiliation",NA,2
+"NCT02465346","Department of Neurology, Saarland University","Homburg","overall_officials_affiliation",NA,1
 "NCT01717677","Klinik für Urologie und Kinderurologie der Universität des Saarlandes","Homburg","overall_officials_affiliation",NA,1
+"NCT03756662","Knappschaftsklinikum Saar GmbH, Augenklinik Sulzbach","Homburg","overall_officials_affiliation",NA,1
+"NCT04654312","Saarland University Hospital","Homburg","overall_officials_affiliation",NA,1
 "NCT02544360","University of Homburg","Homburg","sponsor_name",NA,1
 "NCT03242096","University of Saarland","Homburg","overall_officials_affiliation",NA,1
-"NCT03545555","University of Jena","Jena","sponsor_name",NA,24
-"NCT04303052","Jena University Hospital","Jena","sponsor_name",NA,10
-"NCT01679990","Universitätsklinikum Jena","Jena","overall_officials_affiliation",NA,3
+"NCT04113837","University of Jena","Jena","sponsor_name",NA,32
+"NCT05590182","Jena University Hospital","Jena","sponsor_name",NA,21
+"NCT04049045","Department of Internal Medicine I, Jena University Hospital","Jena","overall_officials_affiliation",NA,1
+"NCT04717076","Friedrich-Schiller-University","Jena","overall_officials_affiliation",NA,1
 "NCT03266302","Jena University Hospital, Department of Cardiac and Thoracic Surgery","Jena","overall_officials_affiliation",NA,1
 "NCT03669185","Universital Hospital Jena","Jena","overall_officials_affiliation",NA,1
+"NCT04338958","University Hospital Jena","Jena","overall_officials_affiliation",NA,1
 "NCT02929368","University Hospital Jena, Germany","Jena","overall_officials_affiliation",NA,1
-"NCT02183870","University of Cologne","Köln","sponsor_name",NA,39
-"NCT03848559","Universitätsklinikum Köln","Köln","sponsor_name",NA,13
-"NCT04630743","University Hospital of Cologne","Köln","sponsor_name",NA,9
-"NCT02598245","Klinikum der Universität Köln","Köln","sponsor_name",NA,4
-"NCT05584813","University Hospital Cologne","Köln","overall_officials_affiliation",NA,4
+"NCT05590182","University Hospital Jena, Radiology Department, Germany","Jena","overall_officials_affiliation",NA,1
+"NCT01243489","Universitätsklinikum Jena, Klinik für Innere Medizin II","Jena","overall_officials_affiliation",NA,1
+"NCT01057641","University of Cologne","Köln","sponsor_name",NA,56
+"NCT02241382","Universitätsklinikum Köln","Köln","sponsor_name",NA,13
+"NCT04630743","University Hospital of Cologne","Köln","sponsor_name",NA,11
+"NCT01737411","Klinikum der Universität Köln","Köln","sponsor_name",NA,8
+"NCT02241382","University Hospital Cologne","Köln","overall_officials_affiliation",NA,7
 "NCT03417323","German Sport University, Cologne","Köln","sponsor_name",NA,2
 "NCT02371512","The Clinical Trials Centre Cologne","Köln","sponsor_name",NA,2
-"NCT01356680","University of Cologne, German Hodgkin Study Group","Köln","overall_officials_affiliation",NA,2
+"NCT01453504","University of Cologne, German Hodgkin Study Group","Köln","overall_officials_affiliation",NA,2
+"NCT04631666","ZKS Köln","Köln","sponsor_name",NA,2
+"NCT01222052","Breast Center University Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT04203810","ClinCompetence GmbH, Genter Str. 7, 50672 Cologne, Germany","Köln","overall_officials_affiliation",NA,1
 "NCT03471559","Department I of Pharmacology, University of Cologne","Köln","overall_officials_affiliation",NA,1
+"NCT04472624","Department II of Internal Medicine, University of Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT02384291","Department of Craniomaxillofacial and Plastic Surgery University Hospital of Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT02834559","Department of Ophthalmology, University of Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT03005652","Director of the Clinic for Psychiatry and Psychotherapy at University Hospital Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT04106453","General, Visceral, Cancer and Transplant Surgery, University of Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT02371512","Herzzentrum Uniklinik Köln","Köln","overall_officials_affiliation",NA,1
 "NCT02020421","Max-Planck-Institut fur Neurologische Forschung (Cologne, Germany)","Köln","overall_officials_affiliation",NA,1
+"NCT03968250","Medical University of Cologne","Köln","sponsor_name",NA,1
+"NCT00769522","Medizinische Universitaetsklinik I at the University of Cologne","Köln","overall_officials_affiliation",NA,1
 "NCT03848559","UK Köln","Köln","overall_officials_affiliation",NA,1
 "NCT02183870","Uniklinik Köln, Department I for Internal Medicine, LCGC","Köln","overall_officials_affiliation",NA,1
-"NCT02021006","Ärztlicher Leiter der Kindernephrologie Klinik und Poliklinik für Kinder- und Jugendmedizin Uniklinik Köln - Köln","Köln","overall_officials_affiliation",NA,1
-"NCT04226781","University of Leipzig","Leipzig","sponsor_name",NA,37
-"NCT03246594","Heart Center Leipzig - University Hospital","Leipzig","sponsor_name",NA,9
+"NCT03182322","Forschergruppe Diabetes, Klinikum rechts der Isar, Technische Universität München, Lehrstuhl für Diabetes und Gestationsdiabetes, der Technischen Universität München, Kölner Platz 1, 80804 München, Germany","Köln;Munich","overall_officials_affiliation",NA,2
+"NCT02612519","University of Leipzig","Leipzig","sponsor_name",NA,47
+"NCT03078985","Heart Center Leipzig - University Hospital","Leipzig","sponsor_name",NA,8
 "NCT03065634","Universitätsklinikum Leipzig","Leipzig","sponsor_name",NA,4
 "NCT04389697","Heart Center Leipzig at the University of Leipzig","Leipzig","overall_officials_affiliation",NA,3
-"NCT03024268","Heart Center of the University Leipzig","Leipzig","overall_officials_affiliation",NA,3
+"NCT02920034","Heart Center of the University Leipzig","Leipzig","overall_officials_affiliation",NA,3
+"NCT01412541","University Leipzig","Leipzig","overall_officials_affiliation",NA,3
+"NCT02078947","Heart Center Leipzig, Leipzig, Germany","Leipzig","overall_officials_affiliation",NA,2
+"NCT02857309","Herzzentrum Leipzig GmbH","Leipzig","overall_officials_affiliation",NA,2
 "NCT02867449","Leipzig University","Leipzig","overall_officials_affiliation",NA,2
-"NCT01628159","University Leipzig","Leipzig","overall_officials_affiliation",NA,2
 "NCT02478996","Department of Visceral, Transplantation, Vascular and Thoracic Surgery, University Hospital of Leipzig","Leipzig","overall_officials_affiliation",NA,1
 "NCT03101865","Division for Paediatric Diabetology, University of Leipzig, Leipzig, Germany","Leipzig","overall_officials_affiliation",NA,1
 "NCT02924285","Heart Center Leipzig","Leipzig","overall_officials_affiliation",NA,1
-"NCT02857309","Herzzentrum Leipzig GmbH","Leipzig","overall_officials_affiliation",NA,1
 "NCT02790229","Hospital St.Georg gGmbH; Clinic of Trauma, Orthopedic and septic Surgery, Leipzig, Germany","Leipzig","sponsor_name",NA,1
+"NCT03682146","Leipzig University, Department of Urology","Leipzig","overall_officials_affiliation",NA,1
+"NCT01808274","Leipzig, Rhön Herzentrum (Germany)","Leipzig","overall_officials_affiliation",NA,1
+"NCT04338906","St. Georg Hospital Leipzig, Germany","Leipzig","sponsor_name",NA,1
 "NCT02612519","Uniklinik Leipzig Sektion Hepatologie","Leipzig","overall_officials_affiliation",NA,1
-"NCT02856867","Universitaetsklinikum Leipzig, Germany","Leipzig","overall_officials_affiliation",NA,1
+"NCT03842930","University Clinic Leipzig","Leipzig","overall_officials_affiliation",NA,1
 "NCT02479555","University Hospital of Leipzig","Leipzig","overall_officials_affiliation",NA,1
 "NCT02669680","University Hospital of Leipzig;","Leipzig","overall_officials_affiliation",NA,1
+"NCT02157142","University of Leipzig - Herzzcntrum","Leipzig","overall_officials_affiliation",NA,1
 "NCT03510676","Universitätsklinikum Leipzig, Germany","Leipzig","overall_officials_affiliation",NA,1
 "NCT02924285","Zentrum für Klinische Studien Leipzig","Leipzig","sponsor_name",NA,1
-"NCT04010994","University of Magdeburg","Magdeburg","sponsor_name",NA,4
+"NCT04008589","University of Magdeburg","Magdeburg","sponsor_name",NA,6
+"NCT04186468","Otto-von-Guericke University Magdeburg","Magdeburg","sponsor_name",NA,3
 "NCT02521870","University Hospital Magdeburg","Magdeburg","overall_officials_affiliation",NA,1
 "NCT01853163","University Hospital Magdeburg, Germany","Magdeburg","overall_officials_affiliation",NA,1
-"NCT04000828","Johannes Gutenberg University Mainz","Mainz","sponsor_name",NA,50
-"NCT04687332","University Medical Center Mainz","Mainz","sponsor_name",NA,7
-"NCT04235439","Profil Mainz GmbH & Co KG","Mainz","overall_officials_affiliation",NA,2
+"NCT02874833","Johannes Gutenberg University Mainz","Mainz","sponsor_name",NA,61
+"NCT04687332","University Medical Center Mainz","Mainz","sponsor_name",NA,8
+"NCT02874833","Department of Psychiatry and Psychotherapy, University Medical Center, Mainz","Mainz","sponsor_name",NA,2
+"NCT04236895","Profil Mainz GmbH & Co KG","Mainz","overall_officials_affiliation",NA,2
+"NCT01462513","Universitätsmedizin Mainz","Mainz","overall_officials_affiliation",NA,2
 "NCT02596555","Center for Thrombosis and Hemostasis, University Medical Center Mainz","Mainz","overall_officials_affiliation",NA,1
-"NCT03024593","Department of Clinical Psychology, Psychotherapy and Experimental Psychopathology, Johannes Gutenberg University Mainz","Mainz","overall_officials_affiliation",NA,1
+"NCT04842357","Department of Anaesthesiology / Klinik für Anästhesiologie, Langenbeckstr. 1, 55131 Mainz, Germany","Mainz","overall_officials_affiliation",NA,1
+"NCT01828905","Department of Orthopaedics and Traumatology, Johannes Gutenberg University Mainz","Mainz","overall_officials_affiliation",NA,1
 "NCT02478996","Department of Sports Medicine, Disease Prevention and Rehabilitation, Johannes Gutenberg-University of Mainz","Mainz","overall_officials_affiliation",NA,1
 "NCT01585727","Department of Visceral and Abdominal Surgery, University Medical Center Mainz","Mainz","overall_officials_affiliation",NA,1
 "NCT02612428","Germany - Universitätsmedizin Mainz","Mainz","overall_officials_affiliation",NA,1
+"NCT04066595","Interdisciplinary Center Clinical Trials (IZKS), University Medical Center Mainz","Mainz","sponsor_name",NA,1
 "NCT03542747","Johannes GU, Mainz","Mainz","overall_officials_affiliation",NA,1
 "NCT03586141","Johannes Gutenberg University Centre, department of anaesthesiology, Langenbeckstraße 1, 55131 Mainz, Germany","Mainz","overall_officials_affiliation",NA,1
 "NCT04022317","Profil Mainz GmbH","Mainz","overall_officials_affiliation",NA,1
+"NCT04842357","Trauma Surgery / Zentrum für Orthopädie und Unfallchirurgie, Langebeckstr. 1, 55131 Mainz, Germany","Mainz","overall_officials_affiliation",NA,1
 "NCT02723981","Universitaetsmedizin Mainz","Mainz","overall_officials_affiliation",NA,1
 "NCT02158377","Universitatsbedizin Mainz","Mainz","overall_officials_affiliation",NA,1
 "NCT02611986","University JG, Mainz","Mainz","overall_officials_affiliation",NA,1
@@ -431,42 +543,48 @@
 "NCT03007992","Universitätsmedizin Mainz, Klinik und Poliklinik für Geburtshilfe und Frauengesundheit","Mainz","overall_officials_affiliation",NA,1
 "NCT02699866","Universitätsmedizin der Johannes Gutenberg-Universität Mainz, Klinik für Mund-Kiefer-Gesichtschirurgie, Plastische Operationen","Mainz","overall_officials_affiliation",NA,1
 "NCT03370653","Villa Metabolica, Mainz GERMANY","Mainz","overall_officials_affiliation",NA,1
-"NCT02212015","Universitätsmedizin Mannheim","Mannheim","sponsor_name",NA,15
-"NCT03810950","Central Institute of Mental Health, Mannheim","Mannheim","sponsor_name",NA,10
-"NCT03887117","CRS Clinical Research Services Mannheim GmbH","Mannheim","overall_officials_affiliation",NA,2
+"NCT02866110","Central Institute of Mental Health, Mannheim","Mannheim","sponsor_name",NA,16
+"NCT02773966","Universitätsmedizin Mannheim","Mannheim","sponsor_name",NA,15
+"NCT04105205","CRS Clinical Research Services Mannheim GmbH","Mannheim","overall_officials_affiliation",NA,2
 "NCT02341170","Department of Radiation Oncology, University Medical Centre Mannheim","Mannheim","overall_officials_affiliation",NA,2
 "NCT00842920","CIMH Mannheim","Mannheim","overall_officials_affiliation",NA,1
 "NCT03810950","Project Group for Automation in Medicine and Biotechnology PAMB, Mannheim","Mannheim","sponsor_name",NA,1
 "NCT02723981","Universitaetsmedizin Mannheim","Mannheim","overall_officials_affiliation",NA,1
-"NCT03055208","University Medical Center Mannheim","Mannheim","overall_officials_affiliation",NA,1
 "NCT01692496","University Medical Centre Mannheim","Mannheim","overall_officials_affiliation",NA,1
 "NCT02775838","University of Mannheim, General Surgery","Mannheim","overall_officials_affiliation",NA,1
 "NCT03196050","Vitaphone GmbH, Mannheim","Mannheim","sponsor_name",NA,1
 "NCT03691805","ZI Mannheim","Mannheim","overall_officials_affiliation",NA,1
 "NCT03109028","Zentralinstitut für Seelische Gesundheit Mannheim","Mannheim","sponsor_name",NA,1
-"NCT03550430","Philipps University Marburg Medical Center","Marburg","sponsor_name",NA,52
-"NCT03863691","Philipps-Univeristy of Marburg","Marburg","overall_officials_affiliation",NA,3
+"NCT03863691","Philipps University Marburg","Marburg","sponsor_name",NA,72
+"NCT03869424","Philipps-Univeristy of Marburg","Marburg","overall_officials_affiliation",NA,3
+"NCT03387436","Philipps University Marburg, Department of Psychology, Division of Clinical Psychology and Psychotherapy","Marburg","overall_officials_affiliation",NA,2
 "NCT03616652","Clinical Psychology and Psychotherapy, Department of Psychology, Philipps University Marburg","Marburg","overall_officials_affiliation",NA,1
 "NCT02787148","Department of Clinical Psychology and Psychothearpy, Philipps University of Marburg","Marburg","overall_officials_affiliation",NA,1
 "NCT02551146","Dept. of Prosthodontics and Orofacial Function Philipps-University, School of Dental Medicine","Marburg","overall_officials_affiliation",NA,1
-"NCT03387436","Philipps University Marburg, Department of Psychology, Division of Clinical Psychology and Psychotherapy","Marburg","overall_officials_affiliation",NA,1
+"NCT03803358","Philipps University of Marburg, Department of pulmonary rehabilitation","Marburg","overall_officials_affiliation",NA,1
 "NCT03550430","Philipps Universität Marburg","Marburg","overall_officials_affiliation",NA,1
 "NCT02359188","Philipps-University Marburg, Dept. of Neurology","Marburg","overall_officials_affiliation",NA,1
 "NCT03949816","Philipps-University Marburg, Faculty psychology, department clinical psychology","Marburg","overall_officials_affiliation",NA,1
-"NCT03347175","Technical University of Munich","Munich","sponsor_name",NA,47
-"NCT02791282","Ludwig-Maximilians - University of Munich","Munich","sponsor_name",NA,38
-"NCT03488797","Deutsches Herzzentrum Muenchen","Munich","sponsor_name",NA,13
-"NCT01586910","Deutsches Herzzentrum München","Munich","overall_officials_affiliation",NA,5
-"NCT02212015","Klinikum der Universitaet Muenchen, Grosshadern","Munich","sponsor_name",NA,5
+"NCT01077427","Ludwig-Maximilians - University of Munich","Munich","sponsor_name",NA,73
+"NCT01615965","Technical University of Munich","Munich","sponsor_name",NA,60
+"NCT03487432","Deutsches Herzzentrum Muenchen","Munich","sponsor_name",NA,15
+"NCT02174848","Klinikum der Universität München","Munich","overall_officials_affiliation",NA,6
+"NCT03312855","Deutsches Herzzentrum München","Munich","overall_officials_affiliation",NA,5
+"NCT01077427","Klinikum der Universitaet Muenchen, Grosshadern","Munich","sponsor_name",NA,5
+"NCT03182322","Helmholtz Zentrum München","Munich","sponsor_name",NA,4
 "NCT02622412","University Hospital Munich","Munich","sponsor_name",NA,4
-"NCT02174848","Klinikum der Universität München","Munich","overall_officials_affiliation",NA,3
-"NCT02622412","Munich University Hospital","Munich","overall_officials_affiliation",NA,3
-"NCT01781338","Breast Center of the University of Munich (LMU) Universitätsfrauenklinik Großhadern, Munich, Germany","Munich","overall_officials_affiliation",NA,2
-"NCT03600662","Department of Cardiovascular Surgery, German Heart Center Munich","Munich","sponsor_name",NA,2
+"NCT03894774","Department of Pediatrics, Dr. von Hauner Children's Hospital, University Hospital, LMU Munich","Munich","overall_officials_affiliation",NA,3
+"NCT02544594","Munich University Hospital","Munich","overall_officials_affiliation",NA,3
 "NCT02789917","Klinikum der Universität München (LMU)","Munich","overall_officials_affiliation",NA,2
+"NCT05938517","LMU Munich","Munich","overall_officials_affiliation",NA,2
+"NCT02078947","Technische Universität München, Munich, Germany","Munich","overall_officials_affiliation",NA,2
+"NCT01207388","Amgen Research (Munich) GmbH","Munich","sponsor_name",NA,1
+"NCT03227016","Askelios Klinik München Gauting","Munich","overall_officials_affiliation",NA,1
 "NCT01621256","Department for Otorhinolaryngology, LM University Munich","Munich","overall_officials_affiliation",NA,1
+"NCT03957850","Department of Child&Adolescent Psychiatry, Psychosomatics&Psychoth.,LMU Munich","Munich","overall_officials_affiliation",NA,1
 "NCT03131648","Department of Dermatology and Allergy, Ludwig-Maximilian University Munich, Germany","Munich","overall_officials_affiliation",NA,1
 "NCT01734304","Department of Medicine III; Hospital of the University of Munich,","Munich","overall_officials_affiliation",NA,1
+"NCT01067157","Department of Medicine, Division of Prevention, Rehabilitation and Sports Medicine, Technical University Munich, Germany","Munich","overall_officials_affiliation",NA,1
 "NCT03805854","Department of Neurology, Klinikum rechts der Isar, Technische Universität München","Munich","overall_officials_affiliation",NA,1
 "NCT03507400","Department of Neurology, Marchioninistr. 15, 81377 Munich, Germany","Munich","overall_officials_affiliation",NA,1
 "NCT01645306","Department of Neurology, TU Munich","Munich","overall_officials_affiliation",NA,1
@@ -474,12 +592,12 @@
 "NCT03488797","Department of Paediatric Cardiology and Congenital Heart Defects, German heart center of the state of Bavaria (Munich), Technical University of Munich (TUM)","Munich","overall_officials_affiliation",NA,1
 "NCT01942070","Deutsches Herzzentrum Munich","Munich","overall_officials_affiliation",NA,1
 "NCT01755520","Deutsches Herzzentrum Munich Germany","Munich","overall_officials_affiliation",NA,1
-"NCT02515760","Division Thoracic Surgery, Technical University of Munich, Munich, Germany","Munich","overall_officials_affiliation",NA,1
 "NCT02522897","Eye Clinic of the Ludwig Maximilians University of Munich","Munich","overall_officials_affiliation",NA,1
-"NCT02622412","Helmholtz Zentrum München","Munich","sponsor_name",NA,1
+"NCT02854319","German Heart Centre München","Munich","overall_officials_affiliation",NA,1
+"NCT01951937","Head, Div. Metabolic and Nutritional Medicine Dr. von Hauner Children's Hospital Univ. of Munich Medical Centre - Klinikum d. Univ. München Lindwurmstr. 4, D-80337 Muenchen, Germany","Munich","overall_officials_affiliation",NA,1
+"NCT04338906","Hospital Schwabing Munich, Germany","Munich","sponsor_name",NA,1
 "NCT03082469","II. Medizinische Klinik; Klinikum rechts der Isar; Technische Universität München","Munich","overall_officials_affiliation",NA,1
-"NCT03488797","Institute of Preventive Pediatrics, Technical University of Munich","Munich","sponsor_name",NA,1
-"NCT03127020","Klinik Universität München","Munich","overall_officials_affiliation",NA,1
+"NCT02594501","ISAResearch Center Deutsches Herzzentrum München","Munich","overall_officials_affiliation",NA,1
 "NCT01827501","Klinik für Anaesthesiologie Technische Universität München","Munich","overall_officials_affiliation",NA,1
 "NCT04370561","Klinik für Unfallchirurgie, Klinikum rechts der Isar, TU München","Munich","overall_officials_affiliation",NA,1
 "NCT02325167","Klinik und Poliklinik für Palliativmedizin, Ludwig Maximilians Universität München","Munich","overall_officials_affiliation",NA,1
@@ -487,30 +605,39 @@
 "NCT02577692","Klinikum der Universitaet Muenchen - Campus Grosshadern","Munich","overall_officials_affiliation",NA,1
 "NCT02564367","Klinikum der Universität München, Campus Großhadern","Munich","overall_officials_affiliation",NA,1
 "NCT01449344","Klinikum der Universität München, Grosshadern","Munich","overall_officials_affiliation",NA,1
+"NCT04571333","Klinikum der Universität München, HNO","Munich","overall_officials_affiliation",NA,1
 "NCT03835923","Klinikum rechts der Isar Technische Universität München","Munich","overall_officials_affiliation",NA,1
 "NCT03167645","Klinikum rechts der Isar, Technical University Munich, Dept. of Anesthesiology","Munich","overall_officials_affiliation",NA,1
 "NCT03760328","Klinikum rechts der Isar, Technical University of Munich","Munich","overall_officials_affiliation",NA,1
+"NCT04228939","Ludwig Maximilian University Munich","Munich","overall_officials_affiliation",NA,1
 "NCT04080817","Ludwig Maximlians University (LMU) Munich","Munich","overall_officials_affiliation",NA,1
 "NCT03162679","Ludwig-Maximilians-Universität München","Munich","overall_officials_affiliation",NA,1
 "NCT02615249","Ludwig-Maximilians-Universität München, Germany","Munich","overall_officials_affiliation",NA,1
 "NCT03162679","Ludwig-Maximilians-Universität München/ REFUGIO München","Munich","overall_officials_affiliation",NA,1
 "NCT00142233","Medizinische Klinik II, Klinikum der Universität München","Munich","overall_officials_affiliation",NA,1
 "NCT02669511","Medizinische Klinik und Poliklinik III Klinikum der Universität München","Munich","overall_officials_affiliation",NA,1
-"NCT01788020","National Co-Coordinating Investigator - Germany University Hospital Großhadern, Munich","Munich","overall_officials_affiliation",NA,1
+"NCT02668484","Munich University Clinic, Ludwig-Maximilians University","Munich","overall_officials_affiliation",NA,1
+"NCT02631603","Pediatric Pneumology, Ludwig-Maximilians University Munich","Munich","overall_officials_affiliation",NA,1
+"NCT02631603","Pediatric Pneumology, Ludwig-Maximilians-University Munich","Munich","overall_officials_affiliation",NA,1
 "NCT01586702","Praxis für Neurologie und Psychiatrie am Prinzregentenplatz, München","Munich","sponsor_name",NA,1
+"NCT01925794","Professor of Medicine at The University of Munich","Munich","overall_officials_affiliation",NA,1
 "NCT03162679","REFUGIO Munich","Munich","sponsor_name",NA,1
 "NCT03162679","REFUGIO München","Munich","overall_officials_affiliation",NA,1
+"NCT03160248","Technical University Munich","Munich","overall_officials_affiliation",NA,1
+"NCT01885572","Technical University Munich, Ismaningerstrasse 22, 81675 Munich, Germany","Munich","overall_officials_affiliation",NA,1
 "NCT03325621","Technical University, Munich","Munich","overall_officials_affiliation",NA,1
 "NCT03399383","University Hospital Munich, Germany","Munich","sponsor_name",NA,1
 "NCT00908544","University Munich, University Hospital, Dept. of Infectious Diseases,","Munich","overall_officials_affiliation",NA,1
 "NCT02975141","University of Munich - Klinikum Großhadern","Munich","overall_officials_affiliation",NA,1
 "NCT02633449","University of München","Munich","sponsor_name",NA,1
-"NCT02470078","University Hospital Muenster","Münster","sponsor_name",NA,29
-"NCT04738383","Universität Münster","Münster","sponsor_name",NA,6
-"NCT02358200","Pamela Munster","Münster","sponsor_name",NA,2
-"NCT01679990","Universitätsklinikum Münster","Münster","overall_officials_affiliation",NA,2
+"NCT03464474","University Hospital Muenster","Münster","sponsor_name",NA,33
+"NCT02605668","Universität Münster","Münster","sponsor_name",NA,6
+"NCT02735798","Pamela Munster","Münster","sponsor_name",NA,4
+"NCT04019184","University Hospital Muenster, Dept. of Anesthesiology, Intensive Care and Pain Medicine","Münster","overall_officials_affiliation",NA,2
+"NCT02076620","Universitätsklinikum Münster","Münster","overall_officials_affiliation",NA,2
 "NCT03187522","Center of Vascular and Endovascular Surgery, Munster University Hospital","Münster","overall_officials_affiliation",NA,1
 "NCT04010617","Department of Neurology, University Hospital Münster, Germany","Münster","overall_officials_affiliation",NA,1
+"NCT03631511","Department of Periodontology and Operative Dentistry, Westphalian Wilhelms-University, Albert-Schweitzer-Campus 1, building W 30, 48149 Münster, Germany","Münster","overall_officials_affiliation",NA,1
 "NCT02612428","Germany - Universitätsklinikum Münster","Münster","overall_officials_affiliation",NA,1
 "NCT04019184","IZKF (Interdisciplinary Centre for Clinical Research (IZKF), Muenster)","Münster","sponsor_name",NA,1
 "NCT03698526","Institut of Palliative Care, University Hospital of Muenster","Münster","overall_officials_affiliation",NA,1
@@ -518,15 +645,15 @@
 "NCT03423602","St Fraziskus Hospital, Muenster, Germany","Münster","overall_officials_affiliation",NA,1
 "NCT01588847","University Hospital Muenster, Department of Anesthesia, Intensive Care and Pain Therapy","Münster","overall_officials_affiliation",NA,1
 "NCT03244514","University Hospital Muenster, Dept. of Anesthesiology","Münster","overall_officials_affiliation",NA,1
-"NCT04019184","University Hospital Muenster, Dept. of Anesthesiology, Intensive Care and Pain Medicine","Münster","overall_officials_affiliation",NA,1
+"NCT04669756","University Hospital Muenster, Germany","Münster","overall_officials_affiliation",NA,1
 "NCT03698500","University Hospital Muenster, University of Muenster","Münster","overall_officials_affiliation",NA,1
 "NCT02579759","University Hospital Munster, Germany","Münster","overall_officials_affiliation",NA,1
 "NCT02470078","University Hospital Münster","Münster","overall_officials_affiliation",NA,1
 "NCT02902237","University Hospital of Muenster","Münster","overall_officials_affiliation",NA,1
 "NCT03677401","Universitätsklinikum Münster Klinik für Hautkrankheiten Zentrale Studienkoordination für innovative Dermaologie (ZID)","Münster","overall_officials_affiliation",NA,1
 "NCT02253771","Universitätsklinikum Münster, Klinik für Allgemeine Orthopädie und Tumororthopädie","Münster","overall_officials_affiliation",NA,1
-"NCT03953521","University of Regensburg","Regensburg","sponsor_name",NA,18
-"NCT02852083","University Hospital Regensburg","Regensburg","sponsor_name",NA,10
+"NCT03953521","University of Regensburg","Regensburg","sponsor_name",NA,23
+"NCT04069364","University Hospital Regensburg","Regensburg","sponsor_name",NA,14
 "NCT04334096","Tumor Center Regensburg","Regensburg","sponsor_name",NA,5
 "NCT02085629","University Hospital Regensburg, University of Regensburg","Regensburg","overall_officials_affiliation",NA,3
 "NCT01614132","Department of Neurology, University of Regensburg","Regensburg","overall_officials_affiliation",NA,1
@@ -535,46 +662,55 @@
 "NCT03513159","Regensburg Physicians Network RAEN","Regensburg","sponsor_name",NA,1
 "NCT01467986","University of Regensburg, Department of Pediatric Hematology and Oncology","Regensburg","overall_officials_affiliation",NA,1
 "NCT02653547","University of Regensburg, Department of Psychiatry","Regensburg","overall_officials_affiliation",NA,1
-"NCT01656902","Universitätsklinikum Regensburg","Regensburg","overall_officials_affiliation",NA,1
 "NCT03652376","University of Rostock","Rostock","sponsor_name",NA,5
+"NCT03317951","Universitätsmedizin Rostock","Rostock","overall_officials_affiliation",NA,2
 "NCT02676076","Facharzt für Innere Medizin Rostock, Germany","Rostock","overall_officials_affiliation",NA,1
 "NCT02612428","Germany - Universitätsmedizin Rostock","Rostock","overall_officials_affiliation",NA,1
 "NCT02802059","Klinikum Südstadt Rostock - Abteilung für Neonatologie","Rostock","overall_officials_affiliation",NA,1
+"NCT03795038","Nephrocare Rostock GmbH","Rostock","overall_officials_affiliation",NA,1
 "NCT03399383","University Hospital of Rostock, Germany","Rostock","sponsor_name",NA,1
 "NCT03317951","University Medical Center Rostock","Rostock","sponsor_name",NA,1
-"NCT03317951","Universitätsmedizin Rostock","Rostock","overall_officials_affiliation",NA,1
 "NCT03317951","Universitätsmedizin Rostock Versorgungsstrukturen GmbH","Rostock","sponsor_name",NA,1
-"NCT02635256","University Hospital Schleswig-Holstein","Schleswig-Holstein","sponsor_name",NA,32
-"NCT02635256","University of Luebeck","Schleswig-Holstein","sponsor_name",NA,14
+"NCT04822116","University Hospital Schleswig-Holstein","Schleswig-Holstein","sponsor_name",NA,35
+"NCT02635256","University of Luebeck","Schleswig-Holstein","sponsor_name",NA,13
+"NCT01411592","University of Kiel","Schleswig-Holstein","sponsor_name",NA,7
 "NCT03040544","Medical University Center Schleswig-Holstein Campus Lübeck","Schleswig-Holstein","overall_officials_affiliation",NA,2
-"NCT01769053","University of Kiel","Schleswig-Holstein","sponsor_name",NA,2
-"NCT02703454","Universität zu Lübeck","Schleswig-Holstein","overall_officials_affiliation",NA,2
+"NCT03146247","Universität zu Lübeck","Schleswig-Holstein","overall_officials_affiliation",NA,2
 "NCT03725215","CAU Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT04747639","CRC Clinical Research Center Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT04176263","Christian-Albrechts-University of Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT03339973","Christian-Albrechts-Universität zu Kiel, Klinik für Innere Medizin III Kardiologie, Angiologie und internistische Intensivmedizin, Kiel, Germany","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT04747639","Clinical Research Center Kiel GmbH","Schleswig-Holstein","sponsor_name",NA,1
 "NCT04009889","Clinical Research Center Kiel GmbH, Germany","Schleswig-Holstein","overall_officials_affiliation",NA,1
-"NCT01788020","Coordinator Pathology (Germany) Department of Pathology Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT03047174","Dep. of Radiation Oncology, Univ. of Lübeck, Univ. Med. Center S-H, Germany","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT01117441","Department of Pediatrics, University Hospital of Schleswig-Holstein, Campus Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT04006886","Institute for Clinical Molecular Biology, Christian-Albrechts-University, Kiel","Schleswig-Holstein","sponsor_name",NA,1
+"NCT04490226","Institute of Human Nutrition, Kiel University","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT03070431","Radiation Oncology, University of Lübeck, Lübeck, Germany","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT06192420","UKSH Universitätsklinikum Schleswig-Holstein, Campus Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT01024803","University Eye Hospital, Kiel, Germany","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT03754309","University Hospital Schleswig-Holstein, 24105 Kiel, Germany","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT04822116","University Hospital Schleswig-Holstein, Kiel","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT02326428","University Hospital of Schleswig-Holstein","Schleswig-Holstein","overall_officials_affiliation",NA,1
-"NCT02474641","University Medical Center Schleswig-Holstein (UKSH)","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT03646448","University of Lübeck","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT03418142","University of Lübeck, Zentrum für Integrative Psychiatrie ZiP gGmbH","Schleswig-Holstein","overall_officials_affiliation",NA,1
+"NCT00457431","University of Schleswig-Holstein, Campus Luebeck, Medical Clinic II","Schleswig-Holstein","overall_officials_affiliation",NA,1
 "NCT01787006","Universität zu Lübeck, Klinik für Strahlentherapie","Schleswig-Holstein","overall_officials_affiliation",NA,1
-"NCT03132090","University Hospital Tuebingen","Tübingen","sponsor_name",NA,87
-"NCT04871386","University Hospital Tübingen","Tübingen","overall_officials_affiliation",NA,6
+"NCT03615209","University Hospital Tuebingen","Tübingen","sponsor_name",NA,108
+"NCT04052399","University Hospital Tübingen","Tübingen","overall_officials_affiliation",NA,6
 "NCT02427126","Tübingen University Hospital","Tübingen","overall_officials_affiliation",NA,3
 "NCT03027596","BG Trauma Center Tuebingen","Tübingen","sponsor_name",NA,2
-"NCT02258815","University Children's Hospital Tuebingen","Tübingen","sponsor_name",NA,2
+"NCT03286777","University Hospital, Eberhard Karls University Tuebingen, Germany","Tübingen","overall_officials_affiliation",NA,2
 "NCT03048396","University Women's Hospital Tübingen","Tübingen","sponsor_name",NA,2
+"NCT03236454","University of Tübingen, Department of Psychiatry and Psychotherapy","Tübingen","overall_officials_affiliation",NA,2
+"NCT03518749","Universität Tübingen","Tübingen","sponsor_name",NA,2
 "NCT03201770","CERMEL, University of Tübingen, Germany","Tübingen","overall_officials_affiliation",NA,1
+"NCT01024803","Centre for Ophthalmology, Institute for Ophthalmic Research, University of Tuebingen, Germany","Tübingen","overall_officials_affiliation",NA,1
 "NCT02671539","Centre for Ophthalmology, University Hospital Tübingen, Germany","Tübingen","overall_officials_affiliation",NA,1
 "NCT02506322","Department Psychology University Tuebingen","Tübingen","overall_officials_affiliation",NA,1
 "NCT02553213","Department of General, Visceral, and Transplant Surgery, University Hospital Tübingen, Germany","Tübingen","overall_officials_affiliation",NA,1
 "NCT02793193","Department of Internal Medicine VI: Psychosomatic Medicine and Psychotherapy, University of Tuebingen","Tübingen","overall_officials_affiliation",NA,1
-"NCT02724670","Department of Radiation Oncology, University of Tübingen","Tübingen","overall_officials_affiliation",NA,1
+"NCT02789254","Department of Internal Medicine, Internal Medicine II; Oncology, haematology, clinical immunology, rheumatology and pneumology University Hospital Tuebingen","Tübingen","overall_officials_affiliation",NA,1
 "NCT03027596","Hand and Plastic Surgery, BG Trauma Center Tübingen, Germany","Tübingen","overall_officials_affiliation",NA,1
 "NCT03195387","Institute of Tropical Medicine / Centre for Clinical Trials, Eberhard Karls University","Tübingen","overall_officials_affiliation",NA,1
 "NCT02704533","Institute of Tropical Medicine, University of Tuebingen, Wilhelmstr. 27, Germany","Tübingen","overall_officials_affiliation",NA,1
@@ -582,23 +718,26 @@
 "NCT02968966","University Children's Hospital Tübingen","Tübingen","overall_officials_affiliation",NA,1
 "NCT02863471","University Department of General, Visceral and TransplantSurgery Tuebingen","Tübingen","overall_officials_affiliation",NA,1
 "NCT02686788","University Department of Neurology Tübingen","Tübingen","overall_officials_affiliation",NA,1
+"NCT01024803","University Eye Hospital Tuebingen, Germany","Tübingen","overall_officials_affiliation",NA,1
 "NCT02379572","University Hospital Tuebingen, Department of Neurosurgery","Tübingen","overall_officials_affiliation",NA,1
 "NCT02666885","University Hospital Tuebingen, Department of Radiation Oncology, Tuebingen, Germany","Tübingen","overall_officials_affiliation",NA,1
 "NCT02957552","University Hospital Tuebingen, Germany; Dept. for Pediatric Gastroenterology and Hepatology","Tübingen","overall_officials_affiliation",NA,1
+"NCT05863169","University Hospital Tübingen, Dpt. of Psychiatry and Psychotherapy, Group leader: Psychophysiology & Optical Imaging","Tübingen","overall_officials_affiliation",NA,1
+"NCT01393496","University Hospital of Tuebingen","Tübingen","overall_officials_affiliation",NA,1
+"NCT01750008","University of Tubingen","Tübingen","overall_officials_affiliation",NA,1
 "NCT03785899","University of Tubingen, University Hospital, Dept. Neonatology","Tübingen","overall_officials_affiliation",NA,1
 "NCT04375371","University of Tuebingen, Department of Internal Medicine IV","Tübingen","overall_officials_affiliation",NA,1
-"NCT04108663","University of Tübingen, Department of Psychiatry and Psychotherapy","Tübingen","overall_officials_affiliation",NA,1
-"NCT03518749","Universität Tübingen","Tübingen","sponsor_name",NA,1
+"NCT02629705","University of Tübingen, Department of Internal Medicine","Tübingen","overall_officials_affiliation",NA,1
+"NCT02429440","University of Tübingen, Department of Urology","Tübingen","overall_officials_affiliation",NA,1
 "NCT03490019","Universtitätsklinikum Tübingen","Tübingen","overall_officials_affiliation",NA,1
 "NCT02427126","ZKS and IKEaB Tübingen","Tübingen","sponsor_name",NA,1
-"NCT03290157","University of Ulm","Ulm","sponsor_name",NA,55
+"NCT04258800","University of Ulm","Ulm","sponsor_name",NA,64
 "NCT04258800","University Hospital Ulm","Ulm","sponsor_name",NA,6
 "NCT03405415","Institut für Diabetes-Technologie Forschungs- und Entwicklungsgesellschaft mbH an der Universität Ulm","Ulm","sponsor_name",NA,5
-"NCT02162056","University of Ulm, Ulm, Germany","Ulm","overall_officials_affiliation",NA,3
+"NCT02162069","University of Ulm, Ulm, Germany","Ulm","overall_officials_affiliation",NA,3
 "NCT01477606","University Hospital of Ulm","Ulm","overall_officials_affiliation",NA,2
 "NCT02306590","University Ulm","Ulm","overall_officials_affiliation",NA,2
 "NCT02139800","Children's Hospital, University of Ulm, Ulm Germany","Ulm","overall_officials_affiliation",NA,1
-"NCT01788020","Coordinating Investigator Germany University Hospital Ulm","Ulm","overall_officials_affiliation",NA,1
 "NCT01717677","Klinik für Strahlentherapie und Radioonkologie der Universität Ulm","Ulm","overall_officials_affiliation",NA,1
 "NCT03043703","Lungenzentrum Ulm","Ulm","overall_officials_affiliation",NA,1
 "NCT03482817","Neu-Ulm","Ulm","overall_officials_affiliation",NA,1
@@ -607,19 +746,25 @@
 "NCT01360320","University Hospital Ulm, Ulm, Germany","Ulm","overall_officials_affiliation",NA,1
 "NCT02667314","University of Ulm, Germany","Ulm","overall_officials_affiliation",NA,1
 "NCT03290157","Universitätsklinikum Ulm","Ulm","overall_officials_affiliation",NA,1
-"NCT03428035","University of Witten/Herdecke","Witten-Herdecke","sponsor_name",NA,11
-"NCT04690257","Witten\Herdecke University","Witten-Herdecke","overall_officials_affiliation",NA,2
-"NCT03428035","Witten/Herdecke University","Witten-Herdecke","overall_officials_affiliation",NA,1
-"NCT04433793","Wuerzburg University Hospital","Würzburg","sponsor_name",NA,15
+"NCT03428035","University of Witten/Herdecke","Witten/Herdecke","sponsor_name",NA,17
+"NCT04550286","Witten/Herdecke University","Witten/Herdecke","overall_officials_affiliation",NA,2
+"NCT04690257","Witten\Herdecke University","Witten/Herdecke","overall_officials_affiliation",NA,2
+"NCT04433793","Wuerzburg University Hospital","Würzburg","sponsor_name",NA,22
 "NCT01352403","University of Wuerzburg","Würzburg","sponsor_name",NA,6
+"NCT01691053","University Hospital Wuerzburg","Würzburg","overall_officials_affiliation",NA,3
 "NCT04367389","Klinikum Würzburg Mitte GmbH","Würzburg","sponsor_name",NA,2
 "NCT04367389","Klinikum Würzburg Mitte gGmbH","Würzburg","overall_officials_affiliation",NA,2
+"NCT01691053","Clinical Trial Center Wuerzburg (CTCW)","Würzburg","sponsor_name",NA,1
 "NCT00777244","Department of Internal Medicine, University of Wuerzburg, Germany","Würzburg","overall_officials_affiliation",NA,1
 "NCT02693691","Deutsches Zentrum für Herzinsuffizienz Würzburg","Würzburg","overall_officials_affiliation",NA,1
 "NCT02742844","Klinik und Poliklinik für Dermatologie, Venerologie und Allergologie Universitätsklinikum Würzburg","Würzburg","overall_officials_affiliation",NA,1
 "NCT03257098","Klinik und Poliklinik für Dermatologie, Venerologie und Allergologie, Würzburg","Würzburg","overall_officials_affiliation",NA,1
 "NCT03267784","Klinik und Poliklinik für Dermatologie, Venerologie und Allergologie, Würzburg, Germany","Würzburg","overall_officials_affiliation",NA,1
+"NCT01207388","Medizinische Klinik und Poliklinik II, Würzburg","Würzburg","overall_officials_affiliation",NA,1
+"NCT04338906","Missioklinik, Wuerzburg, Germany","Würzburg","sponsor_name",NA,1
+"NCT02758223","University Hospital Wuerzburg- Departement of Medicine II","Würzburg","overall_officials_affiliation",NA,1
 "NCT03208400","University Hospital of Wuerzburg","Würzburg","overall_officials_affiliation",NA,1
 "NCT03378401","Universitätsklinikum Würzburg, Poliklinik für Zahnerhaltung und Parodontologie","Würzburg","overall_officials_affiliation",NA,1
 "NCT02125136","Universitätsklinikum Würzburg/Comprehensive Cancer Center Mainfranken","Würzburg","overall_officials_affiliation",NA,1
+"NCT03200405","Wuerzburg UH","Würzburg","overall_officials_affiliation",NA,1
 "NCT01744561","Wuerzburg University Hosptitals","Würzburg","overall_officials_affiliation",NA,1
