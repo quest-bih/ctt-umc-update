@@ -70,18 +70,30 @@ which_umcs <- function(umc_vec, collapse = ";") {
   furrr::future_map_chr(umc_vec, \(x) {
     p()
     which_umc(x)
-  }) |> 
-    paste(collapse = collapse)
-    
+  })
 }
 
+# examples:
 # which_umc(umc_str)
 # umc_vec <- c("Munich", "Wuerzburg", "Ulm and Rostock")
 # umc_str <- "Ulm and Rostock"
 # 
+# tibble(umc_str1 = umc_vec) |>
+#   mutate(umcs = which_umcs(umc_str1))
+# 
 # tibble(umc_str1 = umc_vec, umc_str2 = c("Jena", "Kiel and Charite", "Regensburg")) |>
 #   rowwise() |>
 #   mutate(umcs = which_umcs(umc_str1),
-#          umcs_all = which_umcs(c(umc_str1, umc_str2)))
+#          umcs_all = which_umcs(c(umc_str1, umc_str2)) |> 
+#            paste(collapse = ";"))
 # 
 # 
+# 
+# 
+# validation_umcs_ctgov <- bind_rows(list(umc_ctgov_sponsors,
+#                                         umc_resp_party,
+#                                         umc_ctgov_pi_host)) |> 
+#   filter(id %in% inclusion_trns) |>  # apply inclusion filter here
+#   rowwise() |> 
+#   mutate(umc = which_umcs(raw_affil)) |> 
+#   ungroup()
