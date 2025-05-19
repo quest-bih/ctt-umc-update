@@ -94,7 +94,7 @@ city_grep_indices <- function(dataset, colname, grep_terms)
   indices <- map(grep_terms, grep_fast, x=dataset[[colname]])
   return(indices)
 }
-
+sp <- AACT_datasets$sponsors
 #search the different affiliation datasets for the city search terms
 grep_PI <- city_grep(AACT_datasets$overall_officials, "affiliation", city_search_terms)
 grep_sponsor <- city_grep(AACT_datasets$sponsors |>
@@ -137,7 +137,8 @@ umc_resp_party <- AACT_datasets$responsible_parties |>
 
 umc_ctgov_sponsors <- AACT_datasets$sponsors |> 
   filter(!is.na(name),
-         name != "[Redacted]") |>
+         name != "[Redacted]",
+         lead_or_collaborator == "lead") |>
   inner_join(sponsor_umcs, by = "nct_id") |>
   select(id = "nct_id", umc, raw_affil = name) |> 
   mutate(field = "sponsor_name",
@@ -164,16 +165,20 @@ validation_umcs_ctgov <- bind_rows(list(umc_ctgov_sponsors,
                                         umc_resp_party,
                                         umc_ctgov_pi_host)) |> 
   filter(id %in% inclusion_trns) |>  # apply inclusion filter here
-  mutate(umc = which_umcs(raw_affil))
+  mutate(umc = which_umcs(raw_affil),
+         search_needed = NA,
+         correction = NA,
+         comments = "")
 
 validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
   filter(!is.na(umc), umc != "") |> 
-  group_by(raw_affil) |>
+  group_by(raw_affil, umc) |>
   summarise(across(everything(), first),
             n = n()) |>
   ungroup() |>
   arrange(umc, desc(n)) |>
-  relocate(id, .before = everything())
+  relocate(id, .before = everything()) |> 
+  relocate(n, .before = validation)
 
 validation_umcs_ctgov_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_ctgov.csv"))

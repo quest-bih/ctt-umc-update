@@ -111,19 +111,27 @@ validation_umcs_drks <- umc_drks_sponsors |>
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
          drksId %in% drks_2018_2021) |> 
   mutate(umc = which_umcs(raw_affil),
-         validation = NA) |> 
-  select(id = drksId, umc, raw_affil, field, validation)
+         validation = NA,
+         search_needed = NA,
+         correction = NA,
+         comments = "") |> 
+  select(id = drksId, umc, raw_affil, field, validation, search_needed, correction, comments)
 
 validation_umcs_drks_deduplicated <- validation_umcs_drks |> 
-  group_by(raw_affil) |> 
+  group_by(raw_affil, umc) |> 
   summarise(across(everything(), first),
             n = n()) |>
   ungroup() |> 
   arrange(umc, desc(n)) |> 
-  relocate(id, .before = everything())
+  relocate(id, .before = everything()) |> 
+  relocate(n, .before = validation)
 
 validation_umcs_drks_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_drks.csv"))
+
+combined_validations <- validation_umcs_ctgov_deduplicated |> 
+  bind_rows(validation_umcs_drks_deduplicated) |> 
+  arrange(umc, desc(n))
 
 qa_umc_terms <- drks_sponsors |> 
   filter(str_detect(affiliation, umc_search_terms),
