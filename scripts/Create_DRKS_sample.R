@@ -89,7 +89,7 @@ umc_drks_pcis <- drks_trial_contacts |>
            otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR",
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms)) |> 
-  unite("raw_affil", c(affiliation, city), sep = ", ")  |> 
+  unite("raw_affil", c(affiliation, city), sep = ", ") |> 
   mutate(field = "pci_affil_city")
 
 drks_study_characteristic <- drks_tib |> 
@@ -132,6 +132,8 @@ validation_umcs_drks_deduplicated |>
 combined_validations <- validation_umcs_ctgov_deduplicated |> 
   bind_rows(validation_umcs_drks_deduplicated) |> 
   arrange(umc, desc(n))
+combined_validations |> 
+  write_excel_csv(here("data", "processed", "validation_umcs_ctgov_drks.csv"))
 
 qa_umc_terms <- drks_sponsors |> 
   filter(str_detect(affiliation, umc_search_terms),
