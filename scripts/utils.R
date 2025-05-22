@@ -1,5 +1,13 @@
 library(tidyverse)
 library(ctregistries)
+library(here)
+
+load_AACT_datasets <- function(AACT_folder, AACT_dataset_names) {
+  #AACT filenames that we need to load
+  file.path(AACT_folder, paste0(AACT_dataset_names, ".txt")) |> 
+    map(read_delim, delim = "|") |> 
+    set_names(AACT_dataset_names)
+}
 
 # extract list of regexes for given registry names
 get_registry_regex <- function(registry_names_vec) {

@@ -30,26 +30,21 @@ library(progressr)
 # Loading of AACT dataset
 #----------------------------------------------------------------------------------------------------------------------
 
+source(here("scripts", "utils.R"))
 # the complete AACT was downloaded with the timestamp given and saved in the data/raw folder
 
 # AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
-#AACT filenames that we need to load
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
                         "facilities", 
                         "facility_investigators",
                         "interventions", "calculated_values", "id_information")
 
-AACT_dataset_files <- file.path(AACT_folder, paste0(AACT_dataset_names, ".txt"))
-AACT_datasets <- AACT_dataset_files |> 
-  map(read_delim, delim = "|") |> 
-  set_names(AACT_dataset_names)
+AACT_datasets <- load_AACT_datasets(AACT_folder, AACT_dataset_names)
 
 #----------------------------------------------------------------------------------------------------------------------
 # Load search terms for the affiliations/cities
 #----------------------------------------------------------------------------------------------------------------------
-
-source(here("scripts", "utils.R"))
 
 #different seach terms for each university medical center are stored loaded from this csv
 # city_search_terms <- readLines(here("data", "umc_search_terms", "city_search_terms.csv"), encoding = "UTF-8") |>
