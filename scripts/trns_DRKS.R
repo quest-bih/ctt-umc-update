@@ -123,9 +123,15 @@ drks_secondary_ids |>
   mutate(prop = n / sum(n))
 
 ### now filter secondary id tibble and later join on the main table to generate DRKS data set
+drks_unknown_euctr <- drks_secondary_ids |> 
+  filter(!is.na(euctr_clean) & !euctr_exists) |> 
+  select(drksId, eudraCtNumber)
+
+drks_unknown_euctr |> 
+  write_excel_csv(here("data", "processed", "drks_unknown_euctr.csv"))
 
 drks_secondary_ids <- drks_secondary_ids |> 
-  filter(!is.na(ctgov_clean) | !is.na(euctr_clean) | !is.na(ctgov_clean))
+  filter(has_any_ctgov | has_any_euctr | has_any_alias)
 
 
 crossreg_drks <- drks_secondary_ids |> 
@@ -135,9 +141,8 @@ crossreg_drks <- drks_secondary_ids |>
          ctgov_all = map_chr(ctgov_all, \(x) update_ctgov_alias(x, ctgov_aliases))) |> 
   pivot_longer(cols = contains("_all"), values_to = "linked_id") |> 
   filter(linked_id != "") |> 
-  # rename(trial_id = drksId) |> 
   select(trial_id = drksId, linked_id, triad) |> 
-  mutate(linked_id = na_if(linked_id, ""), via_registry = TRUE, bidirectional = NA) |> 
+  mutate(linked_id = na_if(linked_id, ""), via_registry = TRUE, bidirectional = NA, many_to_many = NA) |> 
   unite("binary_id", c(trial_id, linked_id), na.rm = TRUE, remove = FALSE)
 
 crossreg_drks |> 
