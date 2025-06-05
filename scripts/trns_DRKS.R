@@ -123,4 +123,17 @@ drks_secondary_ids <- drks_secondary_ids |>
   filter(!is.na(ctgov_clean) | !is.na(euctr_clean) | !is.na(ctgov_clean))
 
 
+crossreg_drks <- drks_secondary_ids |> 
+  unite("ctgov_all", c(ctgov_clean, ctgov_clean2), na.rm = TRUE) |> 
+  unite("euctr_all", c(euctr_clean, euctr_clean2), na.rm = TRUE) |> 
+  mutate(triad = has_any_euctr & has_any_ctgov,
+         ctgov_all = map_chr(ctgov_all, \(x) update_ctgov_alias(x, ctgov_aliases))) |> 
+  pivot_longer(cols = contains("_all"), values_to = "linked_id") |> 
+  filter(linked_id != "") |> 
+  # rename(trial_id = drksId) |> 
+  select(trial_id = drksId, linked_id, triad) |> 
+  mutate(linked_id = na_if(linked_id, ""), via_registry = TRUE, bidirectional = NA) |> 
+  unite("binary_id", c(trial_id, linked_id), na.rm = TRUE, remove = FALSE)
 
+crossreg_drks |> 
+  write_excel_csv(here("data", "processed", "crossreg_drks.csv"))
