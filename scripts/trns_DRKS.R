@@ -18,7 +18,8 @@ ctgov_id_info <- file.path(AACT_folder, "id_information.txt") |>
   read_delim(delim = "|")
 ctgov_aliases <- read_csv(here("data", "processed", "ctgov_aliases.csv"))
 
-### TODO: import euctr secondary TRN tables for existence check
+euctr_ids  <- readRDS(here("data", "raw", "euctr_combined.rds")) |> 
+  distinct(eudract_number)
 
 drks_secondary_ids <- drks_tib |> 
   select(drksId, secondaryIds) |> 
@@ -92,7 +93,9 @@ drks_secondary_ids <- drks_secondary_ids |>
       .default = ctgov_clean2),
     drks_alias_exists = drks_clean %in% drksId,
     ctgov_exists = ctgov_clean %in% ctgov_id_info$nct_id, # all of the ctgov_clean exist
-    ctgov2_exists = ctgov_clean2 %in% ctgov_id_info$nct_id # all of the ctgov2_clean exist
+    ctgov2_exists = ctgov_clean2 %in% ctgov_id_info$nct_id, # all of the ctgov_clean2 exist
+    euctr_exists = euctr_clean %in% euctr_ids$eudract_number, # > 100 of the euctr_clean do not exist!!!
+    euctr2_exists = euctr_clean2 %in% euctr_ids$eudract_number # all of the euctr_clean2 exist
   )
 
 # explore multiple euctr trial numbers
@@ -101,8 +104,10 @@ drks_secondary_ids |>
   select(drksId, contains("euctr"))
 
 drks_secondary_ids <- drks_secondary_ids |> 
-  mutate(has_any_euctr = !is.na(euctr_clean)  | !is.na(euctr_clean2),
-         has_any_ctgov = !is.na(ctgov_clean) | !is.na(ctgov_clean2),
+  mutate(has_any_euctr = (!is.na(euctr_clean) & euctr_exists)  |
+           (!is.na(euctr_clean2) & euctr2_exists) ,
+         has_any_ctgov = (!is.na(ctgov_clean) & ctgov_exists) |
+           (!is.na(ctgov_clean2) & ctgov2_exists),
          has_any_alias = !is.na(drks_clean) | !is.na(drks_clean2),
          has_multiple_euctr = !is.na(euctr_clean) & !is.na(euctr_clean2),
          has_multiple_ctgov = !is.na(ctgov_clean) & !is.na(ctgov_clean2)) 
