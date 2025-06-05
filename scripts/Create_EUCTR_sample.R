@@ -10,6 +10,7 @@ regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 
 # dedupe trial tracker data
 euctr_umc <- read_csv(here("data", "processed", "umc_trials_euctr.csv")) |> 
+  select(-sponsor, -contains("title")) |> 
   rename(eudract_number = id) |> 
   group_by(eudract_number) |> 
   summarise(across(everything(), \(x) unique(x) |> paste0(collapse = ";")))
@@ -33,7 +34,7 @@ euctr_combined <- euctr_tib |>
 
 euctr_combined |> 
   saveRDS(here("data", "raw", "euctr_combined.rds"))
-
+# TODO filter by umc
 euctr_2018_2021 <- euctr_combined |> 
   mutate(completion_date = case_when(
     !is.na(results_global_end_of_trial_date) ~ results_global_end_of_trial_date,
@@ -44,4 +45,9 @@ euctr_2018_2021 <- euctr_combined |>
   select(contains("eudract_number"), completion_date, contains("global"),
          everything()) |> 
   filter(between(completion_date, as_date("2018-01-01"), as_date("2021-12-31")))
+
+
+# sanity check results without german protocols
+# collapse by trial remove dupes, preferably by german protocol! exclude otherwise, but sanity check
+# sequence umc > completion_date > german protocol
 
