@@ -137,13 +137,44 @@ drks_secondary_ids <- drks_secondary_ids |>
 crossreg_drks <- drks_secondary_ids |> 
   unite("ctgov_all", c(ctgov_clean, ctgov_clean2), na.rm = TRUE) |> 
   unite("euctr_all", c(euctr_clean, euctr_clean2), na.rm = TRUE) |> 
-  mutate(triad = has_any_euctr & has_any_ctgov,
-         ctgov_all = map_chr(ctgov_all, \(x) update_ctgov_alias(x, ctgov_aliases))) |> 
+  mutate(drks_all = coalesce(drks_clean, drks_clean2),
+    triad = has_any_euctr & has_any_ctgov,
+         ctgov_all = map_chr(ctgov_all, \(x) update_ctgov_alias(x, ctgov_aliases)),
+         many_to_many = has_any_alias) |> 
   pivot_longer(cols = contains("_all"), values_to = "linked_id") |> 
   filter(linked_id != "") |> 
-  select(trial_id = drksId, linked_id, triad) |> 
-  mutate(linked_id = na_if(linked_id, ""), via_registry = TRUE, bidirectional = NA, many_to_many = NA) |> 
-  unite("binary_id", c(trial_id, linked_id), na.rm = TRUE, remove = FALSE)
+  select(trial_id = drksId, linked_id, triad, many_to_many) |> 
+  mutate(linked_id = na_if(linked_id, ""), via_id = TRUE, bidirectional = NA)
 
 crossreg_drks |> 
   write_excel_csv(here("data", "processed", "crossreg_drks.csv"))
+
+crossreg_drks <- read_csv(here("data", "processed", "crossreg_drks.csv")) |>
+  rowwise() |> 
+  mutate(binary_id = case_when(
+    str_detect(linked_id, "-") ~ paste(c(linked_id, trial_id), collapse = "_"),
+    .default = paste(c(trial_id, linked_id), collapse = "_")
+  ), .before = 1) |> 
+  ungroup()
+
+
+crossreg_euctr_drks <- read_csv(here("data", "processed", "crossreg_euctr.csv")) 
+
+bidirectional_euctr_drks <- crossreg_euctr_drks |> 
+  semi_join(crossreg_drks, by = "binary_id") |> 
+  pull(binary_id)
+
+new_crossregs_drks <- crossreg_drks |> 
+  filter(!binary_id %in% bidirectional_euctr_drks) |> 
+  mutate(bidirectional = ifelse(str_detect(linked_id, "^20"), FALSE, bidirectional))
+
+crossreg_euctr_drks <- crossreg_euctr_drks |> 
+  bind_rows(new_crossregs_drks) |> 
+  mutate(bidirectional = case_when(
+    binary_id %in% bidirectional_euctr_drks ~ TRUE,
+    .default = bidirectional
+  )) 
+
+
+crossreg_euctr_drks |> 
+  write_excel_csv(here("data", "processed", "crossreg_euctr_drks.csv"))
