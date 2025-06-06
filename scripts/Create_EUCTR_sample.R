@@ -34,8 +34,8 @@ euctr_combined <- euctr_tib |>
 
 euctr_combined |> 
   saveRDS(here("data", "raw", "euctr_combined.rds"))
-# TODO filter by umc
-euctr_2018_2021 <- euctr_combined |> 
+
+euctr_filtered <- euctr_combined |> 
   mutate(completion_date = case_when(
     !is.na(results_global_end_of_trial_date) ~ results_global_end_of_trial_date,
     !is.na(date_of_the_global_end_of_the_trial) &
@@ -44,10 +44,36 @@ euctr_2018_2021 <- euctr_combined |>
   )) |> 
   select(contains("eudract_number"), completion_date, contains("global"),
          everything()) |> 
-  filter(between(completion_date, as_date("2018-01-01"), as_date("2021-12-31")))
+  filter(!is.na(umc),
+    between(completion_date, as_date("2018-01-01"), as_date("2021-12-31")),
+    str_detect(eudract_number_with_country, "DE"))
 
+# number of new TRNs from EUCTR
+euctr_filtered |> 
+  distinct(eudract_number) |> 
+  nrow()
 
 # sanity check results without german protocols
 # collapse by trial remove dupes, preferably by german protocol! exclude otherwise, but sanity check
 # sequence umc > completion_date > german protocol
+
+# there are 22 TRNs in all of EUCTR with a German UMC but no German protocol
+qa_missing_de_protocols <- euctr_combined |> 
+  filter(!is.na(umc)) |> 
+  group_by(eudract_number, umc) |> 
+  summarise(n_german_protocol = str_detect(eudract_number_with_country, "DE") |> sum(),
+            ) |> 
+  filter(n_german_protocol < 1)
+
+missing_de_protocols <- euctr_combined |> 
+  filter(eudract_number %in% qa_missing_de_protocols$eudract_number) |> 
+  rowwise() |> 
+  mutate(in_sampling_period = any(between(results_global_end_of_trial_date, as_date("2018-01-01"), as_date("2021-12-31")),
+    between(date_of_the_global_end_of_the_trial, as_date("2018-01-01"), as_date("2021-12-31")), na.rm = TRUE)) |> 
+  ungroup() |> 
+  select(contains("eudract"), umc, in_sampling_period, contains("global"), everything()) |> 
+  arrange(desc(eudract_number))
+
+missing_de_protocols |> 
+  write_excel_csv(here("data", "processed", "euctr_missing_de_protocols.csv"))
 
