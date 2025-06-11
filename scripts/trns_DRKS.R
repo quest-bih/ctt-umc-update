@@ -157,7 +157,6 @@ crossreg_drks <- read_csv(here("data", "processed", "crossreg_drks.csv")) |>
   ), .before = 1) |> 
   ungroup()
 
-
 crossreg_euctr_drks <- read_csv(here("data", "processed", "crossreg_euctr.csv")) 
 
 bidirectional_euctr_drks <- crossreg_euctr_drks |> 
@@ -172,9 +171,12 @@ crossreg_euctr_drks <- crossreg_euctr_drks |>
   bind_rows(new_crossregs_drks) |> 
   mutate(bidirectional = case_when(
     binary_id %in% bidirectional_euctr_drks ~ TRUE,
+    !str_detect(linked_id, "NCT") & is.na(bidirectional) ~ FALSE,
     .default = bidirectional
   )) 
 
+qa_euctr_drks <- crossreg_euctr_drks |> 
+  filter(is.na(bidirectional), !str_detect(linked_id, "NCT"))
 
 crossreg_euctr_drks |> 
   write_excel_csv(here("data", "processed", "crossreg_euctr_drks.csv"))
