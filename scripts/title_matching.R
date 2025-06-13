@@ -10,6 +10,7 @@ library(progressr)
 library(stringdist)
 
 ##########################################################
+source(here("scripts", "utils.R"))
 
 # Ct.gov preprocessing
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
@@ -245,6 +246,9 @@ title_matches_ct_drks <- title_matches_ct_drks |>
          title_length.y >= min_title_length)
 title_matches_ct_drks |> 
   saveRDS(here("data", "processed", "title_matches_ct_drks_20.rds"))
+
+#### TODO: matches with euctr drks and euctr ctgov to be made after the summer school,
+# potentially with newer euctr data set from Nick
 
 
 ### as doing the ct_cleaned in one go fails, split the dataset into two chunks

@@ -79,7 +79,7 @@ euctr_trns_updated <- euctr_trns_clean_registries |>
       na_if(""),
     .default = euctr_clean_results
   )) |>
-  mutate(across(contains("ctgov_"), \(x) future_map_chr(x, \(y) update_ctgov_alias(y, id_aliases))))
+  mutate(across(contains("ctgov_"), \(x) future_map_chr(x, \(y) update_ctgov_alias(y, ctgov_aliases))))
   
 
 euctr_trns_updated <- euctr_trns_updated |> 
