@@ -56,12 +56,13 @@ get_umc_terms <- function(collapsed = TRUE) {
 
 
 # extract and collapse all umc terms from a string
-which_umc <- function(umc_str, collapse = ";") {
+which_umc <- function(umc_str, regexes = NULL, collapse = ";") {
   
   stopifnot("which_umc takes only a single string as input and you supplied a vector" =
               length(umc_str) == 1)
-  
-  regexes <- yaml::read_yaml(here::here("data", "umc_search_terms", "umc_search_terms.yaml"))
+  if (is.null(regexes)) {
+    regexes <- yaml::read_yaml(here::here("data", "umc_search_terms", "umc_search_terms.yaml"))
+  }
   
   hits <- purrr::map_lgl(regexes, \(x) str_detect(umc_str, x))
   return(
@@ -74,10 +75,12 @@ which_umc <- function(umc_str, collapse = ";") {
 # vectorized version of which_umc
 which_umcs <- function(umc_vec, collapse = ";") {
 
+  regexes <- yaml::read_yaml(here::here("data", "umc_search_terms", "umc_search_terms.yaml"))
+  
   p <- progressr::progressor(along = umc_vec)
   furrr::future_map_chr(umc_vec, \(x) {
     p()
-    which_umc(x)
+    which_umc(x, regexes = regexes)
   })
 }
 
