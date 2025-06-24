@@ -123,3 +123,12 @@ update_ctgov_alias <- function(trn, trn_tib) {
 
 # usage example
 # update_ctgov_alias("NCT00006065", id_aliases)
+
+# process title for title matching by removing indefinite articles, punctuation and spaces
+process_title <- function(str_title) {
+  stringr::str_remove_all(str_title,
+                          stringr::regex("\\b(an?)\\b(?!\\-)|\\bN\\/?A\\b", ignore_case = TRUE)) |> 
+    tolower() |> 
+    stringr::str_remove_all("[:punct:]|(^aa\\s)|\\W") |> 
+    stringr::str_squish()
+}
