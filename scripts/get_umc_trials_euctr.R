@@ -22,14 +22,25 @@ DE_UMCs <- vroom::vroom(here("data","umc_search_terms", "umc_sponsors_euctr.csv"
 trials_tidy <- tibble(id = map_chr(all_trials, pluck("trial_id")),
                       sponsor = map_chr(all_trials, pluck("normalized_name")),
                       title = map_chr(all_trials, pluck("trial_title")),
-                      results_due_euctr = map_lgl(all_trials, pluck("results_expected")),
-                      has_results_euctr = map_lgl(all_trials, pluck("has_results")))
+                      eutt_results_due = map_lgl(all_trials, pluck("results_expected")),
+                      eutt_has_results = map_lgl(all_trials, pluck("has_results")))
 
 
 # get title and id for EUCTR registered trial with German sponsor
 euctr_trials_german_umc <- trials_tidy |>
   filter(sponsor %in% DE_UMCs$sponsor) |>
-  left_join(DE_UMCs, by = "sponsor") |>
+  left_join(DE_UMCs, by = "sponsor", relationship = "many-to-many") |>
   mutate(title_len = str_length(title)) # title cuts off at 200 and an ellipsis is added if title too long
 
-#write_csv(euctr_trials_german_umc, here("data", "processed", "umc_trials_euctr.csv"))
+write_csv(euctr_trials_german_umc, here("data", "processed", "umc_trials_euctr.csv"))
+
+
+###### sanity checks
+
+# every UMC present, but also Augsburg and also very few trials from Rostock, Witten-Herdecke, Greifswald
+
+umcs_detected <- euctr_trials_german_umc |> 
+  count(UMC) |> 
+  full_join(DE_UMCs, by = "UMC") |> 
+  arrange(n)
+
