@@ -171,4 +171,4 @@ DRKS_sample_save <- drks_tib |>
          drksId %in% drks_2018_2021) |> 
   select(drksId:url)
 
-write_excel_csv(DRKS_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
+write_excel_csv(DRKS_sample_save, here("data", "processed", "DRKS_sample.csv"), na = "")
