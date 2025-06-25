@@ -8,6 +8,7 @@ library(tictoc)
 library(furrr)
 library(progressr)
 library(stringdist)
+library(janitor)
 
 ##########################################################
 source(here("scripts", "utils.R"))
@@ -75,33 +76,84 @@ euctr_titles <- euctr_combined |>
 #   mutate(first_title = str_remove_all(full_title_of_the_trial, "\\n.*")) |> 
 #   select(full_title_of_the_trial, first_title, eudract_number, eudract_number_with_country) 
 
-
 title_matches_euctr_drks <- euctr_titles |> 
-  inner_join(drks_titles, by = "title_processed") |> 
-  mutate(is_german_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
-  arrange(trial_id.x, desc(is_german_protocol)) |> 
-  distinct(trial_id.x, trial_id.y, .keep_all = TRUE)
-
-
+  inner_join(drks_titles, by = "title_processed",
+             relationship = "many-to-many") |> 
+  mutate(has_german_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
+  arrange(trial_id.x, desc(has_german_protocol)) |> 
+  distinct(trial_id.x, trial_id.y) |> 
+  mutate(title_matched = TRUE)
 
 #only a single case of many-to-many with drks and euctr
+dupes_euctr_drks_titles.x <- get_dupes(title_matches_euctr_drks, trial_id.x)
 dupes_euctr_drks_titles.y <- get_dupes(title_matches_euctr_drks, trial_id.y)
-
+mtm_euctr_drks <- dupes_euctr_drks_titles.y |> 
+  select(contains("trial_id")) |> 
+  unlist() |> 
+  unique()
 
 title_matches_euctr_ctgov <- euctr_titles |> 
   inner_join(ct_titles, by = "title_processed",
              relationship = "many-to-many") |> 
-  mutate(is_german_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
-  arrange(trial_id.x, desc(is_german_protocol)) |> 
-  distinct(trial_id.x, trial_id.y, .keep_all = TRUE)
+  mutate(has_german_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
+  arrange(trial_id.x, desc(has_german_protocol)) |> 
+  distinct(trial_id.x, trial_id.y) |> 
+  mutate(title_matched = TRUE)
 
-
-### many-to-many with ct.gov!
-dupes_euctr_ctgov_titles <- get_dupes(title_matches_euctr_ctgov, trial_id.x)
+### many-to-many with euctr and ct.gov!
+dupes_euctr_ctgov_titles.x <- get_dupes(title_matches_euctr_ctgov, trial_id.x)
 dupes_euctr_ctgov_titles.y <- get_dupes(title_matches_euctr_ctgov, trial_id.y)
+mtm_euctr_ctgov <- dupes_euctr_ctgov_titles.x |> 
+  bind_rows(dupes_euctr_ctgov_titles.y) |> 
+  select(contains("trial_id")) |> 
+  unlist() |> 
+  unique()
+
+title_matches_drks_ctgov <- drks_titles |> 
+  inner_join(ct_titles, by = "title_processed",
+             relationship = "many-to-many") |>
+  distinct(trial_id.x, trial_id.y) |> 
+  mutate(title_matched = TRUE)
+
+### only one many-to-many with drks and ct.gov
+dupes_drks_ctgov_titles.x <- get_dupes(title_matches_drks_ctgov, trial_id.x)
+dupes_drks_ctgov_titles.y <- get_dupes(title_matches_drks_ctgov, trial_id.y)
+mtm_drks_ctgov <- dupes_drks_ctgov_titles.x |> 
+  bind_rows(dupes_drks_ctgov_titles.y) |> 
+  select(contains("trial_id")) |> 
+  unlist() |> 
+  unique()
+
+mtm_ids <- c(mtm_drks_ctgov, mtm_euctr_ctgov, mtm_euctr_drks) |> 
+  unique()
+
+ctgov_id_info <- file.path(AACT_folder, "id_information.txt") |> 
+  read_delim(delim = "|")
 
 
+### all title matches between all registries
+title_matches <- title_matches_euctr_drks |> 
+  bind_rows(title_matches_euctr_ctgov) |> 
+  bind_rows(title_matches_drks_ctgov) |> 
+  rename(trial_id = trial_id.x, linked_id = trial_id.y) |> 
+  mutate(many_to_many = trial_id %in% mtm_ids | linked_id %in% mtm_ids)
 
+
+EUCTR_sample <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
+DRKS_sample <- read_csv(here("data", "processed", "DRKS_sample.csv"))
+CTgov_sample <- read_csv(here("data", "processed", "CTgov_sample.csv"))
+
+
+sample_ids <- c(EUCTR_sample$eudract_number, DRKS_sample$drksId, CTgov_sample$nct_id) |> 
+  unique()
+
+# filter for TRNs in the validated umc sample inclusion filter here 
+title_matches_included <- title_matches |> 
+  filter(trial_id %in% sample_ids |
+           linked_id %in% sample_ids | trial_id == "2016-002673-35")
+
+title_matches_included |> 
+  write_excel_csv(here("data", "processed", "title_matches.csv"))
 ##########################################################
 # old scripts here for potential re-use
 

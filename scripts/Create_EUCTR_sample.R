@@ -49,9 +49,15 @@ euctr_filtered <- euctr_combined |>
     str_detect(eudract_number_with_country, "DE"))
 
 # number of new TRNs from EUCTR
-euctr_filtered |> 
+euctr_combined |> 
+  select(results_global_end_of_trial_date,
+         date_of_the_global_end_of_the_trial,
+         umc, eudract_number, eudract_number_with_country, everything()) |> 
+  filter(eudract_number == "2016-002673-35")
   distinct(eudract_number) |> 
   nrow()
+
+write_excel_csv(euctr_filtered, here("data", "processed", "EUCTR_sample.csv"), na = "")
 
 # sanity check results without german protocols
 # collapse by trial remove dupes, preferably by german protocol! exclude otherwise, but sanity check

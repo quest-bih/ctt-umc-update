@@ -179,6 +179,7 @@ validation_umcs_ctgov_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
 
 # TODO:
+# validation_umcs_ctgov <- read_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
 # after manual revision, there should be a csv with validated umc affils
 # similar to tibble below, with umc affiliation split by field and trns
 # deduplicated.
@@ -305,5 +306,5 @@ CTgov_sample_save <- CTgov_sample |>
 #save CT.gov trial sample
 #please be aware that not all associations of the trials to the cites are correct (there are still false positives)
 #such that the city associations had to be checked manually during publication search
-write_excel_csv2(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
+write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
 

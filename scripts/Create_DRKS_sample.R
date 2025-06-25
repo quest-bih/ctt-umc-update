@@ -106,6 +106,7 @@ drks_2018_2021 <- drks_tib |>
   filter(between(as_date(actualCompletionDate), as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   pull(drksId)
 
+
 validation_umcs_drks <- umc_drks_sponsors |> 
   bind_rows(umc_drks_pcis) |>
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
@@ -163,3 +164,11 @@ qa_city <- drks_trial_contacts |>
            otherType == "OTHER_SECONDARY_SPONSOR",
          !str_detect(affiliation, umc_search_terms),
          str_detect(city, umc_search_terms))
+
+### TODO: decide what exactly to extract here and if harmonization needed
+DRKS_sample_save <- drks_tib |> 
+  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+         drksId %in% drks_2018_2021) |> 
+  select(drksId:url)
+
+write_excel_csv(DRKS_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
