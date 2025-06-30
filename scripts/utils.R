@@ -27,6 +27,7 @@ deduplicate_collapsed <- function(str_vec, collapse = ";") {
     strsplit(split = collapse) |> 
     unlist() |> 
     unique() |> 
+    sort() |> 
     dplyr::na_if("") |>
     dplyr::na_if("-") |>
     dplyr::na_if("NA") |> 

@@ -20,6 +20,7 @@ library(furrr)
 library(progressr)
 library(jsonlite)
 library(yaml)
+library(readxl)
 
 #----------------------------------------------------------------------------------------------------------------------
 # Data loading and transformation
@@ -82,7 +83,8 @@ umc_drks_sponsors <- drks_trial_contacts |>
     str_detect(city, umc_search_terms) |
       str_detect(affiliation, umc_search_terms)) |> 
   unite("raw_affil", c(affiliation, city), sep = ", ") |> 
-  mutate(field = "primary_sponsor_affil_city")
+  mutate(field = "primary_sponsor_affil_city",
+         raw_affil = str_squish(raw_affil))
 
 umc_drks_pcis <- drks_trial_contacts |> 
   filter(type == "PRINCIPAL_COORDINATING_INVESTIGATOR" |
@@ -90,7 +92,8 @@ umc_drks_pcis <- drks_trial_contacts |>
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms)) |> 
   unite("raw_affil", c(affiliation, city), sep = ", ") |> 
-  mutate(field = "pci_affil_city")
+  mutate(field = "pci_affil_city",
+         raw_affil = str_squish(raw_affil))
 
 drks_study_characteristic <- drks_tib |> 
   select(drksId, studyCharacteristic) |> 
@@ -105,7 +108,6 @@ drks_2018_2021 <- drks_tib |>
   unnest(recruitment) |>
   filter(between(as_date(actualCompletionDate), as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   pull(drksId)
-
 
 validation_umcs_drks <- umc_drks_sponsors |> 
   bind_rows(umc_drks_pcis) |>
@@ -165,10 +167,70 @@ qa_city <- drks_trial_contacts |>
          !str_detect(affiliation, umc_search_terms),
          str_detect(city, umc_search_terms))
 
-### TODO: decide what exactly to extract here and if harmonization needed
+# add validated umc info
+
+umc_validations_1 <- read_xlsx(here("data", "raw", "affil_review_extract_df_20250627.xlsx")) |> 
+  select(id, raw_affil, umc, validation, correction, n)
+umc_validations_2 <- read_xlsx(here("data", "raw", "affil_review_extract_mmp_20250627.xlsx")) |> 
+  select(id, raw_affil, umc, validation, correction, n)
+
+umc_validations <- umc_validations_1 |> 
+  bind_rows(umc_validations_2) |> 
+  rename(umc_estimated = umc) |> 
+  mutate(raw_affil = str_squish(raw_affil),
+    umc = case_when(
+    validation != 1 ~ "false positive",
+    correction != "" ~ correction,
+    .default = umc_estimated
+  ))
+
+# prop umc false positives from the unique affiliations ~ 
+umc_validations |> 
+  count(umc == "false positive")  |> 
+  mutate(prop = n / sum(n))
+# prop umc false positives from total affiliations ~ approx 1/3
+umc_validations |> 
+  count(umc == "false positive", wt = n) |> 
+  mutate(prop = n / sum(n))
+
+validated_umc_drks <- umc_validations |> 
+  filter(str_detect(id, "DRKS")) |>
+  select(raw_affil, umc)
+
+validated_umc_drks <- umc_drks_sponsors |> 
+  bind_rows(umc_drks_pcis) |>
+  left_join(validated_umc_drks, by = "raw_affil", relationship = "many-to-many") |> 
+  select(drksId, raw_affil, umc, everything())
+
+validated_umc_drks_deduplicated <- validated_umc_drks |>  
+  filter(umc != "false positive") |> 
+  group_by(drksId) |> 
+  summarise(umc = deduplicate_collapsed(umc))
+  
+
 DRKS_sample_save <- drks_tib |> 
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
-         drksId %in% drks_2018_2021) |> 
-  select(drksId:url)
+         drksId %in% drks_2018_2021,
+         drksId %in% validated_umc_drks_deduplicated$drksId) |> 
+  select(drksId:url) |> 
+  left_join(validated_umc_drks_deduplicated, by = "drksId")
+
 
 write_excel_csv(DRKS_sample_save, here("data", "processed", "DRKS_sample.csv"), na = "")
+
+
+qa_excluded <- drks_tib |> 
+  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+         drksId %in% drks_2018_2021,
+         !drksId %in% validated_umc_drks_deduplicated$drksId) |> 
+  select(drksId, trialContacts) |> 
+  # unnest(trialContacts) |> 
+  left_join(validated_umc_drks |> select(drksId, raw_affil, umc), by = "drksId") |> 
+  # filter(!is.na(umc)) |> 
+  unnest(trialContacts) |> 
+  unnest(contact)
+
+qa_na_excluded <- qa_excluded |> 
+  filter(is.na(umc),
+         str_detect(city, umc_search_terms) |
+           str_detect(affiliation, umc_search_terms))
