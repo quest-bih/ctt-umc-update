@@ -178,20 +178,15 @@ validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
 validation_umcs_ctgov_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
 
-# TODO:
-# validation_umcs_ctgov <- read_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
-# after manual revision, there should be a csv with validated umc affils
-# similar to tibble below, with umc affiliation split by field and trns
-# deduplicated.
 # If we want to merge in later processing for e.g. harmonization with
 # other registries, combine fields into the different filter categories
 # we want here:
-
-umcs_ctgov <- validation_umcs_ctgov |>
-  filter(!is.na(umc), umc != "") |> 
-  pivot_wider(names_from = field, values_from = c(umc, raw_affil),
-              values_fn = deduplicate_collapsed,
-              values_fill = NA_character_)
+# 
+# umcs_ctgov <- validation_umcs_ctgov |>
+#   filter(!is.na(umc), umc != "") |> 
+#   pivot_wider(names_from = field, values_from = c(umc, raw_affil),
+#               values_fn = deduplicate_collapsed,
+#               values_fill = NA_character_)
 
 ### some exploration of the umc output here for quality assurance (qa)
 qa_pi <- AACT_datasets$overall_officials |> 
@@ -218,13 +213,29 @@ gmbh_resp_org <- qa_resp_org |>
 #     map(sort)
 # }
 
-# TODO: move inclusion filter later in the workflow. decide where.
-
 #----------------------------------------------------------------------------------------------------------------------
 # reduce the CTgov dataset to those studies that are indeed affiliated
 # and filter for lead completion years & study status
 #----------------------------------------------------------------------------------------------------------------------
+# add validated umc info
 
+umc_validations_ctgov <- read_csv(here("data", "processed", "umc_validations.csv")) |> 
+  filter(str_detect(id, "NCT")) |>
+  mutate(raw_affil = str_squish(raw_affil)) |> 
+  select(raw_affil, umc)
+
+validated_umc_ctgov <- bind_rows(list(umc_ctgov_sponsors,
+                                        umc_resp_party,
+                                        umc_ctgov_pi_host)) |> 
+  rename(umc_estimated = umc) |>
+  mutate(raw_affil = str_squish(raw_affil)) |> 
+  left_join(umc_validations_ctgov, by = "raw_affil") |> 
+  select(id, umc) 
+
+validated_umc_ctgov_deduplicated <- validated_umc_ctgov |>  
+  filter(!is.na(umc), umc != "false positive") |> 
+  group_by(id) |> 
+  summarise(umc = deduplicate_collapsed(umc))
 
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -234,8 +245,27 @@ gmbh_resp_org <- qa_resp_org |>
 
 #filter cases for affiliation, years, study status, and study type, etc.
 CTgov_sample <- AACT_datasets$studies |> 
-  filter(nct_id %in% umcs_ctgov$id) |> # apply inclusion filter here, incl. umc
-  left_join(umcs_ctgov, by = c("nct_id" = "id"), copy = TRUE)
+  filter(nct_id %in% inclusion_trns,
+         nct_id %in% validated_umc_ctgov_deduplicated$id) |> # apply inclusion filter here, incl. umc
+  left_join(validated_umc_ctgov_deduplicated, by = c("nct_id" = "id"))
+
+
+CTgov_sample_save <- CTgov_sample
+write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
+
+# 
+# qa_excluded <- AACT_datasets$studies |> 
+#   filter(nct_id %in% inclusion_trns,
+#          !nct_id %in% validated_umc_ctgov_deduplicated$id) |> 
+#   left_join(validated_umc_ctgov, by = c("nct_id" = "id")) |> 
+#   select(nct_id, umc, everything())
+# 
+# qa_na_excluded <- qa_excluded |> 
+#   filter(is.na(umc),
+#          str_detect(city, umc_search_terms) |
+#            str_detect(affiliation, umc_search_terms))
+
+
 
 ######### In previous code now commented out (see below) only the first PI was taken
 # from each study, regardless if others may have been UMC-related or not?
@@ -285,21 +315,20 @@ CTgov_sample <- CTgov_sample |>
 CTgov_sample <- CTgov_sample |>
   left_join(AACT_datasets$calculated_values, by = "nct_id")
 
-#TODO: Potentially add inclusion filter only at this stage, right before export
-
-CTgov_sample_save <- CTgov_sample |>
-  # TODO: This code below is now broken.
-  # decide which affil columns to keep/standardize for comparison with
-  # data from other registries, in place of old PI_name and PI_affiliation 
-  # variables here 
-  rename(PI_name = name,
-         PI_affiliation = affiliation,
-         interventions = intervention_names_comb) |> 
-  select(nct_id, cities_lead, brief_title, official_title,
-         study_first_submitted_date, start_date, start_date_type,
-         completion_date, completion_date_type, PI_name,
-         PI_affiliation, interventions, overall_status,
-         phase, enrollment, enrollment_type, were_results_reported)
+# 
+# CTgov_sample_save <- CTgov_sample |>
+#   # TODO: This code below is now broken.
+#   # decide which affil columns to keep/standardize for comparison with
+#   # data from other registries, in place of old PI_name and PI_affiliation 
+#   # variables here 
+#   rename(PI_name = name,
+#          PI_affiliation = affiliation,
+#          interventions = intervention_names_comb) |> 
+#   select(nct_id, cities_lead, brief_title, official_title,
+#          study_first_submitted_date, start_date, start_date_type,
+#          completion_date, completion_date_type, PI_name,
+#          PI_affiliation, interventions, overall_status,
+#          phase, enrollment, enrollment_type, were_results_reported)
 
 
 

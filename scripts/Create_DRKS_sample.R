@@ -193,6 +193,9 @@ umc_validations |>
   count(umc == "false positive", wt = n) |> 
   mutate(prop = n / sum(n))
 
+umc_validations |> 
+  write_csv(here("data", "processed", "umc_validations.csv"))
+
 validated_umc_drks <- umc_validations |> 
   filter(str_detect(id, "DRKS")) |>
   select(raw_affil, umc)
