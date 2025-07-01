@@ -253,17 +253,24 @@ CTgov_sample <- AACT_datasets$studies |>
 CTgov_sample_save <- CTgov_sample
 write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
 
-# 
-# qa_excluded <- AACT_datasets$studies |> 
-#   filter(nct_id %in% inclusion_trns,
-#          !nct_id %in% validated_umc_ctgov_deduplicated$id) |> 
-#   left_join(validated_umc_ctgov, by = c("nct_id" = "id")) |> 
-#   select(nct_id, umc, everything())
-# 
-# qa_na_excluded <- qa_excluded |> 
-#   filter(is.na(umc),
-#          str_detect(city, umc_search_terms) |
-#            str_detect(affiliation, umc_search_terms))
+qa_CTgov <- CTgov_sample |> 
+  select(nct_id, umc, everything()) 
+
+count(qa_CTgov, umc, sort = TRUE)
+
+qa_excluded <- AACT_datasets$studies |>
+  filter(nct_id %in% inclusion_trns,
+         !nct_id %in% validated_umc_ctgov_deduplicated$id) |>
+  left_join(validated_umc_ctgov, by = c("nct_id" = "id")) |>
+  left_join(validation_umcs_ctgov |> 
+              select(id, umc_estimated = umc, raw_affil, field), by = c("nct_id" = "id")) |> 
+  select(nct_id, contains("umc"), raw_affil, field, everything())
+
+umc_search_terms <- get_umc_terms()
+
+qa_na_excluded <- qa_excluded |>
+  filter(is.na(umc),
+         str_detect(raw_affil, umc_search_terms))
 
 
 
