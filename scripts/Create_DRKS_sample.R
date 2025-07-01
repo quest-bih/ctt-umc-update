@@ -220,7 +220,7 @@ DRKS_sample_save <- drks_tib |>
 
 
 write_excel_csv(DRKS_sample_save, here("data", "processed", "DRKS_sample.csv"), na = "")
-
+# DRKS_sample <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 
 qa_excluded <- drks_tib |> 
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here

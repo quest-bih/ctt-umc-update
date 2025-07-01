@@ -247,7 +247,8 @@ validated_umc_ctgov_deduplicated <- validated_umc_ctgov |>
 CTgov_sample <- AACT_datasets$studies |> 
   filter(nct_id %in% inclusion_trns,
          nct_id %in% validated_umc_ctgov_deduplicated$id) |> # apply inclusion filter here, incl. umc
-  left_join(validated_umc_ctgov_deduplicated, by = c("nct_id" = "id"))
+  left_join(validated_umc_ctgov_deduplicated, by = c("nct_id" = "id")) |> 
+  select(nct_id, umc, everything())
 
 
 CTgov_sample_save <- CTgov_sample
