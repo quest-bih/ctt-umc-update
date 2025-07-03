@@ -189,8 +189,9 @@ umc_validations |>
   count(umc == "false positive")  |> 
   mutate(prop = n / sum(n))
 # prop umc false positives from total affiliations ~ approx 1/3
-umc_validations |> 
-  count(umc == "false positive", wt = n) |> 
+
+qa_cases |> 
+  count(umc) |> 
   mutate(prop = n / sum(n))
 
 umc_validations |> 
@@ -203,13 +204,39 @@ validated_umc_drks <- umc_validations |>
 validated_umc_drks <- umc_drks_sponsors |> 
   bind_rows(umc_drks_pcis) |>
   left_join(validated_umc_drks, by = "raw_affil", relationship = "many-to-many") |> 
-  select(drksId, raw_affil, umc, everything())
+  select(drksId, contains("type"), raw_affil, umc, everything())
 
 validated_umc_drks_deduplicated <- validated_umc_drks |>  
   filter(umc != "false positive") |> 
+  mutate(type = case_when(
+    type == "PRIMARY_SPONSOR" ~ "umc_sponsor",
+    otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR" |
+      type == "PRINCIPAL_COORDINATING_INVESTIGATOR" ~ "umc_pi",
+    .default = NA
+  )) |> 
+  group_by(drksId, type) |> 
+  summarise(umc = deduplicate_collapsed(umc)) |> 
+  pivot_wider(id_cols = drksId, names_from = type, values_from = umc) |>
+  mutate(umc = deduplicate_collapsed(c(umc_pi, umc_sponsor)))
+
+
+qa_validated_umc_drks <- validated_umc_drks |>  
+  filter(!is.na(umc)) |> 
   group_by(drksId) |> 
-  summarise(umc = deduplicate_collapsed(umc))
-  
+  summarise(validated_affils = case_when(
+    all(umc == "false positive", na.rm = TRUE) ~ "falsely included",
+    any(umc == "false positive", na.rm = TRUE) ~ "falsely assigned",
+    .default = deduplicate_collapsed(umc)
+  )) |> 
+  ungroup()
+
+qa_validated_umc_drks |> 
+  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+         drksId %in% drks_2018_2021) |> 
+  count(validated_affils, sort = TRUE) |>
+  mutate(total = sum(n),
+         prop = n / total) |> 
+  filter(str_detect(validated_affils, "false"))
 
 DRKS_sample_save <- drks_tib |> 
   filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
@@ -217,6 +244,9 @@ DRKS_sample_save <- drks_tib |>
          drksId %in% validated_umc_drks_deduplicated$drksId) |> 
   select(drksId:url) |> 
   left_join(validated_umc_drks_deduplicated, by = "drksId")
+
+DRKS_sample_save |> 
+  count(is.na(umc_sponsor), is.na(umc_pi))
 
 
 write_excel_csv(DRKS_sample_save, here("data", "processed", "DRKS_sample.csv"), na = "")

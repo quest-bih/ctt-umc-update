@@ -41,6 +41,11 @@ AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible
                         "interventions", "calculated_values", "id_information")
 
 AACT_datasets <- load_AACT_datasets(AACT_folder, AACT_dataset_names)
+studies <- AACT_datasets$studies |> 
+  select(nct_id, source_class, everything())
+sponsors_cleaned <- AACT_datasets$sponsors |>
+  filter(lead_or_collaborator == "collaborator") |>  # Keep only lead sponsors
+  select(nct_id, agency_class, name)
 
 #----------------------------------------------------------------------------------------------------------------------
 # Load search terms for the affiliations/cities
@@ -230,14 +235,41 @@ validated_umc_ctgov <- bind_rows(list(umc_ctgov_sponsors,
   rename(umc_estimated = umc) |>
   mutate(raw_affil = str_squish(raw_affil)) |> 
   left_join(umc_validations_ctgov, by = "raw_affil") |> 
-  select(id, umc) 
+  mutate(type = case_when(
+    field == "overall_officials_affiliation" ~ "umc_pi",
+    field == "sponsor_name" ~ "umc_sponsor",
+    field == "responsible_parties_org_affil" ~ "umc_resp_party",
+    .default = NA
+  )) |> 
+  select(id, umc, type)
 
 validated_umc_ctgov_deduplicated <- validated_umc_ctgov |>  
   filter(!is.na(umc), umc != "false positive") |> 
+  group_by(id, type) |> 
+  summarise(umc = deduplicate_collapsed(umc)) |> 
+  pivot_wider(id_cols = id, names_from = type, values_from = umc) |>
+  mutate(umc = deduplicate_collapsed(c(umc_pi, umc_sponsor, umc_resp_party)))
+
+qa_validated_umc_ctgov <- validated_umc_ctgov |>  
+  filter(!is.na(umc)) |> 
   group_by(id) |> 
-  summarise(umc = deduplicate_collapsed(umc))
+  summarise(validated_affils = case_when(
+    all(umc == "false positive", na.rm = TRUE) ~ "falsely included",
+    # "falsesly assigned" not as useful, as sometimes one affil is false but another is correct
+    any(umc == "false positive", na.rm = TRUE) ~ "falsely assigned", 
+    .default = deduplicate_collapsed(umc)
+  )) |> 
+  ungroup()
 
+qa_validated_umc_ctgov |> 
+  filter(id %in% inclusion_trns) |> 
+  count(validated_affils, sort = TRUE) |>
+  mutate(total = sum(n),
+         prop = n / total) |> 
+  filter(str_detect(validated_affils, "false"))
 
+# total for both registries:
+(374 + 307) / (1294 + 1161)
 #----------------------------------------------------------------------------------------------------------------------
 # new: apply inclusion filter and add affiliation columns directly
 # deprecated: create for each study a list of affiliated cities and add to main table
@@ -248,7 +280,10 @@ CTgov_sample <- AACT_datasets$studies |>
   filter(nct_id %in% inclusion_trns,
          nct_id %in% validated_umc_ctgov_deduplicated$id) |> # apply inclusion filter here, incl. umc
   left_join(validated_umc_ctgov_deduplicated, by = c("nct_id" = "id")) |> 
-  select(nct_id, umc, everything())
+  select(nct_id, contains("umc"), everything())
+
+CTgov_sample |> 
+  count(is.na(umc_sponsor), is.na(umc_pi), is.na(umc_resp_party))
 
 
 CTgov_sample_save <- CTgov_sample
