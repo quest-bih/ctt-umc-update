@@ -13,7 +13,8 @@ euctr_umc <- read_csv(here("data", "processed", "umc_trials_euctr.csv")) |>
   select(-sponsor, -contains("title")) |> 
   rename(eudract_number = id) |> 
   group_by(eudract_number) |> 
-  summarise(across(everything(), \(x) unique(x) |> paste0(collapse = ";")))
+  summarise(across(everything(), \(x) unique(x) |> paste0(collapse = ";"))) |> 
+  mutate(umc = ifelse(eudract_number == "2009-012198-36", "Giessen", umc))
 
 
 euctr_tib <- read_csv(here("data", "raw", "euctr_euctr_dump-2024-09-07-092059.csv")) |> 
@@ -42,7 +43,7 @@ euctr_filtered <- euctr_combined |>
       str_detect(eudract_number_with_country, "DE") ~ date_of_the_global_end_of_the_trial,
     .default = NA
   )) |> 
-  select(contains("eudract_number"), completion_date, contains("global"),
+  select(contains("eudract_number"), completion_date, contains("global"), umc, 
          everything()) |> 
   filter(!is.na(umc),
     between(completion_date, as_date("2018-01-01"), as_date("2021-12-31")),
@@ -53,7 +54,7 @@ euctr_combined |>
   select(results_global_end_of_trial_date,
          date_of_the_global_end_of_the_trial,
          umc, eudract_number, eudract_number_with_country, everything()) |> 
-  filter(eudract_number == "2016-002673-35")
+  # filter(eudract_number == "2016-002673-35")
   distinct(eudract_number) |> 
   nrow()
 
