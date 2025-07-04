@@ -246,8 +246,14 @@ DRKS_sample_save <- drks_tib |>
   left_join(validated_umc_drks_deduplicated, by = "drksId")
 
 DRKS_sample_save |> 
-  count(is.na(umc_sponsor), is.na(umc_pi))
-
+  summarise(total = n(),
+            n_umc_sponsor = sum(!is.na(umc_sponsor)),
+            n_umc_pi = sum(!is.na(umc_pi))) |>
+  pivot_longer(-total, names_to = "definition", values_to = "n") |> 
+  mutate(definition = str_remove(definition, "n_"),
+         prop = round(n / total, 2)) |> 
+  select(definition, everything())
+  
 
 write_excel_csv(DRKS_sample_save, here("data", "processed", "DRKS_sample.csv"), na = "")
 # DRKS_sample <- read_csv(here("data", "processed", "DRKS_sample.csv"))

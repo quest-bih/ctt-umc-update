@@ -292,6 +292,19 @@ write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv")
 qa_CTgov <- CTgov_sample |> 
   select(nct_id, umc, everything()) 
 
+
+CTgov_sample_save <- read_csv(here("data", "processed", "CTgov_sample.csv"))
+
+CTgov_sample_save |> 
+  summarise(total = n(),
+            n_umc_sponsor = sum(!is.na(umc_sponsor)),
+            n_umc_resp_party = sum(!is.na(umc_resp_party)),
+            n_umc_pi = sum(!is.na(umc_pi))) |>
+  pivot_longer(-total, names_to = "definition", values_to = "n") |> 
+  mutate(definition = str_remove(definition, "n_"),
+         prop = round(n / total, 2)) |> 
+  select(definition, everything())
+
 count(qa_CTgov, umc, sort = TRUE)
 
 qa_excluded <- AACT_datasets$studies |>
