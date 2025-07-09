@@ -250,6 +250,22 @@ validated_umc_ctgov_deduplicated <- validated_umc_ctgov |>
   pivot_wider(id_cols = id, names_from = type, values_from = umc) |>
   mutate(umc = deduplicate_collapsed(c(umc_pi, umc_sponsor, umc_resp_party)))
 
+
+validated_exclusions_ctgov <- bind_rows(list(umc_ctgov_sponsors,
+                                             umc_resp_party,
+                                             umc_ctgov_pi_host)) |> 
+  rename(umc_estimated = umc) |>
+  mutate(raw_affil = str_squish(raw_affil)) |> 
+  left_join(umc_validations_ctgov, by = "raw_affil") |>  
+  filter(umc == "false positive", 
+         !id %in% validated_umc_ctgov_deduplicated$id,
+         id %in% inclusion_trns) |> 
+  select(-validation)
+
+validated_exclusions_ctgov |> 
+  write_csv(here("data", "processed", "validated_exclusions_ctgov.csv"))
+
+
 qa_validated_umc_ctgov <- validated_umc_ctgov |>  
   filter(!is.na(umc)) |> 
   group_by(id) |> 

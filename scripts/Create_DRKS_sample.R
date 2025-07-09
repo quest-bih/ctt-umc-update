@@ -197,6 +197,8 @@ qa_cases |>
 umc_validations |> 
   write_csv(here("data", "processed", "umc_validations.csv"))
 
+umc_validations <- read_csv(here("data", "processed", "umc_validations.csv"))
+
 validated_umc_drks <- umc_validations |> 
   filter(str_detect(id, "DRKS")) |>
   select(raw_affil, umc)
@@ -219,6 +221,19 @@ validated_umc_drks_deduplicated <- validated_umc_drks |>
   pivot_wider(id_cols = drksId, names_from = type, values_from = umc) |>
   mutate(umc = deduplicate_collapsed(c(umc_pi, umc_sponsor)))
 
+validated_exclusions_drks <- validated_umc_drks |>  
+  filter(umc == "false positive", 
+         !drksId %in% validated_umc_drks_deduplicated$drksId,
+         drksId %in% drks_interventional_trns,
+         drksId %in% drks_2018_2021) |> 
+  mutate(type = case_when(
+           type == "PRIMARY_SPONSOR" ~ "umc_sponsor",
+           otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR" |
+             type == "PRINCIPAL_COORDINATING_INVESTIGATOR" ~ "umc_pi",
+           .default = NA
+         ))
+validated_exclusions_drks |> 
+  write_csv(here("data", "processed", "validated_exclusions_drks.csv"))
 
 qa_validated_umc_drks <- validated_umc_drks |>  
   filter(!is.na(umc)) |> 
