@@ -138,6 +138,8 @@ title_matches <- title_matches_euctr_drks |>
   rename(trial_id = trial_id.x, linked_id = trial_id.y) |> 
   mutate(many_to_many = trial_id %in% mtm_ids | linked_id %in% mtm_ids)
 
+title_matches |> 
+  saveRDS(here("data", "processed", "all_title_matches.rds"))
 
 EUCTR_sample <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 DRKS_sample <- read_csv(here("data", "processed", "DRKS_sample.csv"))
@@ -159,8 +161,7 @@ title_matches_included |>
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
   
 crossreg_euctr_drks_ctgov_included <- crossreg_euctr_drks_ctgov |> 
-  mutate(linked_id = strsplit(linked_id, ";")) |> 
-  unnest(linked_id) |> 
+  separate_longer_delim(linked_id, ";") |> 
   filter(trial_id %in% sample_ids |
            linked_id %in% sample_ids) |> 
   distinct(binary_id, .keep_all = TRUE)
@@ -170,8 +171,7 @@ included_by_reference <- crossreg_euctr_drks_ctgov |>
            linked_id %in% crossreg_euctr_drks_ctgov_included$trial_id |
            trial_id %in% crossreg_euctr_drks_ctgov_included$linked_id |
            linked_id %in% crossreg_euctr_drks_ctgov_included$linked_id) |> 
-  mutate(linked_id = strsplit(linked_id, ";")) |> 
-  unnest(linked_id) |>
+  separate_longer_delim(linked_id, ";") |> 
   distinct(binary_id, .keep_all = TRUE)
 
 title_matched_not_id_matched <- title_matches_included |> 
