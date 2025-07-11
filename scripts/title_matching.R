@@ -239,13 +239,18 @@ crossreg_title_ids |>
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
 
 # how many links (not triads, not many_to_many)
-crossreg_title_ids |> 
+qa_crossreg_title_ids <- crossreg_title_ids |> 
   filter(many_to_many == FALSE, triad == FALSE) |> 
-  nrow()
+  mutate(in_sample = trial_id %in% sample_ids |
+                               linked_id %in% sample_ids)
+nrow(qa_crossreg_title_ids)
+
 # how many many_to_many
-crossreg_title_ids |> 
+qa_mtm <- crossreg_title_ids |> 
   filter(many_to_many == TRUE) |> 
-  nrow()
+  mutate(in_sample = trial_id %in% sample_ids |
+           linked_id %in% sample_ids)
+nrow(qa_mtm)
 # how many triads
 qa_triads <- crossreg_title_ids |> 
   distinct(binary_id, .keep_all = TRUE) |> 
@@ -253,7 +258,10 @@ qa_triads <- crossreg_title_ids |>
   group_by(trial_id) |> 
   mutate(n_id = n()) |> 
   group_by(linked_id) |> 
-  mutate(n_linked = n()) 
+  mutate(n_linked = n()) |> 
+  ungroup() |> 
+  mutate(in_sample = trial_id %in% sample_ids |
+           linked_id %in% sample_ids)
 nrow(qa_triads) / 3
 
 
