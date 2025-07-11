@@ -158,7 +158,7 @@ title_matches_included |>
 
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
   
-crossreg_ecutr_drks_ctgov_included <- crossreg_euctr_drks_ctgov |> 
+crossreg_euctr_drks_ctgov_included <- crossreg_euctr_drks_ctgov |> 
   mutate(linked_id = strsplit(linked_id, ";")) |> 
   unnest(linked_id) |> 
   filter(trial_id %in% sample_ids |
@@ -166,10 +166,10 @@ crossreg_ecutr_drks_ctgov_included <- crossreg_euctr_drks_ctgov |>
   distinct(binary_id, .keep_all = TRUE)
 
 included_by_reference <- crossreg_euctr_drks_ctgov |> 
-  filter(trial_id %in% crossreg_ecutr_drks_ctgov_included$trial_id |
-           linked_id %in% crossreg_ecutr_drks_ctgov_included$trial_id |
-           trial_id %in% crossreg_ecutr_drks_ctgov_included$linked_id |
-           linked_id %in% crossreg_ecutr_drks_ctgov_included$linked_id) |> 
+  filter(trial_id %in% crossreg_euctr_drks_ctgov_included$trial_id |
+           linked_id %in% crossreg_euctr_drks_ctgov_included$trial_id |
+           trial_id %in% crossreg_euctr_drks_ctgov_included$linked_id |
+           linked_id %in% crossreg_euctr_drks_ctgov_included$linked_id) |> 
   mutate(linked_id = strsplit(linked_id, ";")) |> 
   unnest(linked_id) |>
   distinct(binary_id, .keep_all = TRUE)
@@ -232,8 +232,19 @@ crossreg_title_ids <- included_by_reference |>
   rows_upsert(title_matches_only, by = "binary_id")
 
 crossreg_title_ids <- included_by_reference |>
-  mutate(via_title = binary_id %in% crossreg_title_ids$binary_id) |> 
-  rows_upsert(title_matches_only, by = "binary_id")
+  mutate(via_title = binary_id %in% crossreg_title_ids$binary_id) |>
+  rows_upsert(crossreg_title_ids, by = "binary_id") |>
+  group_by(trial_id) |>
+  mutate(
+    many_to_many = case_when(
+      n() > 2 ~ TRUE,
+      sum(str_detect(linked_id, "DRKS")) > 1 ~ TRUE,
+      sum(str_detect(linked_id, "NCT")) > 1 ~ TRUE,
+      # sum(str_detect(linked_id, "-")) > 1 ~ TRUE,
+      .default = any(many_to_many, na.rm = TRUE)
+    ),
+    triad = any(triad, na.rm = TRUE)) |>
+  ungroup()
 
 crossreg_title_ids |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))

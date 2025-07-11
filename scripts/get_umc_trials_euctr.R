@@ -40,7 +40,7 @@ write_csv(euctr_trials_german_umc, here("data", "processed", "umc_trials_euctr.c
 # every UMC present, but also Augsburg and also very few trials from Rostock, Witten-Herdecke, Greifswald
 
 umcs_detected <- euctr_trials_german_umc |> 
-  count(UMC) |> 
-  full_join(DE_UMCs, by = "UMC") |> 
+  count(umc) |> 
+  full_join(DE_UMCs, by = "umc") |> 
   arrange(n)
 
