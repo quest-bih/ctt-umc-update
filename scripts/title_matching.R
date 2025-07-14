@@ -130,7 +130,6 @@ mtm_ids <- c(mtm_drks_ctgov, mtm_euctr_ctgov, mtm_euctr_drks) |>
 ctgov_id_info <- file.path(AACT_folder, "id_information.txt") |> 
   read_delim(delim = "|")
 
-
 ### all title matches between all registries
 title_matches <- title_matches_euctr_drks |> 
   bind_rows(title_matches_euctr_ctgov) |> 
@@ -149,131 +148,88 @@ CTgov_sample <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 sample_ids <- c(EUCTR_sample$eudract_number, DRKS_sample$drksId, CTgov_sample$nct_id) |> 
   unique()
 
-# filter for TRNs in the validated umc sample inclusion filter here 
-title_matches_included <- title_matches |> 
-  filter(trial_id %in% sample_ids |
-           linked_id %in% sample_ids | trial_id == "2016-002673-35")
-
-title_matches_included |> 
-  write_excel_csv(here("data", "processed", "title_matches.csv"))
-
-
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
-  
-crossreg_euctr_drks_ctgov_included <- crossreg_euctr_drks_ctgov |> 
-  separate_longer_delim(linked_id, ";") |> 
-  filter(trial_id %in% sample_ids |
-           linked_id %in% sample_ids) |> 
-  distinct(binary_id, .keep_all = TRUE)
 
-included_by_reference <- crossreg_euctr_drks_ctgov |> 
-  filter(trial_id %in% crossreg_euctr_drks_ctgov_included$trial_id |
-           linked_id %in% crossreg_euctr_drks_ctgov_included$trial_id |
-           trial_id %in% crossreg_euctr_drks_ctgov_included$linked_id |
-           linked_id %in% crossreg_euctr_drks_ctgov_included$linked_id) |> 
-  separate_longer_delim(linked_id, ";") |> 
-  distinct(binary_id, .keep_all = TRUE)
+crossreg_long <- crossreg_euctr_drks_ctgov |> 
+  separate_longer_delim(linked_id, ";")
 
-title_matched_not_id_matched <- title_matches_included |> 
-  filter(!trial_id %in% included_by_reference$trial_id,
-         !trial_id %in% included_by_reference$linked_id,
-         !linked_id %in% included_by_reference$trial_id,
-         !linked_id %in% included_by_reference$linked_id) 
+trn_clusters <- title_matches |>
+  select(trial_id, linked_id) |>
+  bind_rows(crossreg_long) |>
+  get_cluster_names_from_pairs()
 
-mtm_title_not_id <- title_matched_not_id_matched |> 
-  filter(many_to_many == TRUE) |> 
-  group_by(trial_id) |> 
-  mutate(linked_id = deduplicate_collapsed(linked_id)) |> 
-  distinct(trial_id, .keep_all = TRUE)
-
-title_matched_not_id_matched <- title_matched_not_id_matched |> 
-  filter(!trial_id %in% mtm_title_not_id$trial_id) |> 
-  bind_rows(mtm_title_not_id) |> 
-  rowwise() |> 
-  mutate(binary_id = case_when(
-    str_detect(trial_id, "\\-") ~ paste(c(trial_id, linked_id), collapse = "_"),
-    str_detect(linked_id, "NCT") ~ paste(c(trial_id, linked_id), collapse = "_"),
-    .default = paste(c(linked_id, trial_id), collapse = "_")
-  ), .before = 1) |> 
+title_matches_clusters <- title_matches |>
+  left_join(trn_clusters, by = "trial_id") |>
+  group_by(cluster_unique_id) |>
+  mutate(in_sample = any(trial_id %in% sample_ids |
+                           linked_id %in% sample_ids),
+         pair_in_sample = trial_id %in% sample_ids |
+           linked_id %in% sample_ids) |>
   ungroup()
 
-title_matched_id_matched <- title_matches_included |> 
-  filter(!trial_id %in% title_matched_not_id_matched$trial_id)
-
-mtm_title_id <- title_matched_id_matched |> 
-  filter(many_to_many == TRUE) |> 
-  group_by(trial_id) |> 
-  mutate(linked_id = deduplicate_collapsed(linked_id)) |> 
-  distinct(trial_id, .keep_all = TRUE)
-
-mtm_title <- mtm_title_id |> 
-  bind_rows(mtm_title_not_id) |> 
-  mutate(binary_id = paste(trial_id, "_", linked_id))
-
-title_matched_id_matched <- title_matched_id_matched |> 
-  filter(!trial_id %in% mtm_title_id$trial_id) |> 
-  bind_rows(mtm_title_id) |> 
-  rowwise() |> 
-  mutate(binary_id = case_when(
-    str_detect(trial_id, "\\-") ~ paste(c(trial_id, linked_id), collapse = "_"),
-    str_detect(linked_id, "NCT") ~ paste(c(trial_id, linked_id), collapse = "_"),
-    .default = paste(c(linked_id, trial_id), collapse = "_")
-  ), .before = 1) |> 
+title_matches_included <- title_matches_clusters |>
+  filter(in_sample == TRUE) |>
+  rowwise() |>
+  mutate(many_to_many_overall = is_mtm(cluster_unique_id),
+         binary_id = get_binary_id(c(trial_id, linked_id))) |>
   ungroup()
 
-title_matches_only <- title_matched_id_matched |> 
-  anti_join(crossreg_euctr_drks_ctgov, by = "binary_id") |> 
-  bind_rows(title_matched_not_id_matched) |> 
-  mutate(via_id = FALSE, many_to_many = trial_id %in% mtm_title$trial_id)
-
-crossreg_title_ids <- included_by_reference |> 
-  semi_join(title_matched_id_matched, by = "binary_id") |> 
-  mutate(via_title = TRUE, many_to_many = trial_id %in% mtm_title$trial_id) |> 
-  rows_upsert(title_matches_only, by = "binary_id")
-
-crossreg_title_ids <- included_by_reference |>
-  mutate(via_title = binary_id %in% crossreg_title_ids$binary_id) |>
-  rows_upsert(crossreg_title_ids, by = "binary_id") |>
-  group_by(trial_id) |>
-  mutate(
-    many_to_many = case_when(
-      n() > 2 ~ TRUE,
-      sum(str_detect(linked_id, "DRKS")) > 1 ~ TRUE,
-      sum(str_detect(linked_id, "NCT")) > 1 ~ TRUE,
-      # sum(str_detect(linked_id, "-")) > 1 ~ TRUE,
-      .default = any(many_to_many, na.rm = TRUE)
-    ),
-    triad = any(triad, na.rm = TRUE)) |>
+crossregs_clusters <- crossreg_euctr_drks_ctgov |>
+  left_join(trn_clusters, by = "trial_id") |>
+  separate_longer_delim(linked_id, ";") |>
+  group_by(cluster_unique_id) |>
+  mutate(in_sample = any(trial_id %in% sample_ids |
+                           linked_id %in% sample_ids),
+         pair_in_sample = trial_id %in% sample_ids |
+           linked_id %in% sample_ids) |>
   ungroup()
+
+crossregs_included <- crossregs_clusters |>
+  filter(in_sample == TRUE) |>
+  rowwise() |>
+  mutate(many_to_many_overall = is_mtm(cluster_unique_id),
+         binary_id = get_binary_id(c(trial_id, linked_id))) |>
+  ungroup()
+
+title_matches_only <- title_matches_included |>
+  mutate(via_id = cluster_unique_id %in% crossregs_included$cluster_unique_id) |>
+  filter(via_id == FALSE)
+
+title_matched_id_matched <- title_matches_included |>
+  filter(!binary_id %in% title_matches_only$binary_id) |>
+  mutate(via_id = TRUE)
+
+# add the title match info for cases that have TRN crossreg (still missing cases that only have a title match)
+crossregs_w_and_wo_title <- crossregs_included |>
+  mutate(via_title = FALSE) |>
+  rows_upsert(title_matched_id_matched, by = c("binary_id", "cluster_unique_id", "trial_id", "linked_id"))
+
+# finally add the cases with only a title match to the rest of the crossregs
+crossreg_title_ids <- crossregs_w_and_wo_title |>
+  bind_rows(title_matches_only) |>
+  arrange(cluster_unique_id, binary_id) |>
+  select(cluster_unique_id, binary_id, trial_id, linked_id, everything())
+
 
 crossreg_title_ids |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
 
+crold <- read_csv(here("data", "processed", "crossreg_titles_ids.csv"))
 # how many links (not triads, not many_to_many)
 qa_crossreg_title_ids <- crossreg_title_ids |> 
-  filter(many_to_many == FALSE, triad == FALSE) |> 
-  mutate(in_sample = trial_id %in% sample_ids |
-                               linked_id %in% sample_ids)
+  filter(many_to_many == FALSE, triad == FALSE)
+
 nrow(qa_crossreg_title_ids)
 
 # how many many_to_many
 qa_mtm <- crossreg_title_ids |> 
-  filter(many_to_many == TRUE) |> 
-  mutate(in_sample = trial_id %in% sample_ids |
-           linked_id %in% sample_ids)
+  filter(many_to_many_overall == TRUE)
 nrow(qa_mtm)
-# how many triads
-qa_triads <- crossreg_title_ids |> 
-  distinct(binary_id, .keep_all = TRUE) |> 
-  filter(triad == TRUE) |> 
-  group_by(trial_id) |> 
-  mutate(n_id = n()) |> 
-  group_by(linked_id) |> 
-  mutate(n_linked = n()) |> 
-  ungroup() |> 
-  mutate(in_sample = trial_id %in% sample_ids |
-           linked_id %in% sample_ids)
-nrow(qa_triads) / 3
+
+#unique clusters
+qa_mtm |> 
+  distinct(cluster_unique_id) |> 
+  nrow()
 
 
 ##########################################################

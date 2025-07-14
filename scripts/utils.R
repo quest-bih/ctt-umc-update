@@ -133,3 +133,53 @@ process_title <- function(str_title) {
     stringr::str_remove_all("[:punct:]|(^aa\\s)|\\W") |> 
     stringr::str_squish()
 }
+
+# Create a graph where each TRN is a node, and each TRN pair is an edge
+get_cluster_names_from_pairs <- function(pairs_tib) {
+  
+  # pairs_tib <- crossreg_only_pairs
+  trial_graph <- igraph::graph_from_data_frame(pairs_tib, directed = FALSE)
+  
+  # Find clusters (connected components) in the graph
+  clusters <- igraph::components(trial_graph)
+  # Extract the membership, i.e., which trials belong to which clusters
+  cluster_membership <- clusters$membership
+  
+  # Create a table of trial IDs and their corresponding cluster IDs
+  trial_clusters <- data.frame(
+    trial_id = names(cluster_membership),
+    cluster_id = cluster_membership
+  )
+  # Group by cluster_id and create a unique identifier by concatenating trial IDs (TRNs) with underscores, similar to MDR ID
+  trial_clusters_unique <- trial_clusters |>
+    dplyr::group_by(cluster_id) |>
+    dplyr::summarise(
+      cluster_unique_id = paste(sort(trial_id), collapse = "_")  # Sort TRNs for consistency and concatenate
+    )
+  
+  trial_clusters |>
+    dplyr::left_join(trial_clusters_unique, by = "cluster_id") |>
+    dplyr::select(trial_id, cluster_unique_id)
+}
+
+# check if a cluster contains all three registry strings
+is_triad <- function(cluster_str) {
+  stringr::str_detect(cluster_str, "-") &
+    stringr::str_detect(cluster_str, "DRKS") &
+    stringr::str_detect(cluster_str, "NCT")
+}
+
+# check if a cluster contains more than one link to the same registry
+is_mtm <- function(cluster_str) {
+  stringr::str_count(cluster_str, "-") > 3 |
+    stringr::str_count(cluster_str, "DRKS") > 1 |
+    stringr::str_count(cluster_str, "NCT") > 1
+}
+
+get_binary_id <- function(name_vec) {
+  name_vec |>
+    unique() |>
+    sort() |>
+    paste0(collapse = "_")
+  
+}
