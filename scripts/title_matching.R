@@ -174,7 +174,7 @@ title_matches_included <- title_matches_clusters |>
          binary_id = get_binary_id(c(trial_id, linked_id))) |>
   ungroup()
 
-crossregs_clusters <- crossreg_euctr_drks_ctgov |>
+crossreg_clusters <- crossreg_euctr_drks_ctgov |>
   left_join(trn_clusters, by = "trial_id") |>
   separate_longer_delim(linked_id, ";") |>
   group_by(cluster_unique_id) |>
@@ -184,7 +184,7 @@ crossregs_clusters <- crossreg_euctr_drks_ctgov |>
            linked_id %in% sample_ids) |>
   ungroup()
 
-crossregs_included <- crossregs_clusters |>
+crossreg_included <- crossreg_clusters |>
   filter(in_sample == TRUE) |>
   rowwise() |>
   mutate(many_to_many_overall = is_mtm(cluster_unique_id),
@@ -192,7 +192,7 @@ crossregs_included <- crossregs_clusters |>
   ungroup()
 
 title_matches_only <- title_matches_included |>
-  mutate(via_id = cluster_unique_id %in% crossregs_included$cluster_unique_id) |>
+  mutate(via_id = cluster_unique_id %in% crossreg_included$cluster_unique_id) |>
   filter(via_id == FALSE)
 
 title_matched_id_matched <- title_matches_included |>
@@ -200,21 +200,21 @@ title_matched_id_matched <- title_matches_included |>
   mutate(via_id = TRUE)
 
 # add the title match info for cases that have TRN crossreg (still missing cases that only have a title match)
-crossregs_w_and_wo_title <- crossregs_included |>
+crossreg_w_and_wo_title <- crossreg_included |>
   mutate(via_title = FALSE) |>
   rows_upsert(title_matched_id_matched, by = c("binary_id", "cluster_unique_id", "trial_id", "linked_id"))
 
 # finally add the cases with only a title match to the rest of the crossregs
-crossreg_title_ids <- crossregs_w_and_wo_title |>
+crossreg_title_ids <- crossreg_w_and_wo_title |>
   bind_rows(title_matches_only) |>
   arrange(cluster_unique_id, binary_id) |>
-  select(cluster_unique_id, binary_id, trial_id, linked_id, everything())
-
+  select(cluster_unique_id, binary_id, trial_id, linked_id, everything()) |> 
+  mutate(triad = is_triad(cluster_unique_id),
+         trns_in_cluster = str_count(cluster_unique_id, "_") + 1)
 
 crossreg_title_ids |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
 
-crold <- read_csv(here("data", "processed", "crossreg_titles_ids.csv"))
 # how many links (not triads, not many_to_many)
 qa_crossreg_title_ids <- crossreg_title_ids |> 
   filter(many_to_many == FALSE, triad == FALSE)
