@@ -288,3 +288,17 @@ qa_na_excluded <- qa_excluded |>
   filter(is.na(umc),
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms))
+
+
+drks_results <- drks_tib |> 
+  select(drksId, trialResults) |> 
+  unnest(trialResults) |> 
+  select(drksId, publications, trialResultsDescriptions) |> 
+  unnest(publications) |> 
+  unnest(trialResultsDescriptions) |> 
+  unnest(idLocale) |> 
+  filter(locale == "en")
+
+drks_results |> 
+  count(type, sort = TRUE)
+
