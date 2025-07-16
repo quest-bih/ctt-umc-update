@@ -8,6 +8,7 @@ library(jsonlite)
 library(yaml)
 
 drks_tib <- fromJSON(here("data", "raw", "DRKS_search_20250513.json"))
+regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 
 source(here("scripts", "utils.R"))
 

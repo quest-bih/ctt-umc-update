@@ -183,3 +183,28 @@ get_binary_id <- function(name_vec) {
     paste0(collapse = "_")
   
 }
+
+get_registry_name <- function(name_str) {
+  dplyr::case_when(
+    stringr::str_detect(name_str, "-") ~ "EUCTR",
+    stringr::str_detect(name_str, "DRKS") ~ "DRKS",
+    stringr::str_detect(name_str, "NCT") ~ "ClinicalTrials.gov"
+  )
+}
+
+get_cluster_num_reg <- function(cluster_str, reg_regex) {
+  stringr::str_count(cluster_str, reg_regex)
+}
+
+
+update_bidirectionality <- function(crossreg_tib) {
+  crossreg_tib |>
+    dplyr::mutate(trial_registry = get_registry_name(trial_id),
+                  linked_registry = get_registry_name(linked_id),
+                  selfref = trial_registry == linked_registry) |>
+    dplyr::group_by(binary_id, cluster_unique_id) |>
+    dplyr::summarise(across(c(trial_id, linked_id), first),
+                     across(where(is.logical), any),
+                     bidirectional = n() > 1 & selfref == FALSE | bidirectional)
+}
+

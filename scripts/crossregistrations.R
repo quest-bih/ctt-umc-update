@@ -60,6 +60,10 @@ drks_titles <- drks_tib |>
 # Extract EU IDs plus process EU titles to be used in title matching
 euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
 
+euctr_de_protocols <- euctr_combined |> 
+  group_by(eudract_number) |> 
+  summarise(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE))
+
 # Process EU titles
 euctr_titles <- euctr_combined |>
   tidyr::drop_na(full_title_of_the_trial) |>
@@ -150,9 +154,11 @@ sample_ids <- c(EUCTR_sample$eudract_number, DRKS_sample$drksId, CTgov_sample$nc
 
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
 
-crossreg_long <- crossreg_euctr_drks_ctgov |> 
-  separate_longer_delim(linked_id, ";")
-
+crossreg_long <- crossreg_euctr_drks_ctgov |>
+  select(trial_id, linked_id) |>
+  separate_longer_delim(linked_id, ";") |>
+  mutate(via_id = TRUE)
+  
 trn_clusters <- title_matches |>
   select(trial_id, linked_id) |>
   bind_rows(crossreg_long) |>
@@ -189,28 +195,42 @@ crossreg_included <- crossreg_clusters |>
   rowwise() |>
   mutate(many_to_many_overall = is_mtm(cluster_unique_id),
          binary_id = get_binary_id(c(trial_id, linked_id))) |>
-  ungroup()
+  ungroup() |>
+  update_bidirectionality()
 
 title_matches_only <- title_matches_included |>
   mutate(via_id = cluster_unique_id %in% crossreg_included$cluster_unique_id) |>
   filter(via_id == FALSE)
 
 title_matched_id_matched <- title_matches_included |>
-  filter(!binary_id %in% title_matches_only$binary_id) |>
-  mutate(via_id = TRUE)
+  filter(!binary_id %in% title_matches_only$binary_id)
 
 # add the title match info for cases that have TRN crossreg (still missing cases that only have a title match)
 crossreg_w_and_wo_title <- crossreg_included |>
   mutate(via_title = FALSE) |>
-  rows_upsert(title_matched_id_matched, by = c("binary_id", "cluster_unique_id", "trial_id", "linked_id"))
+  rows_upsert(title_matched_id_matched, by = c("binary_id", "cluster_unique_id", "trial_id", "linked_id")) |>
+  # update via_title for the cases where the binary_id is the same but the linked_id and trial_id are swapped
+  mutate(via_title = case_when(
+    !binary_id %in% title_matches_only$binary_id ~ TRUE,
+    .default = via_title)) |>
+  # flag redundant title rows
+  group_by(binary_id) |>
+  mutate(n_binary = n(),
+         remove_title = n_binary > 1 & is.na(bidirectional)) |>
+  ungroup() |>
+  filter(remove_title == FALSE) |>
+  select(-n_binary, -remove_title)
 
 # finally add the cases with only a title match to the rest of the crossregs
 crossreg_title_ids <- crossreg_w_and_wo_title |>
   bind_rows(title_matches_only) |>
   arrange(cluster_unique_id, binary_id) |>
-  select(cluster_unique_id, binary_id, trial_id, linked_id, everything()) |> 
+  select(cluster_unique_id, binary_id, trial_id, linked_id, everything()) |>
   mutate(triad = is_triad(cluster_unique_id),
-         trns_in_cluster = str_count(cluster_unique_id, "_") + 1)
+         trns_in_cluster = str_count(cluster_unique_id, "_") + 1,
+         via_id = replace_na(via_id, FALSE)) |> 
+  left_join(euctr_de_protocols, by = c("trial_id" = "eudract_number")) |> 
+  left_join(euctr_de_protocols |> rename(linked_de_protocol = trial_de_protocol), by = c("linked_id" = "eudract_number"))
 
 crossreg_title_ids |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
