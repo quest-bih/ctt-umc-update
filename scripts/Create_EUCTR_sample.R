@@ -46,8 +46,10 @@ euctr_filtered <- euctr_combined |>
   select(contains("eudract_number"), completion_date, contains("global"), umc, 
          everything()) |> 
   filter(!is.na(umc),
-    between(completion_date, as_date("2018-01-01"), as_date("2021-12-31")),
-    str_detect(eudract_number_with_country, "DE"))
+    between(completion_date, as_date("2018-01-01"), as_date("2021-12-31"))) |> 
+  group_by(eudract_number) |> 
+  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
+  ungroup()
 
 # number of new TRNs from EUCTR
 euctr_combined |> 
@@ -81,6 +83,9 @@ missing_de_protocols <- euctr_combined |>
   select(contains("eudract"), umc, in_sampling_period, contains("global"), everything()) |> 
   arrange(desc(eudract_number))
 
+
 missing_de_protocols |> 
   write_excel_csv(here("data", "processed", "euctr_missing_de_protocols.csv"))
 
+
+### add these with a flag for trial_id and linked_id_with_de_protocol, etc.
