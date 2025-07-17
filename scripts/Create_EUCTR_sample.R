@@ -49,7 +49,8 @@ euctr_filtered <- euctr_combined |>
     between(completion_date, as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   group_by(eudract_number) |> 
   mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
-  ungroup()
+  ungroup() |> 
+  filter(trial_de_protocol == TRUE) # here we exclude TRNs without DE protocols!
 
 # number of new TRNs from EUCTR
 euctr_combined |> 

@@ -230,9 +230,16 @@ crossreg_title_ids <- crossreg_w_and_wo_title |>
          trns_in_cluster = str_count(cluster_unique_id, "_") + 1,
          via_id = replace_na(via_id, FALSE)) |> 
   left_join(euctr_de_protocols, by = c("trial_id" = "eudract_number")) |> 
-  left_join(euctr_de_protocols |> rename(linked_de_protocol = trial_de_protocol), by = c("linked_id" = "eudract_number"))
+  left_join(euctr_de_protocols |> rename(linked_de_protocol = trial_de_protocol), by = c("linked_id" = "eudract_number")) 
 
 crossreg_title_ids |> 
+  count(trial_de_protocol)
+
+crossreg_title_ids_de_protocols <- crossreg_title_ids |> 
+  filter(trial_de_protocol != FALSE | is.na(trial_de_protocol),
+         linked_de_protocol != FALSE | is.na(linked_de_protocol))
+
+crossreg_title_ids_de_protocols |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
 
 # how many links (not triads, not many_to_many)
