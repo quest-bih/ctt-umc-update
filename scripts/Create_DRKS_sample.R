@@ -103,9 +103,11 @@ drks_interventional_trns <- drks_study_characteristic |>
   filter(type == "INTERVENTIONAL") |> 
   pull(drksId)
 
-drks_2018_2021 <- drks_tib |> 
+drks_recuritment <- drks_tib |> 
   select(drksId, recruitment) |> 
-  unnest(recruitment) |>
+  unnest(recruitment)
+
+drks_2018_2021 <- drks_recruitment |> 
   filter(between(as_date(actualCompletionDate), as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   pull(drksId)
 
@@ -289,6 +291,9 @@ qa_na_excluded <- qa_excluded |>
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms))
 
+drks_results |> 
+  filter(drksId == "DRKS00007181")
+
 
 drks_results <- drks_tib |> 
   select(drksId, trialResults) |> 
@@ -296,9 +301,37 @@ drks_results <- drks_tib |>
   select(drksId, publications, trialResultsDescriptions) |> 
   unnest(publications) |> 
   unnest(trialResultsDescriptions) |> 
-  unnest(idLocale) |> 
-  filter(locale == "en")
+  unnest(idLocale)
 
 drks_results |> 
   count(type, sort = TRUE)
+
+############# prepare export with crossreg data and additional transparency practices measures
+validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
+drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
+
+drks_recruitment_dates <- drks_tib |> 
+  select(drksId, recruitment) |> 
+  unnest(recruitment) |> 
+  select(trial_id = drksId, contains("actual"))
+
+drks_export <- drks_export |> 
+  rename(trial_id = drksId) |> 
+  left_join(validated_crossreg_ids, by = "trial_id") |> 
+  left_join(drks_recruitment_dates, by = "trial_id") |> 
+  mutate(across(contains("Date"), ymd),
+    is_prospective =
+           (floor_date(registrationDrks, unit = "month") <=
+              floor_date(actualStartDate, unit = "month")),
+    
+    ### TODO: implement summary results detection as discussed with Delwen
+         # is_summary_results = if_else(
+         #     str_detect(citation,
+         #                "Ergebnisbericht|Abschlussbericht|Studienergebnisse|Studienergebnisbericht|study results")
+         #     & reference_type %in% c("Trial results", "Further trial documents"),
+         #     TRUE, FALSE
+         #   )
+           ) |> 
+  select(trial_id, contains("umc"), contains("Date"),
+         results_reporting)
 
