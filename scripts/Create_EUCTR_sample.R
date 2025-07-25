@@ -16,7 +16,6 @@ euctr_umc <- read_csv(here("data", "processed", "umc_trials_euctr.csv")) |>
   summarise(across(everything(), \(x) unique(x) |> paste0(collapse = ";"))) |> 
   mutate(umc = ifelse(eudract_number == "2009-012198-36", "Giessen", umc))
 
-
 euctr_tib <- read_csv(here("data", "raw", "euctr_euctr_dump-2024-09-07-092059.csv")) |> 
   select(eudract_number, everything())
 euctr_results <- read_csv(here("data", "raw", "euctr_data_quality_results_scrape_sept_2024.csv")) |> 
@@ -24,7 +23,8 @@ euctr_results <- read_csv(here("data", "raw", "euctr_data_quality_results_scrape
   rename(eudract_number = trial_id,
          actual_enrollment = global_subjects,
          last_updated = this_version_date) |> 
-  rename_with(\(x) paste0("results_", x), !starts_with("eudract"))
+  rename_with(\(x) paste0("results_", x), !starts_with(c("eudract", "results_"))) |> 
+  mutate(results_reporting = results_type %in% c("Tabular", "Mixed", "Document"))
 
 euctr_combined <- euctr_tib |> 
   full_join(euctr_results, by = "eudract_number") |> 
@@ -49,8 +49,7 @@ euctr_filtered <- euctr_combined |>
     between(completion_date, as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   group_by(eudract_number) |> 
   mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
-  ungroup() |> 
-  filter(trial_de_protocol == TRUE) # here we exclude TRNs without DE protocols!
+  ungroup() 
 
 # number of new TRNs from EUCTR
 euctr_combined |> 
@@ -61,7 +60,9 @@ euctr_combined |>
   distinct(eudract_number) |> 
   nrow()
 
-write_excel_csv(euctr_filtered, here("data", "processed", "EUCTR_sample.csv"), na = "")
+euctr_filtered |> 
+  filter(trial_de_protocol == TRUE) |> # here we exclude TRNs without DE protocols
+  write_excel_csv(here("data", "processed", "EUCTR_sample.csv"), na = "")
 
 # sanity check results without german protocols
 # collapse by trial remove dupes, preferably by german protocol! exclude otherwise, but sanity check
@@ -71,9 +72,13 @@ write_excel_csv(euctr_filtered, here("data", "processed", "EUCTR_sample.csv"), n
 qa_missing_de_protocols <- euctr_combined |> 
   filter(!is.na(umc)) |> 
   group_by(eudract_number, umc) |> 
-  summarise(n_german_protocol = str_detect(eudract_number_with_country, "DE") |> sum(),
-            ) |> 
-  filter(n_german_protocol < 1)
+  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
+  ungroup() |> 
+  filter(trial_de_protocol == FALSE) # here we exclude TRNs with DE protocols!
+
+qa_missing_de_protocols |> 
+  distinct(eudract_number) |> 
+  count()
 
 missing_de_protocols <- euctr_combined |> 
   filter(eudract_number %in% qa_missing_de_protocols$eudract_number) |> 
@@ -84,9 +89,25 @@ missing_de_protocols <- euctr_combined |>
   select(contains("eudract"), umc, in_sampling_period, contains("global"), everything()) |> 
   arrange(desc(eudract_number))
 
+missing_de_protocols |> 
+  count(in_sampling_period)
+
+missing_de_protocols |> 
+  filter(in_sampling_period) |> 
+  distinct(eudract_number)
 
 missing_de_protocols |> 
   write_excel_csv(here("data", "processed", "euctr_missing_de_protocols.csv"))
 
+############# prepare export with crossreg data and additional transparency practices measures
+validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
+euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 
-### add these with a flag for trial_id and linked_id_with_de_protocol, etc.
+euctr_export <- euctr_export |> 
+  rename(trial_id = eudract_number) |> 
+  left_join(validated_crossreg_ids, by = "trial_id") |> 
+  select(trial_id, eudract_number_with_country, umc, completion_date, contains("date"),
+         results_reporting, contains("eutt"))
+
+
+
