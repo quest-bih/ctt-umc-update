@@ -2,6 +2,7 @@ library(tidyverse)
 library(ctregistries)
 library(progressr)
 library(furrr)
+library(here)
 
 plan(multisession)
 handlers(global = TRUE)
@@ -21,7 +22,7 @@ pub_search_table_crossreg <- validated_crossreg_ids |>
   # rowwise() |> 
   mutate(registry_url = get_registry_url(trial_id),
          registry = get_registry_name(trial_id),
-         noselfref = str_remove(crossreg_id, trial_id), 
+         noselfref = str_remove(crossreg_id, trial_id) |> str_replace_all("_", " "), 
          crossreg_euctr = which_trns(noselfref, registry = "EudraCT") ,
          crossreg_drks = which_trns(noselfref, registry = "DRKS"),
          crossreg_ctgov = which_trns(noselfref, registry = "ClinicalTrials.gov"),
@@ -55,4 +56,13 @@ pub_search_table <- pub_search_table_euctr |>
          trial_id_meets_inclusion = trial_id %in% sample_ids) |> 
   bind_rows(pub_search_table_crossreg)
 
+pub_search_table |> 
+  write_excel_csv(here("data", "processed", "pub_search_table.csv"))
 
+pub_search_table |> 
+  distinct(crossreg_id) |> 
+  nrow()
+
+?which_trns
+
+which_trns("2005-005144-62 NCT01449344", registry = "EudraCT")
