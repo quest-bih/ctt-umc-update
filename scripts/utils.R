@@ -192,6 +192,14 @@ get_registry_name <- function(name_str) {
   )
 }
 
+get_registry_url <- function(name_str) {
+  dplyr::case_when(
+    stringr::str_detect(name_str, "-") ~ paste0("https://www.clinicaltrialsregister.eu/ctr-search/trial/", name_str),
+    stringr::str_detect(name_str, "DRKS") ~ paste0("https://drks.de/search/de/trial/", name_str),
+    stringr::str_detect(name_str, "NCT") ~ paste0("https://clinicaltrials.gov/study/", name_str)
+  )
+}
+
 get_cluster_num_reg <- function(cluster_str, reg_regex) {
   stringr::str_count(cluster_str, reg_regex)
 }
@@ -207,4 +215,3 @@ update_bidirectionality <- function(crossreg_tib) {
                      across(where(is.logical), any),
                      bidirectional = n() > 1 & selfref == FALSE | bidirectional)
 }
-
