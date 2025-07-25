@@ -9,6 +9,7 @@ library(furrr)
 library(progressr)
 library(stringdist)
 library(janitor)
+library(readxl)
 
 ##########################################################
 source(here("scripts", "utils.R"))
@@ -83,8 +84,8 @@ euctr_titles <- euctr_combined |>
 title_matches_euctr_drks <- euctr_titles |> 
   inner_join(drks_titles, by = "title_processed",
              relationship = "many-to-many") |> 
-  mutate(has_german_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
-  arrange(trial_id.x, desc(has_german_protocol)) |> 
+  mutate(trial_de_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
+  arrange(trial_id.x, desc(trial_de_protocol)) |> 
   distinct(trial_id.x, trial_id.y) |> 
   mutate(via_title = TRUE)
 
@@ -99,8 +100,8 @@ mtm_euctr_drks <- dupes_euctr_drks_titles.y |>
 title_matches_euctr_ctgov <- euctr_titles |> 
   inner_join(ct_titles, by = "title_processed",
              relationship = "many-to-many") |> 
-  mutate(has_german_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
-  arrange(trial_id.x, desc(has_german_protocol)) |> 
+  mutate(trial_de_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
+  arrange(trial_id.x, desc(trial_de_protocol)) |> 
   distinct(trial_id.x, trial_id.y) |> 
   mutate(via_title = TRUE)
 
@@ -232,15 +233,52 @@ crossreg_title_ids <- crossreg_w_and_wo_title |>
   left_join(euctr_de_protocols, by = c("trial_id" = "eudract_number")) |> 
   left_join(euctr_de_protocols |> rename(linked_de_protocol = trial_de_protocol), by = c("linked_id" = "eudract_number")) 
 
+
+# Number unique TRNs?= unique clusters
+crossreg_title_ids |>
+  distinct(cluster_unique_id) |>
+  nrow()
+
+crossreg_title_ids_mtm <- crossreg_title_ids |>
+  filter(many_to_many_overall)
+
 crossreg_title_ids |> 
   count(trial_de_protocol)
 
-crossreg_title_ids_de_protocols <- crossreg_title_ids |> 
+### remove EUCTR TRNs without a DE protocol
+crossreg_title_ids <- crossreg_title_ids |> 
   filter(trial_de_protocol != FALSE | is.na(trial_de_protocol),
          linked_de_protocol != FALSE | is.na(linked_de_protocol))
 
-crossreg_title_ids_de_protocols |> 
+# and recalculate the clusters
+new_clusters <- get_cluster_names_from_pairs(crossreg_title_ids |>
+                                               select(trial_id, linked_id)) |>
+  mutate(many_to_many = is_mtm(cluster_unique_id),
+         trns_in_cluster = str_count(cluster_unique_id, "_") + 1)
+
+
+simplified_clusters <- new_clusters |>
+  filter(many_to_many == FALSE) |>
+  select(-many_to_many)
+
+new_mtm <- new_clusters |>
+  filter(mtm == TRUE)  |>
+  select(-mtm)
+
+crossreg_title_ids_new_clusters <- crossreg_title_ids |> 
+  select(-cluster_unique_id, -many_to_many, -trns_in_cluster) |> 
+  left_join(new_clusters, by = "trial_id") |> 
+  select(contains("cluster"), everything(), -many_to_many_overall)
+
+#unique clusters
+crossreg_title_ids_new_clusters |>
+  filter(many_to_many == TRUE) |> 
+  count(cluster_unique_id) |>
+  nrow()
+
+crossreg_title_ids <- crossreg_title_ids_new_clusters |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
+
 
 # how many links (not triads, not many_to_many)
 qa_crossreg_title_ids <- crossreg_title_ids |> 
@@ -248,15 +286,107 @@ qa_crossreg_title_ids <- crossreg_title_ids |>
 
 nrow(qa_crossreg_title_ids)
 
-# how many many_to_many
 qa_mtm <- crossreg_title_ids |> 
-  filter(many_to_many_overall == TRUE)
-nrow(qa_mtm)
+  filter(many_to_many == TRUE)
 
-#unique clusters
-qa_mtm |> 
-  distinct(cluster_unique_id) |> 
-  nrow()
+#### add EUCTR and CTgov grant numbers
+other_info <- file.path(AACT_folder, "id_information.txt") |>
+  read_delim(delim = "|") |>
+  filter(id_type %in% c(NA, "OTHER")) |>
+  select(trial_id = nct_id, other_nr_ctgov = id_value) |>
+  group_by(trial_id) |>
+  summarise(other_nr_ctgov = deduplicate_collapsed(other_nr_ctgov)) |>
+  ungroup()
+
+other_info_euctr <- read_csv(here("data", "raw", "euctr_euctr_dump-2024-09-07-092059.csv")) |>
+  # select(contains("number"), everything())
+  select(contains("eudract_number"), sponsor_s_protocol_code_number)
+
+other_info_euctr_collapsed <- other_info_euctr |>
+  rename(trial_id = eudract_number, other_nr_euctr = sponsor_s_protocol_code_number) |>
+  group_by(trial_id) |>
+  summarise(other_nr_euctr = deduplicate_collapsed(other_nr_euctr)) |>
+  ungroup()
+
+mtm_other <- qa_mtm  |>
+  left_join(other_info, by = "trial_id") |>
+  left_join(other_info, by = c("linked_id" = "trial_id")) |>
+  left_join(other_info_euctr_collapsed, by = "trial_id") |>
+  left_join(other_info_euctr_collapsed, by = c("linked_id" = "trial_id")) |>
+  rowwise() |>
+  mutate(trial_registry = get_registry_name(trial_id),
+         linked_registry = get_registry_name(linked_id),
+         other_nr_ctgov = deduplicate_collapsed(c(other_nr_ctgov.x, other_nr_ctgov.y)),
+         other_nr_euctr = deduplicate_collapsed(c(other_nr_euctr.x, other_nr_euctr.y))) |>
+  ungroup() |>
+  select(-contains(c(".x", ".y"))) |>
+  mutate(other_match = str_detect(other_nr_ctgov, other_nr_euctr) |
+           str_detect(other_nr_euctr, other_nr_ctgov),
+         euctr_ctgov = trial_registry == "EUCTR" & linked_registry == "ClinicalTrials.gov" |
+           trial_registry == "ClinicalTrials.gov" & linked_registry == "EUCTR") |>
+  group_by(cluster_unique_id, euctr_ctgov) |>
+  mutate(n_reg = n(),
+         n_other_matched = sum(other_match == TRUE, na.rm = TRUE),
+         false_positive = n_reg > 1 &
+           n_other_matched > 0 & other_match == FALSE)
+
+
+mtm_other |>
+  write_csv(here("data", "processed", "mtm_othernr.csv"))
+
+validated_mtm_resolved <- read_xlsx(here("data", "processed", "validations",
+                                         "mtm_othernr_manually_validated – 20250724.xlsx"))
+
+crossreg_tp <- validated_mtm_resolved |>
+  filter(combinations_validated != "NA") |>
+  select(binary_id, cluster_unique_id = combinations_validated)
+
+mtm_resolved <- crossreg_title_ids |>
+  filter(many_to_many_overall == TRUE,
+         binary_id %in% c(crossreg_tp$binary_id) |
+           trial_id %in% simplified_clusters$trial_id |
+           linked_id %in% simplified_clusters$trial_id) |>
+  select(-cluster_unique_id) |>
+  left_join(simplified_clusters, by = "trial_id") |>
+  left_join(simplified_clusters, by = c("linked_id" = "trial_id")) |>
+  left_join(crossreg_tp, by = "binary_id") |>
+  mutate(cluster_unique_id = case_when(
+    !is.na(cluster_unique_id) ~ cluster_unique_id,
+    cluster_unique_id.x == binary_id ~ binary_id,
+    .default = NA
+  ),
+  many_to_many = is_mtm(cluster_unique_id),
+  trns_in_cluster = str_count(cluster_unique_id, "_") + 1) |>
+  filter(!is.na(cluster_unique_id)) |>
+  select(-contains(".x"), -contains(".y"))
+
+
+crossreg_validated <- crossreg_title_ids |>
+  filter(many_to_many_overall == FALSE) |>
+  ### add only validated  mtm here
+  bind_rows(mtm_resolved) |>
+  mutate(trial_id_meets_inclusion = trial_id %in% sample_ids,
+         linked_id_meets_inclusion = linked_id %in% sample_ids) |>
+  group_by(cluster_unique_id) |> 
+  mutate(cl_meets_inclusion = any(trial_id_meets_inclusion) |
+           any(linked_id_meets_inclusion)) |>
+  ungroup() |> 
+  select(
+    -many_to_many_overall, -contains("in_sample"), -selfref)
+
+falling_clusters <- crossreg_validated |> 
+  filter(cl_meets_inclusion == FALSE)
+
+crossreg_validated_included <- crossreg_validated |> 
+  filter(cl_meets_inclusion == TRUE)|>
+  select(-cl_meets_inclusion) |> 
+  write_excel_csv(here("data", "processed", "crossreg_validated_mtm.csv"))
+
+validated_crossreg_ids <- crossreg_validated |>
+  select(trial_id, linked_id, crossreg_id = cluster_unique_id) |>
+  pivot_longer(-crossreg_id, names_to = NULL, values_to = "trial_id") |>
+  distinct(trial_id, .keep_all = TRUE) |> 
+  write_excel_csv(here("data", "processed", "crossreg_ids.csv"))
 
 
 ##########################################################
