@@ -4,6 +4,9 @@ library(progressr)
 library(furrr)
 library(here)
 
+
+source(here("scripts", "utils.R"))
+
 plan(multisession)
 handlers(global = TRUE)
 
@@ -63,6 +66,5 @@ pub_search_table |>
   distinct(crossreg_id) |> 
   nrow()
 
-?which_trns
+pub_search_table <- read_csv((here("data", "processed", "pub_search_table.csv")))
 
-which_trns("2005-005144-62 NCT01449344", registry = "EudraCT")
