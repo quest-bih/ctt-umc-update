@@ -371,8 +371,7 @@ crossreg_validated <- crossreg_title_ids |>
   mutate(cl_meets_inclusion = any(trial_id_meets_inclusion) |
            any(linked_id_meets_inclusion)) |>
   ungroup() |> 
-  select(
-    -many_to_many_overall, -contains("in_sample"), -selfref)
+  select(-contains("in_sample"), -selfref)
 
 falling_clusters <- crossreg_validated |> 
   filter(cl_meets_inclusion == FALSE)
