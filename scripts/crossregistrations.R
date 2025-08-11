@@ -262,8 +262,8 @@ simplified_clusters <- new_clusters |>
   select(-many_to_many)
 
 new_mtm <- new_clusters |>
-  filter(mtm == TRUE)  |>
-  select(-mtm)
+  filter(many_to_many == TRUE)  |>
+  select(-many_to_many)
 
 crossreg_title_ids_new_clusters <- crossreg_title_ids |> 
   select(-cluster_unique_id, -many_to_many, -trns_in_cluster) |> 
@@ -342,7 +342,7 @@ crossreg_tp <- validated_mtm_resolved |>
   select(binary_id, cluster_unique_id = combinations_validated)
 
 mtm_resolved <- crossreg_title_ids |>
-  filter(many_to_many_overall == TRUE,
+  filter(many_to_many == TRUE,
          binary_id %in% c(crossreg_tp$binary_id) |
            trial_id %in% simplified_clusters$trial_id |
            linked_id %in% simplified_clusters$trial_id) |>
@@ -362,7 +362,7 @@ mtm_resolved <- crossreg_title_ids |>
 
 
 crossreg_validated <- crossreg_title_ids |>
-  filter(many_to_many_overall == FALSE) |>
+  filter(many_to_many == FALSE) |>
   ### add only validated  mtm here
   bind_rows(mtm_resolved) |>
   mutate(trial_id_meets_inclusion = trial_id %in% sample_ids,
