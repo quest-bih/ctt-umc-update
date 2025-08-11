@@ -16,9 +16,9 @@ euctr_umc <- read_csv(here("data", "processed", "umc_trials_euctr.csv")) |>
   summarise(across(everything(), \(x) unique(x) |> paste0(collapse = ";"))) |> 
   mutate(umc = ifelse(eudract_number == "2009-012198-36", "Giessen", umc))
 
-euctr_tib <- read_csv(here("data", "raw", "euctr_euctr_dump-2024-09-07-092059.csv")) |> 
+euctr_tib <- read_csv(here("data", "raw", "euctr_euctr_dump-2025-07-05-072411.csv")) |> 
   select(eudract_number, everything())
-euctr_results <- read_csv(here("data", "raw", "euctr_data_quality_results_scrape_sept_2024.csv")) |> 
+euctr_results <- read_csv(here("data", "raw", "euctr_data_quality_results_scrape_jul_2025.csv")) |> 
   select(-`...1`) |> 
   rename(eudract_number = trial_id,
          actual_enrollment = global_subjects,
