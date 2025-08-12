@@ -301,8 +301,10 @@ CTgov_sample <- AACT_datasets$studies |>
 CTgov_sample |> 
   count(is.na(umc_sponsor), is.na(umc_pi), is.na(umc_resp_party))
 
+CTgov_sample_save <- CTgov_sample |> 
+  rename(last_updated = last_update_posted_date) |> 
+  mutate(results_reporting = if_else(!is.na(results_first_submitted_date), TRUE, FALSE))
 
-CTgov_sample_save <- CTgov_sample
 write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
 
 qa_CTgov <- CTgov_sample |> 
@@ -376,16 +378,16 @@ qa_na_excluded <- qa_excluded |>
 #   left_join(PI_affils_table_filtered, by = "nct_id")
 
 #add intervention name
-interventions_combined <- AACT_datasets$interventions |>
-  group_by(nct_id) |>
-  summarise(intervention_names_comb = paste(name, collapse=" | "))
-
-CTgov_sample <- CTgov_sample |>
-  left_join(interventions_combined, by = "nct_id")
-
-#add calculated values
-CTgov_sample <- CTgov_sample |>
-  left_join(AACT_datasets$calculated_values, by = "nct_id")
+# interventions_combined <- AACT_datasets$interventions |>
+#   group_by(nct_id) |>
+#   summarise(intervention_names_comb = paste(name, collapse=" | "))
+# 
+# CTgov_sample <- CTgov_sample |>
+#   left_join(interventions_combined, by = "nct_id")
+# 
+# #add calculated values
+# CTgov_sample <- CTgov_sample |>
+#   left_join(AACT_datasets$calculated_values, by = "nct_id")
 
 # 
 # CTgov_sample_save <- CTgov_sample |>
@@ -407,5 +409,5 @@ CTgov_sample <- CTgov_sample |>
 #save CT.gov trial sample
 #please be aware that not all associations of the trials to the cites are correct (there are still false positives)
 #such that the city associations had to be checked manually during publication search
-write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
+# write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
 

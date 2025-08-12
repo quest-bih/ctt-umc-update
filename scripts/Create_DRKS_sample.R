@@ -303,7 +303,15 @@ drks_results <- drks_tib |>
   unnest(trialResultsDescriptions) |> 
   unnest(idLocale)
 
+drks_results_reporting <- drks_results |> 
+  group_by(drksId) |> 
+  summarise(results_reporting = 
+              any(str_detect(description, "Ergebnisbericht|Abschlussbericht|(?<!keine )Studienergebnisse|Studienergebnisbericht|study results"),
+                  na.rm = TRUE)) |> 
+  select(trial_id = drksId, everything())
+
 drks_results |> 
+  ungroup() |> 
   count(type, sort = TRUE)
 
 ############# prepare export with crossreg data and additional transparency practices measures
@@ -319,19 +327,13 @@ drks_export <- drks_export |>
   rename(trial_id = drksId) |> 
   left_join(validated_crossreg_ids, by = "trial_id") |> 
   left_join(drks_recruitment_dates, by = "trial_id") |> 
+  left_join(drks_results_reporting, by = "trial_id") |> 
   mutate(across(contains("Date"), ymd),
     is_prospective =
            (floor_date(registrationDrks, unit = "month") <=
               floor_date(actualStartDate, unit = "month")),
-    
-    ### TODO: implement summary results detection as discussed with Delwen
-         # is_summary_results = if_else(
-         #     str_detect(citation,
-         #                "Ergebnisbericht|Abschlussbericht|Studienergebnisse|Studienergebnisbericht|study results")
-         #     & reference_type %in% c("Trial results", "Further trial documents"),
-         #     TRUE, FALSE
-         #   )
-           ) |> 
+    results_reporting = replace_na(results_reporting, FALSE)) |> 
   select(trial_id, contains("umc"), contains("Date"),
-         results_reporting)
+         results_reporting, last_updated = lastUpdate)
 
+write_excel_csv(drks_export, here("data", "processed", "DRKS_sample.csv"), na = "")
