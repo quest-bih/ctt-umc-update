@@ -15,7 +15,6 @@ euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 
-
 sample_ids <- c(euctr_export$eudract_number, drks_export$drksId, ctgov_export$nct_id) |> 
   unique()
 
@@ -42,7 +41,7 @@ pub_search_table_euctr <- euctr_export |>
   filter(!trial_id %in% pub_search_table_crossreg$trial_id)
 
 pub_search_table_drks <- drks_export |> 
-  select(trial_id = drksId) |> 
+  # select(trial_id = drksId) |> 
   filter(!trial_id %in% pub_search_table_crossreg$trial_id)
 
 pub_search_table_ctgov <- ctgov_export |> 
@@ -61,6 +60,15 @@ pub_search_table <- pub_search_table_euctr |>
          many_to_many = FALSE,
          trial_id_meets_inclusion = trial_id %in% sample_ids) |> 
   bind_rows(pub_search_table_crossreg)
+
+### add withdrawn status for DRKS and CT.gov
+withdrawn_trns_drks <- drks_export |>
+  filter(status == "WITHDRAWN")
+withdrawn_trn_ctgov <- ctgov_export |> 
+  filter(overall_status == "WITHDRAWN")
+
+pub_search_table <- pub_search_table |> 
+  mutate(is_withdrawn = trial_id %in% c(withdrawn_trn_ctgov$nct_id, withdrawn_trns_drks$trial_id))
 
 pub_search_table |> 
   write_excel_csv(here("data", "processed", "pub_search_table.csv"))

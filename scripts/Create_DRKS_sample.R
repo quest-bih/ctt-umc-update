@@ -103,7 +103,7 @@ drks_interventional_trns <- drks_study_characteristic |>
   filter(type == "INTERVENTIONAL") |> 
   pull(drksId)
 
-drks_recuritment <- drks_tib |> 
+drks_recruitment <- drks_tib |> 
   select(drksId, recruitment) |> 
   unnest(recruitment)
 
@@ -318,10 +318,8 @@ drks_results |>
 validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
 drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 
-drks_recruitment_dates <- drks_tib |> 
-  select(drksId, recruitment) |> 
-  unnest(recruitment) |> 
-  select(trial_id = drksId, contains("actual"))
+drks_recruitment_dates <- drks_recruitment |> 
+  select(trial_id = drksId, contains("actual"), status)
 
 drks_export <- drks_export |> 
   rename(trial_id = drksId) |> 
@@ -334,6 +332,6 @@ drks_export <- drks_export |>
               floor_date(actualStartDate, unit = "month")),
     results_reporting = replace_na(results_reporting, FALSE)) |> 
   select(trial_id, contains("umc"), contains("Date"),
-         results_reporting, last_updated = lastUpdate)
+         results_reporting, last_updated = lastUpdate, status)
 
 write_excel_csv(drks_export, here("data", "processed", "DRKS_sample.csv"), na = "")
