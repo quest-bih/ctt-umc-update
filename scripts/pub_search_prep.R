@@ -31,7 +31,10 @@ pub_search_table_crossreg <- validated_crossreg_ids |>
          crossreg_ctgov = which_trns(noselfref, registry = "ClinicalTrials.gov"),
          many_to_many = is_mtm(crossreg_id),
          trial_id_meets_inclusion = trial_id %in% sample_ids) |>
-  select(-noselfref)
+  select(-noselfref) |> 
+  group_by(crossreg_id) |> 
+  arrange(crossreg_id, desc(trial_id)) |> 
+  ungroup()
 
 
 pub_search_table_euctr <- euctr_export |> 

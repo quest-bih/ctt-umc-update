@@ -195,7 +195,7 @@ get_registry_name <- function(name_str) {
 get_registry_url <- function(name_str) {
   dplyr::case_when(
     stringr::str_detect(name_str, "-") ~ paste0("https://www.clinicaltrialsregister.eu/ctr-search/search?query=", name_str),
-    stringr::str_detect(name_str, "DRKS") ~ paste0("https://drks.de/search/de/trial/", name_str),
+    stringr::str_detect(name_str, "DRKS") ~ paste0("https://drks.de/search/en/trial/", name_str),
     stringr::str_detect(name_str, "NCT") ~ paste0("https://clinicaltrials.gov/study/", name_str)
   )
 }
