@@ -28,15 +28,7 @@ euctr_results <- read_csv(here("data", "raw", "euctr_data_quality_results_scrape
 
 euctr_combined <- euctr_tib |> 
   full_join(euctr_results, by = "eudract_number") |> 
-  left_join(euctr_umc, by = "eudract_number")
-
-#one_off <- euctr_results |> 
-#  filter(!eudract_number %in% euctr_tib$eudract_number) ?
-
-euctr_combined |> 
-  saveRDS(here("data", "raw", "euctr_combined.rds"))
-
-euctr_filtered <- euctr_combined |> 
+  left_join(euctr_umc, by = "eudract_number") |> 
   mutate(completion_date = case_when(
     !is.na(results_global_end_of_trial_date) ~ results_global_end_of_trial_date,
     !is.na(date_of_the_global_end_of_the_trial) &
@@ -44,7 +36,30 @@ euctr_filtered <- euctr_combined |>
     .default = NA
   )) |> 
   select(contains("eudract_number"), completion_date, contains("global"), umc, 
-         everything()) |> 
+         everything())
+
+#one_off <- euctr_results |> 
+#  filter(!eudract_number %in% euctr_tib$eudract_number) ?
+
+euctr_combined |> 
+  saveRDS(here("data", "raw", "euctr_combined.rds"))
+
+euctr_inex <- euctr_combined |> 
+  mutate(is_interventional = TRUE,
+         is_completed_2018_2021 = between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31")),
+         is_german_umc = !is.na(umc)) |> 
+  group_by(eudract_number) |> 
+  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
+  ungroup() |>
+  filter(trial_de_protocol == TRUE) |> 
+  select(trial_id = eudract_number, status = trial_status, last_updated = results_last_updated,
+         registration_date = date_on_which_this_record_was_first_entered_in_the_eudract_data,
+         is_interventional, is_completed_2018_2021, is_german_umc) 
+
+euctr_inex |> 
+  write_excel_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
+
+euctr_filtered <- euctr_combined |> 
   filter(!is.na(umc),
     between(completion_date, as_date("2018-01-01"), as_date("2021-12-31"))) |> 
   group_by(eudract_number) |> 
@@ -99,15 +114,19 @@ missing_de_protocols |>
 missing_de_protocols |> 
   write_excel_csv(here("data", "processed", "euctr_missing_de_protocols.csv"))
 
-############# prepare export with crossreg data and additional transparency practices measures
-validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
-euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
-
-euctr_export <- euctr_export |> 
-  rename(trial_id = eudract_number) |> 
-  left_join(validated_crossreg_ids, by = "trial_id") |> 
-  select(trial_id, eudract_number_with_country, umc, completion_date, contains("date"),
-         results_reporting, contains("eutt"))
-
+############# prepare export with crossreg data and additional transparency practices measures? 
+# validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
+# euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
+# 
+# euctr_export <- euctr_export |> 
+#   rename(trial_id = eudract_number) |> 
+#   left_join(validated_crossreg_ids, by = "trial_id") |> 
+#   select(trial_id, eudract_number_with_country, umc, completion_date, contains("date"),
+#          results_reporting, contains("eutt"))
+# 
+# euctr_results |> 
+#   count(results_actual_enrollment >= 88888)
+# qa_enrollment <- euctr_results |> 
+#   filter( eudract_number %in% euctr_export$trial_id) 
 
 

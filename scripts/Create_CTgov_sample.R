@@ -6,7 +6,7 @@
 # 
 # The script searches the AACT dataset for affiliations of the sponsor/PI/responsible party
 # associated with the different UMCs (keywords are loaded from city_search_terms.csv). It also filters
-# the relevant completion years and study status (Completed, Terminated, Suspended, Unknown status).
+# the relevant completion years and study type (interventional).
 #
 # The script saves a filtered version of the dataset, containing only relevant trials. 
 # Please be
@@ -183,6 +183,7 @@ validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
 validation_umcs_ctgov_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
 
+
 # If we want to merge in later processing for e.g. harmonization with
 # other registries, combine fields into the different filter categories
 # we want here:
@@ -250,6 +251,8 @@ validated_umc_ctgov_deduplicated <- validated_umc_ctgov |>
   pivot_wider(id_cols = id, names_from = type, values_from = umc) |>
   mutate(umc = deduplicate_collapsed(c(umc_pi, umc_sponsor, umc_resp_party)))
 
+validated_umc_ctgov_deduplicated |> 
+  write_excel_csv(here("data", "processed", "validated_umc_inclusions_ctgov.csv"))
 
 validated_exclusions_ctgov <- bind_rows(list(umc_ctgov_sponsors,
                                              umc_resp_party,
@@ -265,6 +268,15 @@ validated_exclusions_ctgov <- bind_rows(list(umc_ctgov_sponsors,
 validated_exclusions_ctgov |> 
   write_csv(here("data", "processed", "validated_exclusions_ctgov.csv"))
 
+ctgov_inex <- AACT_datasets$studies |> 
+  mutate(is_interventional = study_type == "INTERVENTIONAL",
+         is_completed_2018_2021 = between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31")),
+         is_german_umc = nct_id %in% validated_umc_ctgov_deduplicated$id) |> 
+  select(trial_id = nct_id, status = overall_status, last_updated = last_update_submitted_date,
+         registration_date = study_first_submitted_date, is_interventional, is_completed_2018_2021, is_german_umc) 
+
+ctgov_inex |> 
+  write_excel_csv(here("data", "processed", "inclusion_exclusion_ctgov.csv"))
 
 qa_validated_umc_ctgov <- validated_umc_ctgov |>  
   filter(!is.na(umc)) |> 
@@ -291,7 +303,8 @@ qa_validated_umc_ctgov |>
 # deprecated: create for each study a list of affiliated cities and add to main table
 #----------------------------------------------------------------------------------------------------------------------
 
-#filter cases for affiliation, years, study status, and study type, etc.
+#filter cases for affiliation, years, study type, etc.
+# decision: no need to save interim file as no mutate or summaries done before filtering
 CTgov_sample <- AACT_datasets$studies |> 
   filter(nct_id %in% inclusion_trns,
          nct_id %in% validated_umc_ctgov_deduplicated$id) |> # apply inclusion filter here, incl. umc

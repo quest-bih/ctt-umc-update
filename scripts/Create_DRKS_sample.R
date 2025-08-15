@@ -99,12 +99,15 @@ drks_study_characteristic <- drks_tib |>
   select(drksId, studyCharacteristic) |> 
   unnest(studyCharacteristic)
 
-drks_interventional_trns <- drks_study_characteristic |> 
-  filter(type == "INTERVENTIONAL") |> 
-  pull(drksId)
+drks_interventional <- drks_tib |> 
+  select(drksId, studyCharacteristic) |> 
+  unnest(studyCharacteristic) |> 
+  mutate(is_interventional = type == "INTERVENTIONAL") |> 
+  select(drksId, is_interventional)
 
 drks_recruitment <- drks_tib |> 
-  select(drksId, recruitment) |> 
+  select(drksId, recruitment, registration_date = registrationDrks,
+         last_updated = lastUpdate) |> 
   unnest(recruitment)
 
 drks_2018_2021 <- drks_recruitment |> 
@@ -113,7 +116,7 @@ drks_2018_2021 <- drks_recruitment |>
 
 validation_umcs_drks <- umc_drks_sponsors |> 
   bind_rows(umc_drks_pcis) |>
-  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+  filter(drksId %in% drks_interventional$drksId, # apply interventional and time filter here
          drksId %in% drks_2018_2021) |> 
   mutate(umc = which_umcs(raw_affil),
          validation = NA,
@@ -226,7 +229,7 @@ validated_umc_drks_deduplicated <- validated_umc_drks |>
 validated_exclusions_drks <- validated_umc_drks |>  
   filter(umc == "false positive", 
          !drksId %in% validated_umc_drks_deduplicated$drksId,
-         drksId %in% drks_interventional_trns,
+         drksId %in% drks_interventional$drksId,
          drksId %in% drks_2018_2021) |> 
   mutate(type = case_when(
            type == "PRIMARY_SPONSOR" ~ "umc_sponsor",
@@ -248,15 +251,27 @@ qa_validated_umc_drks <- validated_umc_drks |>
   ungroup()
 
 qa_validated_umc_drks |> 
-  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+  filter(drksId %in% drks_interventional$drksId, # apply interventional and time filter here
          drksId %in% drks_2018_2021) |> 
   count(validated_affils, sort = TRUE) |>
   mutate(total = sum(n),
          prop = n / total) |> 
   filter(str_detect(validated_affils, "false"))
 
+
+drks_inex <- drks_recruitment |>
+  left_join(drks_interventional, by = "drksId") |> 
+  mutate(is_completed_2018_2021 = between(as_date(actualCompletionDate),
+                                          as_date("2018-01-01"), as_date("2021-12-31")),
+         is_german_umc = drksId %in% validated_umc_drks_deduplicated$drksId) |> 
+  select(trial_id = drksId, status, last_updated, registration_date, is_interventional, 
+         is_completed_2018_2021, is_german_umc)
+
+drks_inex |> 
+  write_excel_csv(here("data", "processed", "inclusion_exclusion_drks.csv"))
+
 DRKS_sample_save <- drks_tib |> 
-  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+  filter(drksId %in% drks_interventional$drksId, # apply interventional and time filter here
          drksId %in% drks_2018_2021,
          drksId %in% validated_umc_drks_deduplicated$drksId) |> 
   select(drksId:url) |> 

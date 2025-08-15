@@ -10,6 +10,21 @@ source(here("scripts", "utils.R"))
 plan(multisession)
 handlers(global = TRUE)
 
+# EUCTR inclusion and exclusion criteria
+euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
+
+# DRKS inclusion and exclusion criteria
+drks_inex <- read_csv(here("data", "processed", "inclusion_exclusion_drks.csv"))
+
+###decide how to deal with NAs?
+desc(last_updated), desc(registration_date)
+
+# Ct.gov inclusion and exclusion criteria
+ctgov_inex <- read_csv(here("data", "processed", "inclusion_exclusion_ctgov.csv"))
+
+
+combined_inex <- bind_rows(euctr_inex, drks_inex, ctgov_inex)
+
 validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
 euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
@@ -35,6 +50,7 @@ pub_search_table_crossreg <- validated_crossreg_ids |>
   arrange(crossreg_id, desc(trial_id)) |> 
   ungroup()
 
+# TODO: sort by recency, flag for date_ok, studytype_ok, etc
 
 pub_search_table_euctr <- euctr_export |> 
   select(trial_id = eudract_number) |> 
@@ -61,14 +77,19 @@ pub_search_table <- pub_search_table_euctr |>
          trial_id_meets_inclusion = trial_id %in% sample_ids) |> 
   bind_rows(pub_search_table_crossreg)
 
-### add withdrawn status for DRKS and CT.gov
-withdrawn_trns_drks <- drks_export |>
-  filter(status == "WITHDRAWN")
-withdrawn_trn_ctgov <- ctgov_export |> 
-  filter(overall_status == "WITHDRAWN")
-
 pub_search_table <- pub_search_table |> 
-  mutate(is_withdrawn = trial_id %in% c(withdrawn_trn_ctgov$nct_id, withdrawn_trns_drks$trial_id))
+  select(-status) |> 
+  left_join(combined_status, by = "trial_id")
+pub_search_table |> count(is.na(status))
+
+pub_search_table |> filter(is.na(status))
+
+pub_search_table |> 
+  filter(str_detect(trial_id, "NCT")) |> 
+  count(status, sort = TRUE)
+
+# pub_search_table <- pub_search_table |> 
+#   mutate(is_withdrawn = trial_id %in% c(withdrawn_trn_ctgov$nct_id, withdrawn_trns_drks$trial_id))
 
 pub_search_table |> 
   write_excel_csv(here("data", "processed", "pub_search_table.csv"))
