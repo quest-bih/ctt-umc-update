@@ -48,10 +48,11 @@ euctr_inex <- euctr_combined |>
   mutate(is_interventional = TRUE,
          is_completed_2018_2021 = between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31")),
          is_german_umc = !is.na(umc)) |> 
-  group_by(eudract_number) |> 
-  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
-  ungroup() |>
-  filter(trial_de_protocol == TRUE) |> 
+  filter(str_detect(eudract_number_with_country, "DE")) |> # exclude any without a DE protocol 
+  # group_by(eudract_number) |> 
+  # mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
+  # ungroup() |>
+  # filter(trial_de_protocol == TRUE) |> 
   select(trial_id = eudract_number, status = trial_status, last_updated = results_last_updated,
          registration_date = date_on_which_this_record_was_first_entered_in_the_eudract_data,
          is_interventional, is_completed_2018_2021, is_german_umc) 
