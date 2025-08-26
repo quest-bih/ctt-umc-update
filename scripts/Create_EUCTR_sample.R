@@ -14,7 +14,8 @@ euctr_umc <- read_csv(here("data", "processed", "umc_trials_euctr.csv")) |>
   rename(eudract_number = id) |> 
   group_by(eudract_number) |> 
   summarise(across(everything(), \(x) unique(x) |> paste0(collapse = ";"))) |> 
-  mutate(umc = ifelse(eudract_number == "2009-012198-36", "Giessen", umc))
+  mutate(umc = ifelse(eudract_number == "2009-012198-36", "Giessen", umc)) |> 
+  ungroup()
 
 euctr_tib <- read_csv(here("data", "raw", "euctr_euctr_dump-2025-07-05-072411.csv")) |> 
   select(eudract_number, everything())
@@ -35,8 +36,11 @@ euctr_combined <- euctr_tib |>
       str_detect(eudract_number_with_country, "DE") ~ date_of_the_global_end_of_the_trial,
     .default = NA
   )) |> 
-  select(contains("eudract_number"), completion_date, contains("global"), umc, 
-         everything())
+  group_by(eudract_number) |> 
+  mutate(has_trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
+  ungroup() |> 
+  select(contains("eudract_number"), completion_date, contains("global"), umc, has_trial_de_protocol, 
+         everything()) 
 
 #one_off <- euctr_results |> 
 #  filter(!eudract_number %in% euctr_tib$eudract_number) ?
@@ -48,36 +52,30 @@ euctr_inex <- euctr_combined |>
   mutate(is_interventional = TRUE,
          is_completed_2018_2021 = between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31")),
          is_german_umc = !is.na(umc)) |> 
-  filter(str_detect(eudract_number_with_country, "DE")) |> # exclude any without a DE protocol 
-  # group_by(eudract_number) |> 
-  # mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
-  # ungroup() |>
-  # filter(trial_de_protocol == TRUE) |> 
+  # filter(str_detect(eudract_number_with_country, "DE")) |> # exclude any without a DE protocol 
   select(trial_id = eudract_number, status = trial_status, last_updated = results_last_updated,
          registration_date = date_on_which_this_record_was_first_entered_in_the_eudract_data,
-         is_interventional, is_completed_2018_2021, is_german_umc) 
+         is_interventional, is_completed_2018_2021, is_german_umc, has_trial_de_protocol, eudract_number_with_country) 
 
 euctr_inex |> 
   write_excel_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
 
 euctr_filtered <- euctr_combined |> 
-  filter(!is.na(umc),
-    between(completion_date, as_date("2018-01-01"), as_date("2021-12-31"))) |> 
-  group_by(eudract_number) |> 
-  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
-  ungroup() 
+  select(trial_id = eudract_number, everything(), -has_trial_de_protocol) |> 
+  right_join(euctr_inex, by = c("trial_id", "eudract_number_with_country")) |> 
+  filter(is_interventional == TRUE, is_completed_2018_2021 == TRUE, is_german_umc == TRUE)
 
-# number of new TRNs from EUCTR
-euctr_combined |> 
-  select(results_global_end_of_trial_date,
-         date_of_the_global_end_of_the_trial,
-         umc, eudract_number, eudract_number_with_country, everything()) |> 
-  # filter(eudract_number == "2016-002673-35")
-  distinct(eudract_number) |> 
-  nrow()
+# # number of new TRNs from EUCTR
+# euctr_combined |> 
+#   select(results_global_end_of_trial_date,
+#          date_of_the_global_end_of_the_trial,
+#          umc, eudract_number, eudract_number_with_country, everything()) |> 
+#   # filter(eudract_number == "2016-002673-35")
+#   distinct(eudract_number) |> 
+#   nrow()
 
 euctr_filtered |> 
-  filter(trial_de_protocol == TRUE) |> # here we exclude TRNs without DE protocols
+  filter(has_trial_de_protocol == TRUE) |> # here we exclude TRNs without DE protocols
   write_excel_csv(here("data", "processed", "EUCTR_sample.csv"), na = "")
 
 # sanity check results without german protocols
@@ -85,32 +83,27 @@ euctr_filtered |>
 # sequence umc > completion_date > german protocol
 
 # there are 22 TRNs in all of EUCTR with a German UMC but no German protocol
-qa_missing_de_protocols <- euctr_combined |> 
-  filter(!is.na(umc)) |> 
-  group_by(eudract_number, umc) |> 
-  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
-  ungroup() |> 
-  filter(trial_de_protocol == FALSE) # here we exclude TRNs with DE protocols!
+qa_missing_de_protocols <- euctr_inex |> 
+  filter(is_german_umc == TRUE,
+         has_trial_de_protocol == FALSE) # here we exclude TRNs with DE protocols!
 
 qa_missing_de_protocols |> 
-  distinct(eudract_number) |> 
+  distinct(trial_id) |> 
   count()
 
 missing_de_protocols <- euctr_combined |> 
-  filter(eudract_number %in% qa_missing_de_protocols$eudract_number) |> 
-  rowwise() |> 
-  mutate(in_sampling_period = any(between(results_global_end_of_trial_date, as_date("2018-01-01"), as_date("2021-12-31")),
-    between(date_of_the_global_end_of_the_trial, as_date("2018-01-01"), as_date("2021-12-31")), na.rm = TRUE)) |> 
-  ungroup() |> 
-  select(contains("eudract"), umc, in_sampling_period, contains("global"), everything()) |> 
-  arrange(desc(eudract_number))
+  select(trial_id = eudract_number, everything(), -has_trial_de_protocol) |> 
+  filter(trial_id %in% qa_missing_de_protocols$trial_id) |> 
+  left_join(euctr_inex, by = c("trial_id", "eudract_number_with_country")) |>  
+  select(contains("eudract"), umc, is_completed_2018_2021, contains("global"), everything()) |> 
+  arrange(desc(trial_id))
 
 missing_de_protocols |> 
-  count(in_sampling_period)
+  count(is_completed_2018_2021)
 
 missing_de_protocols |> 
-  filter(in_sampling_period) |> 
-  distinct(eudract_number)
+  filter(is_completed_2018_2021) |> 
+  distinct(trial_id)
 
 missing_de_protocols |> 
   write_excel_csv(here("data", "processed", "euctr_missing_de_protocols.csv"))
@@ -129,5 +122,6 @@ missing_de_protocols |>
 #   count(results_actual_enrollment >= 88888)
 # qa_enrollment <- euctr_results |> 
 #   filter( eudract_number %in% euctr_export$trial_id) 
+
 
 

@@ -128,7 +128,6 @@ euctr_trns_clean_all <- euctr_trns_updated |>
          across(where(is.numeric), \(x) replace_na(x, 0)))
 
 # quality check on many-to-many relationships (multiple TRNs in results either for EUCTR or CT.gov)
-
 qa_mtm <- euctr_trns_clean_all |> 
   filter(n_ctgov > 1 | n_drks > 1 | n_euctr > 1) |> 
   select(contains("eudract"), contains("_all"), contains("other_ids"))
@@ -171,4 +170,45 @@ crossreg_euctr <- euctr_trns_export |>
 
 crossreg_euctr |> 
   write_excel_csv(here("data", "processed", "crossreg_euctr.csv"))
+
+
+### euctr with more than 1 protocol and with DE protocol, inconsistencies between secondary IDs?
+### No, very rarely, and not in our sample. Usually an additional CT.gov gets pulled from another
+### country's protocol, e.g. here from Italy: 2015-000319-41
+qa_multicountry_de <- euctr_trns_updated |>
+  group_by(eudract_number) |> 
+  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE),
+         n_countries = n()) |> 
+  # ungroup() |> 
+  filter(n_countries > 1, trial_de_protocol == TRUE) |> 
+  group_by(eudract_number) |> 
+  summarise(ctgov_protocol_all = deduplicate_collapsed(
+    c(ctgov_clean, ctgov_clean_other)),
+    ctgov_results_all = deduplicate_collapsed(
+      c(ctgov_clean_results, ctgov_clean_other_results)),
+    drks_all = deduplicate_collapsed(c(drks_clean, drks_clean_results)),
+    euctr_all = deduplicate_collapsed(c(euctr_clean, euctr_clean_results))
+  )
+
+
+qa_multicountry_de_only <- euctr_trns_updated |>
+  group_by(eudract_number) |> 
+  mutate(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE),
+         n_countries = n()) |> 
+  # ungroup() |> 
+  filter(n_countries > 1, trial_de_protocol == TRUE, str_detect(eudract_number_with_country, "DE")) |> 
+  group_by(eudract_number) |> 
+  summarise(ctgov_protocol_all = deduplicate_collapsed(
+    c(ctgov_clean, ctgov_clean_other)),
+    ctgov_results_all = deduplicate_collapsed(
+      c(ctgov_clean_results, ctgov_clean_other_results)),
+    drks_all = deduplicate_collapsed(c(drks_clean, drks_clean_results)),
+    euctr_all = deduplicate_collapsed(c(euctr_clean, euctr_clean_results))
+  )
+
+qa_discrep_de <- qa_multicountry_de |> 
+  left_join(qa_multicountry_de_only, by = "eudract_number") |> 
+  filter(ctgov_protocol_all.x != ctgov_protocol_all.y) |> 
+  select(eudract_number, contains("ctgov_protocol_all")) |> 
+  left_join(euctr_inex, by = join_by("eudract_number" == "trial_id"))
 
