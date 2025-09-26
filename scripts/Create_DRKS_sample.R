@@ -116,7 +116,7 @@ drks_2018_2021 <- drks_recruitment |>
 
 validation_umcs_drks <- umc_drks_sponsors |> 
   bind_rows(umc_drks_pcis) |>
-  filter(drksId %in% drks_interventional$drksId, # apply interventional and time filter here
+  filter(drksId %in% (drks_interventional |> filter(is_interventional) |> pull(drksId)), # apply interventional and time filter here
          drksId %in% drks_2018_2021) |> 
   mutate(umc = which_umcs(raw_affil),
          validation = NA,
@@ -264,16 +264,18 @@ drks_inex <- drks_recruitment |>
   mutate(is_completed_2018_2021 = between(as_date(actualCompletionDate),
                                           as_date("2018-01-01"), as_date("2021-12-31")),
          is_german_umc = drksId %in% validated_umc_drks_deduplicated$drksId) |> 
-  select(trial_id = drksId, status, last_updated, registration_date, is_interventional, 
-         is_completed_2018_2021, is_german_umc)
-
+  select(drksId, status, last_updated, registration_date, is_interventional, 
+         is_completed_2018_2021, is_german_umc, completion_date = actualCompletionDate, estimated_completion_date = scheduledCompletionDate)
+drks_inex |> filter(is_completed_2018_2021, is_german_umc, is_interventional) |> count(status)
 drks_inex |> 
+  rename(trial_id = drksId) |> 
   write_excel_csv(here("data", "processed", "inclusion_exclusion_drks.csv"))
 
 DRKS_sample_save <- drks_tib |> 
-  filter(drksId %in% drks_interventional$drksId, # apply interventional and time filter here
-         drksId %in% drks_2018_2021,
-         drksId %in% validated_umc_drks_deduplicated$drksId) |> 
+  left_join(drks_inex, by = "drksId") |> 
+  filter(is_interventional == TRUE, # apply interventional and time filter here
+         is_completed_2018_2021 == TRUE,
+         is_german_umc == TRUE) |> 
   select(drksId:url) |> 
   left_join(validated_umc_drks_deduplicated, by = "drksId")
 
@@ -291,7 +293,7 @@ write_excel_csv(DRKS_sample_save, here("data", "processed", "DRKS_sample.csv"), 
 # DRKS_sample <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 
 qa_excluded <- drks_tib |> 
-  filter(drksId %in% drks_interventional_trns, # apply interventional and time filter here
+  filter(drksId %in% drks_interventional$drksId, # apply interventional and time filter here
          drksId %in% drks_2018_2021,
          !drksId %in% validated_umc_drks_deduplicated$drksId) |> 
   select(drksId, trialContacts) |> 
@@ -350,3 +352,16 @@ drks_export <- drks_export |>
          results_reporting, last_updated = lastUpdate, status)
 
 write_excel_csv(drks_export, here("data", "processed", "DRKS_sample.csv"), na = "")
+
+drks_recruitment |> 
+  left_join(drks_inex) |> 
+  filter(is_interventional,
+         drksId %in% umc_drks_sponsors$drksId | drksId %in% umc_drks_pcis$drksId,
+         !is.na(actualCompletionDate),
+         !is.na(scheduledCompletionDate),
+         between(as_date(scheduledCompletionDate), as_date("2018-01-01"), as_date("2021-12-31"))) |> 
+  # filter(is_interventional, is_german_umc) |> 
+  distinct(drksId, .keep_all = TRUE) |>
+  count(is.na(actualCompletionDate), is.na(scheduledCompletionDate))
+
+

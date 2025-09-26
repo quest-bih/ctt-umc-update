@@ -63,7 +63,7 @@ euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
 
 euctr_de_protocols <- euctr_combined |> 
   group_by(eudract_number) |> 
-  summarise(trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE))
+  summarise(has_trial_de_protocol = any(has_trial_de_protocol, na.rm = TRUE), .groups = "drop")
 
 # Process EU titles
 euctr_titles <- euctr_combined |>
@@ -73,7 +73,7 @@ euctr_titles <- euctr_combined |>
          title_length = str_length(title_processed)) |> 
   select(trial_id = eudract_number, eudract_number_with_country, 
          title = full_title_of_the_trial,
-         title_processed, title_length)
+         title_processed, title_length, has_trial_de_protocol)
 
 # multiline_titles <- euctr_updated_titles |> 
 #   # filter(eudract_number %in% c("2021-000369-34")) |> 
@@ -84,8 +84,7 @@ euctr_titles <- euctr_combined |>
 title_matches_euctr_drks <- euctr_titles |> 
   inner_join(drks_titles, by = "title_processed",
              relationship = "many-to-many") |> 
-  mutate(trial_de_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
-  arrange(trial_id.x, desc(trial_de_protocol)) |> 
+  arrange(trial_id.x, desc(has_trial_de_protocol)) |> 
   distinct(trial_id.x, trial_id.y) |> 
   mutate(via_title = TRUE)
 
@@ -100,8 +99,7 @@ mtm_euctr_drks <- dupes_euctr_drks_titles.y |>
 title_matches_euctr_ctgov <- euctr_titles |> 
   inner_join(ct_titles, by = "title_processed",
              relationship = "many-to-many") |> 
-  mutate(trial_de_protocol = str_detect(eudract_number_with_country, "DE$")) |> 
-  arrange(trial_id.x, desc(trial_de_protocol)) |> 
+  arrange(trial_id.x, desc(has_trial_de_protocol)) |> 
   distinct(trial_id.x, trial_id.y) |> 
   mutate(via_title = TRUE)
 
@@ -139,7 +137,7 @@ ctgov_id_info <- file.path(AACT_folder, "id_information.txt") |>
 title_matches <- title_matches_euctr_drks |> 
   bind_rows(title_matches_euctr_ctgov) |> 
   bind_rows(title_matches_drks_ctgov) |> 
-  rename(trial_id = trial_id.x, linked_id = trial_id.y) |> 
+  rename(trial_id = trial_id.x, linked_id = trial_id.y) |>
   mutate(many_to_many = trial_id %in% mtm_ids | linked_id %in% mtm_ids)
 
 title_matches |> 
@@ -149,8 +147,9 @@ EUCTR_sample <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 DRKS_sample <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 CTgov_sample <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 
-
-sample_ids <- c(EUCTR_sample$eudract_number, DRKS_sample$drksId, CTgov_sample$nct_id) |> 
+# by taking crossregistrations to only involve at least one trial in-sample
+# we avoid having to refilter here yet again and getting filter criteria potentially out-of-sync
+sample_ids <- c(EUCTR_sample$eudract_number, DRKS_sample$drksId, CTgov_sample$nct_id) |>
   unique()
 
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
@@ -172,15 +171,14 @@ title_matches_clusters <- title_matches |>
                            linked_id %in% sample_ids),
          pair_in_sample = trial_id %in% sample_ids |
            linked_id %in% sample_ids) |>
-  ungroup()
-
-title_matches_included <- title_matches_clusters |>
-  filter(in_sample == TRUE) |>
   rowwise() |>
   mutate(many_to_many_overall = is_mtm(cluster_unique_id),
          binary_id = get_binary_id(c(trial_id, linked_id))) |>
   ungroup()
 
+title_matches_included <- title_matches_clusters |>
+  filter(in_sample == TRUE)
+  
 crossreg_clusters <- crossreg_euctr_drks_ctgov |>
   left_join(trn_clusters, by = "trial_id") |>
   separate_longer_delim(linked_id, ";") |>
@@ -231,8 +229,7 @@ crossreg_title_ids <- crossreg_w_and_wo_title |>
          trns_in_cluster = str_count(cluster_unique_id, "_") + 1,
          via_id = replace_na(via_id, FALSE)) |> 
   left_join(euctr_de_protocols, by = c("trial_id" = "eudract_number")) |> 
-  left_join(euctr_de_protocols |> rename(linked_de_protocol = trial_de_protocol), by = c("linked_id" = "eudract_number")) 
-
+  left_join(euctr_de_protocols |> rename(has_linked_de_protocol = has_trial_de_protocol), by = c("linked_id" = "eudract_number")) 
 
 # Number unique TRNs?= unique clusters
 crossreg_title_ids |>
@@ -243,42 +240,11 @@ crossreg_title_ids_mtm <- crossreg_title_ids |>
   filter(many_to_many_overall)
 
 crossreg_title_ids |> 
-  count(trial_de_protocol)
+  count(has_trial_de_protocol)
 
-### remove EUCTR TRNs without a DE protocol
-crossreg_title_ids <- crossreg_title_ids |> 
-  filter(trial_de_protocol != FALSE | is.na(trial_de_protocol),
-         linked_de_protocol != FALSE | is.na(linked_de_protocol))
-
-# and recalculate the clusters
-new_clusters <- get_cluster_names_from_pairs(crossreg_title_ids |>
-                                               select(trial_id, linked_id)) |>
-  mutate(many_to_many = is_mtm(cluster_unique_id),
-         trns_in_cluster = str_count(cluster_unique_id, "_") + 1)
-
-
-simplified_clusters <- new_clusters |>
-  filter(many_to_many == FALSE) |>
-  select(-many_to_many)
-
-new_mtm <- new_clusters |>
-  filter(many_to_many == TRUE)  |>
-  select(-many_to_many)
-
-crossreg_title_ids_new_clusters <- crossreg_title_ids |> 
-  select(-cluster_unique_id, -many_to_many, -trns_in_cluster) |> 
-  left_join(new_clusters, by = "trial_id") |> 
-  select(contains("cluster"), everything(), -many_to_many_overall)
-
-#unique clusters
-crossreg_title_ids_new_clusters |>
-  filter(many_to_many == TRUE) |> 
-  count(cluster_unique_id) |>
-  nrow()
-
-crossreg_title_ids <- crossreg_title_ids_new_clusters |> 
+# crossreg_title_ids <- crossreg_title_ids_new_clusters |>
+crossreg_title_ids |> 
   write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
-
 
 # how many links (not triads, not many_to_many)
 qa_crossreg_title_ids <- crossreg_title_ids |> 
@@ -330,7 +296,6 @@ mtm_other <- qa_mtm  |>
          false_positive = n_reg > 1 &
            n_other_matched > 0 & other_match == FALSE)
 
-
 mtm_other |>
   write_csv(here("data", "processed", "mtm_othernr.csv"))
 
@@ -342,51 +307,280 @@ crossreg_tp <- validated_mtm_resolved |>
   select(binary_id, cluster_unique_id = combinations_validated)
 
 mtm_resolved <- crossreg_title_ids |>
-  filter(many_to_many == TRUE,
-         binary_id %in% c(crossreg_tp$binary_id) |
-           trial_id %in% simplified_clusters$trial_id |
-           linked_id %in% simplified_clusters$trial_id) |>
-  select(-cluster_unique_id) |>
-  left_join(simplified_clusters, by = "trial_id") |>
-  left_join(simplified_clusters, by = c("linked_id" = "trial_id")) |>
+  filter(many_to_many_overall == TRUE,
+         binary_id %in% c(crossreg_tp$binary_id)) |>
+  rename(old_cluster = cluster_unique_id) |>
+  # left_join(simplified_clusters, by = "trial_id") |>
+  # left_join(simplified_clusters, by = c("linked_id" = "trial_id")) |>
   left_join(crossreg_tp, by = "binary_id") |>
-  mutate(cluster_unique_id = case_when(
-    !is.na(cluster_unique_id) ~ cluster_unique_id,
-    cluster_unique_id.x == binary_id ~ binary_id,
-    .default = NA
-  ),
+  mutate(
+  #   cluster_unique_id = case_when(
+  #   !is.na(cluster_unique_id) ~ cluster_unique_id,
+  #   cluster_unique_id.x == binary_id ~ binary_id,
+  #   .default = NA
+  # ),
   many_to_many = is_mtm(cluster_unique_id),
   trns_in_cluster = str_count(cluster_unique_id, "_") + 1) |>
-  filter(!is.na(cluster_unique_id)) |>
-  select(-contains(".x"), -contains(".y"))
+  select(-contains(".x"), -contains(".y"), -many_to_many_overall)
+  
+
+# EUCTR inclusion and exclusion criteria
+euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
+euctr_inex_deduped <- euctr_inex |> 
+  group_by(trial_id) |> 
+  mutate(is_trial_de_protocol = str_detect(eudract_number_with_country, "DE"),
+         has_premature = any(status == "Prematurely Ended", na.rm = TRUE),
+         de_premature = status == "Prematurely Ended" & str_detect(eudract_number_with_country, "DE"),
+         has_de_premature = any(de_premature, na.rm = TRUE)) |> 
+  arrange(desc(is_trial_de_protocol)) |> 
+  summarise(across(everything(), first)) |> # this takes first also for is_trial_de_protocol == FALSE
+  select(-eudract_number_with_country, -is_trial_de_protocol, -de_premature, has_euctr_results = results_reporting) |> 
+  ungroup() |> 
+  mutate(completion_date = ymd(completion_date),
+         estimated_completion_date = case_when(
+           has_euctr_results == FALSE ~ completion_date,
+           .default = NA_Date_
+         ),
+         actual_completion_date = case_when(
+           has_euctr_results == TRUE ~ completion_date,
+           .default = NA_Date_
+         ))
+
+# DRKS inclusion and exclusion criteria
+drks_inex <- read_csv(here("data", "processed", "inclusion_exclusion_drks.csv")) |> 
+  mutate(completion_date = ymd(completion_date),
+         estimated_completion_date = ymd(estimated_completion_date),
+         actual_completion_date = case_when(
+           is.na(estimated_completion_date) ~ completion_date,
+           .default = NA_Date_
+         ))
+# Ct.gov inclusion and exclusion criteria
+ctgov_inex <- read_csv(here("data", "processed", "inclusion_exclusion_ctgov.csv")) |> 
+  mutate(estimated_completion_date = case_when(
+    completion_date_type == "ESTIMATED" ~ completion_date,
+    .default = NA_Date_
+  ),
+  actual_completion_date = case_when(
+    completion_date_type == "ACTUAL" ~ completion_date,
+    .default = NA_Date_
+  ))
+
+
+combined_inex <- bind_rows(euctr_inex_deduped, drks_inex, ctgov_inex)
+
+qa_de_clusters <- crossreg_clusters |> 
+  left_join(euctr_de_protocols  |> rename(has_linked_de_protocol = has_trial_de_protocol),
+            join_by("linked_id" == "eudract_number")) |> 
+  left_join(combined_inex, by = "trial_id") |> 
+  left_join(combined_inex |> select(linked_id = trial_id, contains("is_")) |> 
+              rename_with(\(x) paste0(x, "_linked"), starts_with("is_")),
+            by = "linked_id") |> 
+  filter(has_trial_de_protocol == FALSE | has_linked_de_protocol == FALSE,
+         is_german_umc | is_german_umc_linked)
+
+# number of german_umc but no DE protocol and many_to_many
+# thus no effect on has_xxxx_de_protocol on the many_to_many validations
+qa_de_clusters |> 
+  filter(many_to_many) |> 
+  nrow()
+
+qa_de_title_matches <- title_matches_clusters |> 
+  left_join(euctr_de_protocols  |> rename(has_linked_de_protocol = has_trial_de_protocol),
+            join_by("linked_id" == "eudract_number")) |> 
+  left_join(combined_inex, by = "trial_id") |> 
+  left_join(combined_inex |> select(linked_id = trial_id, contains("is_")) |> 
+              rename_with(\(x) paste0(x, "_linked"), starts_with("is_")),
+            by = "linked_id") |> 
+  filter(has_trial_de_protocol == FALSE | has_linked_de_protocol == FALSE,
+         is_german_umc | is_german_umc_linked)
+
+# number of german_umc but no DE protocol and many_to_many
+# Effect on has_xxxx_de_protocol on the many_to_many validations : a single new cluster
+# was declustered, to allow sensitivity analysis of including or exlcuding
+# has_xxxx_de_protocol data
+qa_de_title_matches |> 
+  filter(many_to_many_overall) |> 
+  nrow()
 
 
 crossreg_validated <- crossreg_title_ids |>
-  filter(many_to_many == FALSE) |>
+  filter(many_to_many_overall == FALSE) |>
+  select(-many_to_many_overall) |> 
   ### add only validated  mtm here
-  bind_rows(mtm_resolved) |>
-  mutate(trial_id_meets_inclusion = trial_id %in% sample_ids,
-         linked_id_meets_inclusion = linked_id %in% sample_ids) |>
-  group_by(cluster_unique_id) |> 
-  mutate(cl_meets_inclusion = any(trial_id_meets_inclusion) |
-           any(linked_id_meets_inclusion)) |>
-  ungroup() |> 
-  select(-contains("in_sample"), -selfref)
+  bind_rows(mtm_resolved |> select(-old_cluster))
 
-falling_clusters <- crossreg_validated |> 
-  filter(cl_meets_inclusion == FALSE)
+  
+#### this is still unfiltered at this point, except for dropping some clusters in validation!
+validated_crossreg_ids <- crossreg_validated |>
+  select(trial_id, linked_id, crossreg_id = cluster_unique_id) |>    
+  pivot_longer(-crossreg_id, names_to = NULL, values_to = "trial_id") |>
+  distinct(trial_id, .keep_all = TRUE) |>
+  write_excel_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
+
+falling_clusters <- validated_crossreg_ids |> 
+  left_join(combined_inex, by = "trial_id") |>
+  mutate(
+    # completion_date_type = case_when(
+    # has_euctr_results == FALSE & str_detect(trial_id, "-") ~ "ESTIMATED",
+    # has_euctr_results == TRUE & str_detect(trial_id, "-") ~ "ACTUAL",
+    # str_detect(trial_id, "DRKS") ~ "ACTUAL",
+    # .default = completion_date_type),
+    filled_actual_completion_dates = case_when(
+      is.na(estimated_completion_date) & !is.na(completion_date) ~ completion_date,
+      .default = NA_Date_),
+    filled_euctr_completion_date = if_else(has_euctr_results == TRUE, completion_date, NA_Date_)) |>
+  group_by(crossreg_id) |> 
+  arrange(crossreg_id, desc(last_updated), desc(registration_date)) |> 
+  fill(c(filled_actual_completion_dates, filled_euctr_completion_date), .direction = "up") |> 
+  mutate(has_euctr_results = any(has_euctr_results, na.rm = TRUE),
+         has_interventional = any(is_interventional, na.rm = TRUE),
+         has_german_umc = any(is_german_umc, na.rm = TRUE),
+         registries = get_registry_names(crossreg_id),
+         has_premature = any(has_premature, na.rm = TRUE),
+         has_de_premature = any(has_de_premature, na.rm = TRUE),
+         has_cluster_de_protocol = any(has_trial_de_protocol, na.rm = TRUE),
+         # recent_completion_2018_2021 = first(is_completed_2018_2021),
+         # max_completion_date = max(estimated_completion_date, na.rm = TRUE),
+         # has_only_estimated_cd = all(is.na(only_actual_completion_dates)),
+         hierarchical_completion_date = case_when(
+           str_detect(crossreg_id, "-") &
+             any(has_euctr_results == TRUE, na.rm = TRUE) &
+             !is.na(first(filled_euctr_completion_date)) ~
+             first(filled_euctr_completion_date),
+           any(!is.na(filled_actual_completion_dates), na.rm = TRUE) ~
+             first(filled_actual_completion_dates),
+           all(is.na(filled_actual_completion_dates), na.rm = TRUE) ~
+             max(estimated_completion_date, na.rm = TRUE),
+           # .default = first(only_actual_completion_dates)
+           .default = NA_Date_
+         ),
+         has_completion_2018_2021 = any(between(hierarchical_completion_date,
+                                               as_date("2018-01-01"), as_date("2021-12-31")),
+                                       na.rm = TRUE),
+         recent_status = first(status),
+         has_withdrawn_status = any(str_detect(status, regex("withdrawn", ignore_case = TRUE))),
+         many_to_many = is_mtm(crossreg_id),
+         trns_in_cluster = str_count(crossreg_id, "_") + 1,
+         mtm_validated = trial_id %in% mtm_resolved$trial_id |
+           trial_id %in% mtm_resolved$linked_id) |> 
+  ungroup()
+
+
+falling_clusters |> 
+  write_csv(here("data", "processed", "crossreg_unfiltered.csv"))
+
+qa_hier <- falling_clusters |> 
+  filter(has_euctr_results == FALSE, 
+         hierarchical_completion_date != filled_actual_completion_dates)
+
+# falling_clusters |>
+#   select(-completion_date_type) |> 
+#   filter(has_interventional, has_german_umc, has_completion_2018_2021,
+#          !has_withdrawn_status) |> 
+#   write_csv(here("data", "processed", "qa_completion_dates.csv"))
+  
+
+fallen_clusters <- falling_clusters |>   
+  filter(has_interventional == FALSE |
+           has_german_umc == FALSE |
+           has_completion_2018_2021 == FALSE |
+           has_withdrawn_status == TRUE)
+
+falling_clusters |> 
+  count(status, sort = TRUE)
+
+fallen_clusters |> count(status, sort = TRUE)
+#### status exploration
+status_euctr_main <- euctr_inex |> 
+  filter(status == "Prematurely Ended") |>
+  select(contains("eudract"), contains("results_actual_enrollment"), contains("status"), everything())
+
+status_euctr_crossreg <- euctr_inex |> 
+  filter(trial_id %in% validated_crossreg_ids$trial_id) |> 
+  left_join(validated_crossreg_ids, by = "trial_id") |> 
+  group_by(crossreg_id) |> 
+  mutate(has_premature = any(status == "Prematurely Ended", na.rm = TRUE),
+         de_premature = status == "Prematurely Ended" & str_detect(eudract_number_with_country, "DE"),
+         has_de_premature = any(de_premature, na.rm = TRUE),
+         has_interventional = any(is_interventional, na.rm = TRUE),
+         has_german_umc = any(is_german_umc, na.rm = TRUE)) |>
+  filter(has_premature == TRUE, has_german_umc == TRUE, has_interventional == TRUE) |> 
+  ungroup() |> 
+  select(contains("eudract"), contains("results_actual_enrollment"), contains("status"), everything())
+
+
+premature_status <- status_euctr_crossreg |>
+  distinct(trial_id, .keep_all = TRUE) |> 
+  select(trial_id, has_premature, has_de_premature)
+
+fc <- falling_clusters |> 
+  filter(crossreg_id %in% premature_cases$crossreg_id) |> 
+  left_join(pcases, by = "crossreg_id") |> 
+  group_by(crossreg_id) |> 
+  mutate(euctr_most_recent = last_updated == max(last_updated, na.rm = TRUE) & str_detect(trial_id, "-")) 
+  
+
+non_de <- fc |> 
+  filter(euctr_most_recent == TRUE, has_de_premature == FALSE)
+
+fc |> 
+  distinct(crossreg_id, .keep_all = TRUE) |> 
+  ungroup() |> 
+  count(de_premature, euctr_most_recent)
+
+status_euctr <- euctr_combined |>
+  filter(end_of_trial_status == "Prematurely Ended", eudract_number %in% pub_search_table_crossreg$trial_id) |> 
+  select(contains("eudract"), contains("results_actual_enrollment"), contains("status"))
+
+
+### remove EUCTR TRNs without a DE protocol 
+crossreg_title_ids_only_de <- crossreg_title_ids |>
+  filter(has_trial_de_protocol != FALSE | is.na(has_trial_de_protocol),
+         has_linked_de_protocol != FALSE | is.na(has_linked_de_protocol))
+
+
+# recalculate the clusters
+new_clusters <- get_cluster_names_from_pairs(crossreg_title_ids_only_de |>
+                                               select(trial_id, linked_id)) |>
+  mutate(many_to_many = is_mtm(cluster_unique_id),
+         trns_in_cluster = str_count(cluster_unique_id, "_") + 1)
+
+
+simplified_clusters <- new_clusters |>
+  filter(many_to_many == FALSE) |>
+  select(-many_to_many)
+# 
+new_mtm <- new_clusters |>
+  filter(many_to_many == TRUE)  |>
+  select(-many_to_many)
+# 
+crossreg_title_ids_new_clusters <- crossreg_title_ids |>
+  select(-cluster_unique_id, -many_to_many, -trns_in_cluster) |>
+  left_join(new_clusters, by = "trial_id") |>
+  select(contains("cluster"), everything(), -many_to_many_overall)
+# 
+# #unique clusters
+crossreg_title_ids_new_clusters |>
+  filter(many_to_many == TRUE) |>
+  count(cluster_unique_id) |>
+  nrow()
 
 crossreg_validated_included <- crossreg_validated |> 
   filter(cl_meets_inclusion == TRUE)|>
-  select(-cl_meets_inclusion) |> 
+  select(-cl_meets_inclusion) |>
   write_excel_csv(here("data", "processed", "crossreg_validated_mtm.csv"))
 
-validated_crossreg_ids <- crossreg_validated |>
-  select(trial_id, linked_id, crossreg_id = cluster_unique_id) |>
-  pivot_longer(-crossreg_id, names_to = NULL, values_to = "trial_id") |>
-  distinct(trial_id, .keep_all = TRUE) |> 
-  write_excel_csv(here("data", "processed", "crossreg_ids.csv"))
+filtered_clusters <- falling_clusters |>
+  filter(has_completion_2018_2021, has_interventional, has_german_umc, !has_withdrawn_status) |> 
+  write_excel_csv(here("data", "processed", "crossreg_filtered.csv"))
 
+# cluster check
+qa_clusters <- validated_crossreg_ids |> 
+  filter(trial_id %in% filtered_clusters$trial_id)
+
+setdiff(qa_clusters$crossreg_id, filtered_clusters$crossreg_id)
+
+setdiff(filtered_clusters$crossreg_id, qa_clusters$crossreg_id)
 
 ##########################################################
 # old scripts here for potential re-use

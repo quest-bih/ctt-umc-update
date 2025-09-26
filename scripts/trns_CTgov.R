@@ -63,6 +63,13 @@ id_info <- id_info |>
          # with the exception of this one DRKS00005436
          euctr_exists = euctr_clean %in% euctr_combined$eudract_number)
 
+# replace non-existent euctrs with NA
+id_info <- id_info |> 
+  mutate(euctr_clean = case_when(
+    euctr_exists == FALSE ~ NA_character_,
+    .default = euctr_clean
+  ))
+
 # these are all malformed trial ids:
 qa_euctr <- id_info |>
   filter(is.na(euctr_clean),
@@ -129,7 +136,6 @@ qa_trn_length |>
   count(id_source, trn_too_long, alias_id_exists)
 
 
-crossreg_euctr_drks <- read_csv(here("data", "processed", "crossreg_euctr_drks.csv"))
 ###### so now a table of cross-regs from secondary ids:
 id_crossreg <- id_info |>
   mutate(is_alias = id_source == "nct_alias") |>

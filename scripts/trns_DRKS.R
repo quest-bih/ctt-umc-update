@@ -99,6 +99,13 @@ drks_secondary_ids <- drks_secondary_ids |>
     euctr2_exists = euctr_clean2 %in% euctr_ids$eudract_number # all of the euctr_clean2 exist
   )
 
+# replace non-existent euctrs with NA
+drks_secondary_ids <- drks_secondary_ids |> 
+  mutate(euctr_clean = case_when(
+    euctr_exists == FALSE ~ NA_character_,
+    .default = euctr_clean
+  ))
+
 # explore multiple euctr trial numbers
 drks_secondary_ids |> 
   filter(euctr_clean != euctr_clean2) |> 

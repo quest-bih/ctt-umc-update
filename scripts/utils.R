@@ -192,6 +192,15 @@ get_registry_name <- function(name_str) {
   )
 }
 
+get_registry_names <- function(name_str) {
+  strsplit(name_str, "_") |> 
+    unlist() |> 
+    which_registries() |> 
+    unique() |> 
+    sort() |> 
+    paste(collapse = "_")
+}
+
 get_registry_url <- function(name_str) {
   dplyr::case_when(
     stringr::str_detect(name_str, "-") ~ paste0("https://www.clinicaltrialsregister.eu/ctr-search/search?query=", name_str),

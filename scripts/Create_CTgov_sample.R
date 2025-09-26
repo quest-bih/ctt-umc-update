@@ -18,7 +18,6 @@
 # remove false positives.
 #
 #----------------------------------------------------------------------------------------------------------------------
-
 library(tidyverse)
 library(here)
 library(yaml)
@@ -273,7 +272,9 @@ ctgov_inex <- AACT_datasets$studies |>
          is_completed_2018_2021 = between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31")),
          is_german_umc = nct_id %in% validated_umc_ctgov_deduplicated$id) |> 
   select(trial_id = nct_id, status = overall_status, last_updated = last_update_submitted_date,
-         registration_date = study_first_submitted_date, is_interventional, is_completed_2018_2021, is_german_umc) 
+         registration_date = study_first_submitted_date, is_interventional, is_completed_2018_2021, is_german_umc,
+         completion_date,
+         completion_date_type) 
 
 ctgov_inex |> 
   write_excel_csv(here("data", "processed", "inclusion_exclusion_ctgov.csv"))
@@ -315,7 +316,7 @@ CTgov_sample |>
   count(is.na(umc_sponsor), is.na(umc_pi), is.na(umc_resp_party))
 
 CTgov_sample_save <- CTgov_sample |> 
-  rename(last_updated = last_update_posted_date) |> 
+  rename(last_updated = last_update_posted_date, status = overall_status) |> 
   mutate(results_reporting = if_else(!is.na(results_first_submitted_date), TRUE, FALSE))
 
 write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
