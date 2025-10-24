@@ -149,7 +149,7 @@ CTgov_sample <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 
 # by taking crossregistrations to only involve at least one trial in-sample
 # we avoid having to refilter here yet again and getting filter criteria potentially out-of-sync
-sample_ids <- c(EUCTR_sample$eudract_number, DRKS_sample$drksId, CTgov_sample$nct_id) |>
+sample_ids <- c(EUCTR_sample$trial_id, DRKS_sample$trial_id, CTgov_sample$nct_id) |>
   unique()
 
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
@@ -332,19 +332,12 @@ euctr_inex_deduped <- euctr_inex |>
          has_premature = any(status == "Prematurely Ended", na.rm = TRUE),
          de_premature = status == "Prematurely Ended" & str_detect(eudract_number_with_country, "DE"),
          has_de_premature = any(de_premature, na.rm = TRUE)) |> 
-  arrange(desc(is_trial_de_protocol)) |> 
+  arrange(desc(is_trial_de_protocol), desc(registration_date)) |> 
+  fill(estimated_completion_date, .direction = "up") |> 
   summarise(across(everything(), first)) |> # this takes first also for is_trial_de_protocol == FALSE
   select(-eudract_number_with_country, -is_trial_de_protocol, -de_premature, has_euctr_results = results_reporting) |> 
-  ungroup() |> 
-  mutate(completion_date = ymd(completion_date),
-         estimated_completion_date = case_when(
-           has_euctr_results == FALSE ~ completion_date,
-           .default = NA_Date_
-         ),
-         actual_completion_date = case_when(
-           has_euctr_results == TRUE ~ completion_date,
-           .default = NA_Date_
-         ))
+  ungroup() |>
+  mutate(across(contains("completion_date"),  ymd))
 
 # DRKS inclusion and exclusion criteria
 drks_inex <- read_csv(here("data", "processed", "inclusion_exclusion_drks.csv")) |> 
@@ -364,7 +357,6 @@ ctgov_inex <- read_csv(here("data", "processed", "inclusion_exclusion_ctgov.csv"
     completion_date_type == "ACTUAL" ~ completion_date,
     .default = NA_Date_
   ))
-
 
 combined_inex <- bind_rows(euctr_inex_deduped, drks_inex, ctgov_inex)
 
@@ -409,15 +401,14 @@ crossreg_validated <- crossreg_title_ids |>
   ### add only validated  mtm here
   bind_rows(mtm_resolved |> select(-old_cluster))
 
-  
 #### this is still unfiltered at this point, except for dropping some clusters in validation!
 validated_crossreg_ids <- crossreg_validated |>
   select(trial_id, linked_id, crossreg_id = cluster_unique_id) |>    
   pivot_longer(-crossreg_id, names_to = NULL, values_to = "trial_id") |>
   distinct(trial_id, .keep_all = TRUE) |>
   write_excel_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
-
-falling_clusters <- validated_crossreg_ids |> 
+#validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
+falling_clusters2 <- validated_crossreg_ids |> 
   left_join(combined_inex, by = "trial_id") |>
   mutate(
     # completion_date_type = case_when(
@@ -426,9 +417,9 @@ falling_clusters <- validated_crossreg_ids |>
     # str_detect(trial_id, "DRKS") ~ "ACTUAL",
     # .default = completion_date_type),
     filled_actual_completion_dates = case_when(
-      is.na(estimated_completion_date) & !is.na(completion_date) ~ completion_date,
+      is.na(estimated_completion_date) & !is.na(completion_date) ~ actual_completion_date,
       .default = NA_Date_),
-    filled_euctr_completion_date = if_else(has_euctr_results == TRUE, completion_date, NA_Date_)) |>
+    filled_euctr_completion_date = if_else(has_euctr_results == TRUE, results_completion_date, NA_Date_)) |>
   group_by(crossreg_id) |> 
   arrange(crossreg_id, desc(last_updated), desc(registration_date)) |> 
   fill(c(filled_actual_completion_dates, filled_euctr_completion_date), .direction = "up") |> 
@@ -465,10 +456,39 @@ falling_clusters <- validated_crossreg_ids |>
            trial_id %in% mtm_resolved$linked_id) |> 
   ungroup()
 
+test_cases <- tribble(~crossreg_id, ~verified_cluster_completion_date,
+                      "2012-000620-17_DRKS00005503_NCT02531841", ymd("2022-02-25"),
+                      "2016-004396-51_DRKS00011374_NCT03669185", ymd("2022-02-07"),
+                      "2017-005032-42_NCT04057261", ymd("2022-11-30"),
+                      "2013-001884-21_NCT01829347", ymd("2015-09-16"), # because EUCTR results first
+                      "2013-001884-21_NCT01829347", ymd("2015-09-16"), # because EUCTR results first
+                      "2010-019885-10_NCT01315990", ymd("2017-07-09"), # because EUCTR results first
+                      "2020-003503-34_NCT04631666", ymd("2021-08-11"),
+                      "2014-003647-34_NCT02310243", ymd("2020-06-03"), 
+                      "2006-006962-41_NCT02543749", ymd("2022-07-31"),
+                      "2017-002468-41_NCT03645980", ymd("2022-08-31"),
+                      "2015-000465-31_DRKS00012657", ymd("2019-11-25"),
+                      "2013-003714-40_DRKS00014559_NCT02615938", ymd("2025-04-30"))
+
+cluster_check <- falling_clusters2 |>
+  inner_join(test_cases, by = "crossreg_id", relationship = "many-to-many")
+
+cluster_check |> 
+  filter(hierarchical_completion_date != verified_cluster_completion_date) |>
+  nrow() |> 
+  testthat::expect_equal(0)
+  
+all.equal(falling_clusters$hierarchical_completion_date, falling_clusters2$hierarchical_completion_date)
+
+discr <- falling_clusters |>
+  select(crossreg_id, trial_id, hierarchical_completion_date) |> 
+  left_join(falling_clusters2 |> select(crossreg_id, trial_id, hierarchical_completion_date),
+            by = c("crossreg_id", "trial_id")) |> 
+  filter(hierarchical_completion_date.x != hierarchical_completion_date.y)
 
 falling_clusters |> 
   write_csv(here("data", "processed", "crossreg_unfiltered.csv"))
-
+# falling_clusters <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
 qa_hier <- falling_clusters |> 
   filter(has_euctr_results == FALSE, 
          hierarchical_completion_date != filled_actual_completion_dates)
@@ -513,24 +533,10 @@ premature_status <- status_euctr_crossreg |>
   distinct(trial_id, .keep_all = TRUE) |> 
   select(trial_id, has_premature, has_de_premature)
 
-fc <- falling_clusters |> 
-  filter(crossreg_id %in% premature_cases$crossreg_id) |> 
-  left_join(pcases, by = "crossreg_id") |> 
-  group_by(crossreg_id) |> 
-  mutate(euctr_most_recent = last_updated == max(last_updated, na.rm = TRUE) & str_detect(trial_id, "-")) 
-  
 
-non_de <- fc |> 
-  filter(euctr_most_recent == TRUE, has_de_premature == FALSE)
-
-fc |> 
-  distinct(crossreg_id, .keep_all = TRUE) |> 
-  ungroup() |> 
-  count(de_premature, euctr_most_recent)
-
-status_euctr <- euctr_combined |>
-  filter(end_of_trial_status == "Prematurely Ended", eudract_number %in% pub_search_table_crossreg$trial_id) |> 
-  select(contains("eudract"), contains("results_actual_enrollment"), contains("status"))
+# status_euctr <- euctr_combined |>
+#   filter(end_of_trial_status == "Prematurely Ended", eudract_number %in% pub_search_table_crossreg$trial_id) |> 
+#   select(contains("eudract"), contains("results_actual_enrollment"), contains("status"))
 
 
 ### remove EUCTR TRNs without a DE protocol 
@@ -578,9 +584,12 @@ filtered_clusters <- falling_clusters |>
 qa_clusters <- validated_crossreg_ids |> 
   filter(trial_id %in% filtered_clusters$trial_id)
 
+
 setdiff(qa_clusters$crossreg_id, filtered_clusters$crossreg_id)
 
 setdiff(filtered_clusters$crossreg_id, qa_clusters$crossreg_id)
+
+setdiff(filtered_clusters$crossreg_id, fc2$crossreg_id)
 
 ##########################################################
 # old scripts here for potential re-use

@@ -224,3 +224,15 @@ update_bidirectionality <- function(crossreg_tib) {
                      across(where(is.logical), any),
                      bidirectional = n() > 1 & selfref == FALSE | bidirectional)
 }
+
+
+prep_and_print <- function(tib_pub_s, target_folder) {
+  filename <- tib_pub_s |> 
+    slice_head(n = 1) |> 
+    pull(rev_nr)
+  
+  filename <- file.path(target_folder, paste0("pub_search_table_rev_", filename, ".csv"))
+  
+  write_csv(tib_pub_s, filename)
+  
+}

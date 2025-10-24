@@ -38,9 +38,11 @@ euctr_combined <- euctr_tib |>
     !is.infinite(max(date_of_the_global_end_of_the_trial, na.rm = TRUE)) ~ max(date_of_the_global_end_of_the_trial, na.rm = TRUE),  
     .default = max(date_of_the_global_end_of_the_trial)
         ),
-    has_trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE)) |> 
+    has_trial_de_protocol = any(str_detect(eudract_number_with_country, "DE"), na.rm = TRUE),
+    umc_validated = !is.na(umc)) |> 
   ungroup() |> 
-  select(contains("eudract_number"), completion_date, contains("global"), umc, has_trial_de_protocol, 
+  select(contains("eudract_number"), contains("global"), umc, has_trial_de_protocol,
+         umc_validated,
          everything()) 
 
 #one_off <- euctr_results |> 
@@ -57,6 +59,10 @@ euctr_inex <- euctr_combined |>
   # filter(str_detect(eudract_number_with_country, "DE")) |> # exclude any without a DE protocol 
   select(trial_id = eudract_number, status = trial_status, last_updated = results_last_updated,
          registration_date = date_on_which_this_record_was_first_entered_in_the_eudract_data,
+         # actual_completion_date = results_global_end_of_trial_date,
+         results_completion_date = results_global_end_of_trial_date,
+         estimated_completion_date = date_of_the_global_end_of_the_trial,
+         # protocol_completion_date = date_of_the_global_end_of_the_trial,
          is_interventional, is_completed_2018_2021, is_german_umc, has_trial_de_protocol,
          eudract_number_with_country, results_reporting, completion_date) 
 
