@@ -195,9 +195,9 @@ umc_validations |>
   mutate(prop = n / sum(n))
 # prop umc false positives from total affiliations ~ approx 1/3
 
-qa_cases |> 
-  count(umc) |> 
-  mutate(prop = n / sum(n))
+# qa_cases |> 
+#   count(umc) |> 
+#   mutate(prop = n / sum(n))
 
 umc_validations |> 
   write_csv(here("data", "processed", "umc_validations.csv"))
@@ -272,12 +272,13 @@ drks_inex |>
   write_excel_csv(here("data", "processed", "inclusion_exclusion_drks.csv"))
 
 DRKS_sample_save <- drks_tib |> 
-  left_join(drks_inex, by = "drksId") |> 
+  select(drksId:url) |> 
+  right_join(drks_inex, by = "drksId") |> 
   filter(is_interventional == TRUE, # apply interventional and time filter here
          is_completed_2018_2021 == TRUE,
          is_german_umc == TRUE) |> 
-  select(drksId:url) |> 
-  left_join(validated_umc_drks_deduplicated, by = "drksId")
+  left_join(validated_umc_drks_deduplicated, by = "drksId") |> 
+  select(-contains("is_"))
 
 DRKS_sample_save |> 
   summarise(total = n(),
@@ -341,15 +342,15 @@ drks_recruitment_dates <- drks_recruitment |>
 drks_export <- drks_export |> 
   rename(trial_id = drksId) |> 
   left_join(validated_crossreg_ids, by = "trial_id") |> 
-  left_join(drks_recruitment_dates, by = "trial_id") |> 
+  left_join(drks_recruitment_dates |> select(-status), by = "trial_id") |>
   left_join(drks_results_reporting, by = "trial_id") |> 
   mutate(across(contains("Date"), ymd),
     is_prospective =
            (floor_date(registrationDrks, unit = "month") <=
               floor_date(actualStartDate, unit = "month")),
     results_reporting = replace_na(results_reporting, FALSE)) |> 
-  select(trial_id, contains("umc"), contains("Date"),
-         results_reporting, last_updated = lastUpdate, status)
+  select(trial_id, contains("umc"), last_updated, contains("_date"),
+         results_reporting, status)
 
 write_excel_csv(drks_export, here("data", "processed", "DRKS_sample.csv"), na = "")
 

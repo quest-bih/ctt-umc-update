@@ -353,7 +353,14 @@ qa_na_excluded <- qa_excluded |>
   filter(is.na(umc),
          str_detect(raw_affil, umc_search_terms))
 
+setdiff(CTgov_sample_save$nct_id, ctgov_inex |> 
+          filter(is_interventional, is_completed_2018_2021, is_german_umc) |> 
+          pull(trial_id))
 
+setdiff(ctgov_inex |> 
+          filter(is_interventional, is_completed_2018_2021, is_german_umc) |> 
+          pull(trial_id),
+        CTgov_sample_save$nct_id)
 
 ######### In previous code now commented out (see below) only the first PI was taken
 # from each study, regardless if others may have been UMC-related or not?
