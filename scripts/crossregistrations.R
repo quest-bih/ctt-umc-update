@@ -408,7 +408,7 @@ validated_crossreg_ids <- crossreg_validated |>
   distinct(trial_id, .keep_all = TRUE) |>
   write_excel_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
 #validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
-falling_clusters2 <- validated_crossreg_ids |> 
+falling_clusters <- validated_crossreg_ids |> 
   left_join(combined_inex, by = "trial_id") |>
   mutate(
     # completion_date_type = case_when(
@@ -457,8 +457,6 @@ falling_clusters2 <- validated_crossreg_ids |>
   ungroup()
 
 test_cases <- tribble(~crossreg_id, ~verified_cluster_completion_date,
-                      "2012-000620-17_DRKS00005503_NCT02531841", ymd("2022-02-25"),
-                      "2016-004396-51_DRKS00011374_NCT03669185", ymd("2022-02-07"),
                       "2017-005032-42_NCT04057261", ymd("2022-11-30"),
                       "2013-001884-21_NCT01829347", ymd("2015-09-16"), # because EUCTR results first
                       "2013-001884-21_NCT01829347", ymd("2015-09-16"), # because EUCTR results first
@@ -467,10 +465,17 @@ test_cases <- tribble(~crossreg_id, ~verified_cluster_completion_date,
                       "2014-003647-34_NCT02310243", ymd("2020-06-03"), 
                       "2006-006962-41_NCT02543749", ymd("2022-07-31"),
                       "2017-002468-41_NCT03645980", ymd("2022-08-31"),
+                      "2007-007262-38_NCT00777244", ymd("2020-12-31"),
+                      "2012-000620-17_DRKS00005503_NCT02531841", ymd("2022-02-25"),
+                      "2016-004396-51_DRKS00011374_NCT03669185", ymd("2022-02-07"),
+                      "2013-003714-40_DRKS00014559_NCT02615938", ymd("2025-04-30"),
+                      "2016-001179-60_DRKS00017467_NCT02961257", ymd("2021-08-31"),
+                      "2016-001815-19_DRKS00013701_NCT03362359", ymd("2020-07-03"), # because EUCTR results first
                       "2015-000465-31_DRKS00012657", ymd("2019-11-25"),
-                      "2013-003714-40_DRKS00014559_NCT02615938", ymd("2025-04-30"))
+                      "2016-001554-18_DRKS00008018", ymd("2020-09-29")
+                      )
 
-cluster_check <- falling_clusters2 |>
+cluster_check <- falling_clusters |>
   inner_join(test_cases, by = "crossreg_id", relationship = "many-to-many")
 
 cluster_check |> 
@@ -478,14 +483,6 @@ cluster_check |>
   nrow() |> 
   testthat::expect_equal(0)
   
-all.equal(falling_clusters$hierarchical_completion_date, falling_clusters2$hierarchical_completion_date)
-
-discr <- falling_clusters |>
-  select(crossreg_id, trial_id, hierarchical_completion_date) |> 
-  left_join(falling_clusters2 |> select(crossreg_id, trial_id, hierarchical_completion_date),
-            by = c("crossreg_id", "trial_id")) |> 
-  filter(hierarchical_completion_date.x != hierarchical_completion_date.y)
-
 falling_clusters |> 
   write_csv(here("data", "processed", "crossreg_unfiltered.csv"))
 # falling_clusters <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
