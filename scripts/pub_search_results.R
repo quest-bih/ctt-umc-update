@@ -9,10 +9,6 @@ library(testthat)
 
 source(here("scripts", "utils.R"))
 
-plan(multisession)
-handlers(global = TRUE)
-
-
 extractions_raw <- read_xlsx(here("data", "processed", "IV3_PUBSEARCH (Main extraction)-3.xlsx"))
 euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
 
@@ -132,7 +128,8 @@ extractions <- extractions_raw |>
     
     # Any final comments on the extraction can be entered here
     final_comments = any_final_comments_on_the_extraction_can_be_entered_here_dont_miss_to_click_submit
-  )
+  ) |> 
+  left_join(unfiltered_crossreg_ids |> select(trial_id, crossreg_id), by = "trial_id")
 
 ####### sanity checks
 n_per_extractor <- extractions |> 
@@ -187,11 +184,11 @@ extractions |>
 extracted_crossreg <- extractions |> 
   mutate(is_crossreg_filtered = trial_id %in% filtered_crossreg_ids$trial_id) |> 
   filter(euctr_is_prematurely_ended != "Yes" | is.na(euctr_is_prematurely_ended)) |> 
-  left_join(filtered_crossreg_ids |> select(trial_id, crossreg_id), by = "trial_id") |> 
   group_by(extractor, crossreg_id) |> 
   mutate(n = 1:n(),
          crossreg_n = if_else(is_crossreg_filtered == FALSE, 1, max(n)),
-         n_yes = sum(crossreg_pub_already_identified == "Yes")) |> 
+         n_yes = sum(crossreg_pub_already_identified == "Yes", na.rm = TRUE),
+         n_dois = sum(earliest_pub_has_doi == "Yes", na.rm = TRUE)) |> 
   ungroup()
 
 extracted_crossreg |> 
@@ -200,25 +197,110 @@ extracted_crossreg |>
 ## missed cross-registrations
 qa_missed_crossreg <- extracted_crossreg |> 
   filter(crossreg_n == 1, n_yes == 1) 
-qa_missed_crossreg |> 
+qa_missed_crossreg |>
   nrow() |> 
   expect_equal(0)
 
 ## diads
 qa_diads <- extracted_crossreg |> 
-  filter(crossreg_n == 2, n_yes != 1)
+  filter(crossreg_n == 2, n_yes > 1)
 qa_diads |> 
   nrow()  |> 
   expect_equal(0)
   
 ## triads
 qa_triads <- extracted_crossreg |> 
-  filter(crossreg_n == 3, n_yes != 2)
+  filter(crossreg_n == 3, n_yes != 2, n_yes > 0)
 qa_triads |> 
   nrow() |> 
   expect_equal(0)
 
 ## crossreg_pub_already_identified
 extracted_crossreg |> 
-  filter((crossreg_is_subsequent_reg == "No") & ) | ())
-  count(crossreg_is_subsequent_reg, crossreg_pub_already_identified)
+  filter(((crossreg_is_subsequent_reg == "No") & !is.na(crossreg_pub_already_identified)) |
+    ((crossreg_is_subsequent_reg == "Yes") & is.na(crossreg_pub_already_identified))
+  ) |> 
+  nrow() |> 
+  expect_equal(0)
+
+## diads crossreg_pub_already_identified
+qa_diads_yes <- extracted_crossreg |> 
+  # count(crossreg_n, n_yes, crossreg_pub_already_identified)
+  filter(crossreg_n == 2, n_yes == 1, n == 1, is.na(earliest_pub_has_doi))
+qa_diads_yes |> 
+  nrow()  |> 
+  expect_equal(0)
+
+qa_diads_no <- extracted_crossreg |> 
+  # count(crossreg_n, n_yes, crossreg_pub_already_identified)
+  filter(crossreg_n == 2, n_yes == 0, n == 1, !is.na(earliest_pub_has_doi))
+qa_diads_no |> 
+  nrow()  |> 
+  expect_equal(0)
+
+## triads crossreg_pub_already_identified
+qa_triads_yes <- extracted_crossreg |> 
+  filter(crossreg_n == 3, n_yes > 0, n_dois == 0) 
+  
+qa_triads_yes |> 
+  nrow() |> 
+  expect_equal(0)
+
+qa_triads_no <- extracted_crossreg |> 
+  filter(crossreg_n == 3, n_yes == 0, n_dois > 0) 
+
+qa_triads_no |> 
+  nrow() |> 
+  expect_equal(0)
+
+## crossreg_new_earlier_pub_found
+extracted_crossreg |> 
+  filter(((crossreg_pub_already_identified == "Yes") & (is.na(crossreg_new_earlier_pub_found))) |
+  ((crossreg_pub_already_identified != "Yes") & (!is.na(crossreg_new_earlier_pub_found)))) |> 
+  nrow() |> 
+  expect_equal(0)
+
+# qa_dois <- 
+extracted_crossreg |>
+  filter((str_detect(crossreg_new_earlier_pub_found, "Yes") & n_dois == 0) |
+           (str_detect(crossreg_new_earlier_pub_found, "No") & !is.na(earliest_pub_has_doi))) |> 
+  nrow() |> 
+  expect_equal(0)
+
+## is_pub_reglinked
+extracted_crossreg |> 
+  filter(str_detect(is_pub_reglinked, "Yes"), is.na(pub_reglinked_url)) |> 
+  nrow() |> 
+  expect_equal(0)
+  count(is_pub_reglinked, is.na(pub_reglinked_url))
+
+#### dois resolver check???
+
+## earliest_pub_type
+extracted_crossreg |> 
+  filter((!is.na(earliest_pub_url) & is.na(earliest_pub_type)) |
+           ((is.na(earliest_pub_url)) & !is.na(earliest_pub_type))) |> 
+  nrow() |> 
+  expect_equal(0)
+
+pub_type_clean <- extracted_crossreg |> 
+  mutate(earliest_pub_type_clean = case_when(
+    str_detect(earliest_pub_type, regex("abstract", ignore_case = TRUE)) ~ "Abstract",
+    str_detect(earliest_pub_type, regex("letter", ignore_case = TRUE)) ~ "Letter",
+    str_detect(earliest_pub_type, regex("conference", ignore_case = TRUE)) ~ "Conference",
+    .default = earliest_pub_type
+  ))
+  
+# pub_type_clean |> 
+# count(earliest_pub_type_clean)
+
+####Validate the publication type entered manually vs publication type obtained by querying OpenAlex (as coders reported making mistakes when entering the publication type)
+
+tribble(~trial_id, ~crossreg_id, ~extractor, ~rule,
+        "DRKS00005040", "2009-013701-34_DRKS00005040", "Delwen", "missed_crossreg",
+        "DRKS00000591", "2010-018539-16_DRKS00000591", "Delwen", "missed_crossreg",
+        "NCT00777244", "2007-007262-38_NCT00777244", "Till",  "8_diad"
+        )
+
+
+  
