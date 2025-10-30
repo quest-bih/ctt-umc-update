@@ -1,7 +1,4 @@
 library(tidyverse)
-library(ctregistries)
-library(progressr)
-library(furrr)
 library(here)
 library(janitor)
 library(readxl)
@@ -9,7 +6,7 @@ library(testthat)
 
 source(here("scripts", "utils.R"))
 
-extractions_raw <- read_xlsx(here("data", "processed", "IV3_PUBSEARCH (Main extraction)-3.xlsx"))
+extractions_raw <- read_xlsx(here("data", "processed", "2025-10-29-iv3_pubsearch_main.xlsx"))
 euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
 
 unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
@@ -17,6 +14,7 @@ filtered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_filtered.c
 euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv"))
+pub_search_table <- read_csv((here("data", "processed", "pub_search_table.csv")))
 
 
 extractions <- extractions_raw |>
@@ -135,6 +133,13 @@ extractions <- extractions_raw |>
 n_per_extractor <- extractions |> 
   count(extractor, is.na(crossreg_is_subsequent_reg))
 
+## missed extractions
+missed_extractions <- pub_search_table |> 
+  filter(!trial_id %in% extractions$trial_id)
+
+nrow(missed_extractions) |> 
+  expect_equal(0)
+
 ## registry validation
 extractions |> 
   mutate(reg2 = get_registry_name(trial_id)) |> 
@@ -159,7 +164,9 @@ prem_euctr <- euctr_inex |>
   mutate(has_prematurely_ended = any(status == "Prematurely Ended")) |> 
   select(trial_id, eudract_number_with_country,
          has_prematurely_ended, status) |> 
-  arrange(trial_id) |> 
+  arrange(trial_id)
+
+prem_euctr |> 
   filter(!has_prematurely_ended) |> 
   nrow() |> 
   expect_equal(0)
@@ -182,9 +189,10 @@ extractions |>
 
 ## crossreg
 extracted_crossreg <- extractions |> 
-  mutate(is_crossreg_filtered = trial_id %in% filtered_crossreg_ids$trial_id) |> 
-  filter(euctr_is_prematurely_ended != "Yes" | is.na(euctr_is_prematurely_ended)) |> 
   group_by(extractor, crossreg_id) |> 
+  mutate(has_prematurely_ended = any(euctr_is_prematurely_ended == "Yes", na.rm = TRUE),
+         is_crossreg_filtered = trial_id %in% filtered_crossreg_ids$trial_id) |>
+  filter(euctr_is_prematurely_ended != "Yes" | is.na(euctr_is_prematurely_ended)) |> 
   mutate(n = 1:n(),
          crossreg_n = if_else(is_crossreg_filtered == FALSE, 1, max(n)),
          n_yes = sum(crossreg_pub_already_identified == "Yes", na.rm = TRUE),
@@ -196,7 +204,7 @@ extracted_crossreg |>
 
 ## missed cross-registrations
 qa_missed_crossreg <- extracted_crossreg |> 
-  filter(crossreg_n == 1, n_yes == 1) 
+  filter(crossreg_n == 1, n_yes == 1, has_prematurely_ended == FALSE) 
 qa_missed_crossreg |>
   nrow() |> 
   expect_equal(0)
@@ -272,10 +280,7 @@ extracted_crossreg |>
   filter(str_detect(is_pub_reglinked, "Yes"), is.na(pub_reglinked_url)) |> 
   nrow() |> 
   expect_equal(0)
-  count(is_pub_reglinked, is.na(pub_reglinked_url))
-
-#### dois resolver check???
-
+  
 ## earliest_pub_type
 extracted_crossreg |> 
   filter((!is.na(earliest_pub_url) & is.na(earliest_pub_type)) |
@@ -294,12 +299,73 @@ pub_type_clean <- extracted_crossreg |>
 # pub_type_clean |> 
 # count(earliest_pub_type_clean)
 
+## doi checks (offline)
+extracted_crossreg |> 
+  filter((!is.na(earliest_pub_url) & is.na(earliest_pub_has_doi)) |
+           ((is.na(earliest_pub_url)) & !is.na(earliest_pub_has_doi))) |> 
+  nrow() |> 
+  expect_equal(0)
+
+extracted_crossreg |> 
+  filter((!is.na(earliest_pub_doi) & earliest_pub_has_doi != "Yes") |
+           ((is.na(earliest_pub_doi)) & earliest_pub_has_doi == "Yes")) |> 
+  nrow() |> 
+  expect_equal(0)
+
+## pmid checks
+extracted_crossreg |>
+  filter((earliest_pub_has_doi == "No"  & is.na(earliest_pub_has_pmid)) |
+           (earliest_pub_has_doi != "No"   & !is.na(earliest_pub_has_pmid))) |> 
+  nrow() |> 
+  expect_equal(0)
+
+extracted_crossreg |> 
+  filter((!is.na(earliest_pub_pmid) & earliest_pub_has_pmid != "Yes") |
+           ((is.na(earliest_pub_pmid)) & earliest_pub_has_pmid == "Yes")) |> 
+  nrow() |> 
+  expect_equal(0)
+
+
+## identifier cleaning/format check
+extracted_crossreg |> 
+  mutate(is_valid_doi = str_detect(earliest_pub_doi , "^10\\."),
+         is_valid_pmid = str_detect(earliest_pub_pmid, "[1-9]\\d{7}")) |> 
+  filter(!is.na(earliest_pub_has_doi) | !is.na(earliest_pub_has_pmid),
+         is_valid_doi == FALSE | is_valid_pmid == FALSE) |> 
+  nrow() |> 
+  expect_equal(0)
+
+## date format check
+extracted_crossreg |> 
+  # count(is.na(earliest_pub_date), is.na(ymd_date))
+  mutate(ymd_date = dmy(earliest_pub_date)) |>
+  filter(!is.na(earliest_pub_date),
+         is.na(ymd_date)) |> 
+  nrow() |> 
+  expect_equal(0)
+
+## online tests
+
+clean_pub <- pub_search_table |> 
+  select(trial_id, registry_url:crossreg_ctgov) |> 
+  left_join(extractions |> select(-registry, -crossreg_id),
+            by = "trial_id", relationship = "many-to-many") |> 
+  write_excel_csv(here("data", "processed", "reordered_snapshot.csv"))
+
+
+clean_pub |> 
+  count(is.na(timestamp))
 ####Validate the publication type entered manually vs publication type obtained by querying OpenAlex (as coders reported making mistakes when entering the publication type)
 
 tribble(~trial_id, ~crossreg_id, ~extractor, ~rule,
-        "DRKS00005040", "2009-013701-34_DRKS00005040", "Delwen", "missed_crossreg",
-        "DRKS00000591", "2010-018539-16_DRKS00000591", "Delwen", "missed_crossreg",
-        "NCT00777244", "2007-007262-38_NCT00777244", "Till",  "8_diad"
+        # "DRKS00005040", "2009-013701-34_DRKS00005040", "Delwen", "missed_crossreg",
+        # "DRKS00000591", "2010-018539-16_DRKS00000591", "Delwen", "missed_crossreg",
+        # "NCT02486133", "2015-000360-34_NCT02486133", "Merle", "missed_crossreg",
+        # "NCT03160248", "2016-002351-16_NCT03160248", "Marwin", "missed_crossreg",
+        # "NCT03554200", "2017-002695-45_NCT03554200",  "Marwin", "missed_crossreg",
+        # "NCT03409757", "2017-003240-20_NCT03409757", "Love", "missed_crossreg",
+        "NCT00777244", "2007-007262-38_NCT00777244", "Till",  "8_diad",
+        "2014-003647-34", "2014-003647-34_NCT02310243", "Christie", "prematurely_ended"
         )
 
 

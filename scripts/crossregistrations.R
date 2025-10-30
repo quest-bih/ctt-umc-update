@@ -586,8 +586,6 @@ setdiff(qa_clusters$crossreg_id, filtered_clusters$crossreg_id)
 
 setdiff(filtered_clusters$crossreg_id, qa_clusters$crossreg_id)
 
-setdiff(filtered_clusters$crossreg_id, fc2$crossreg_id)
-
 ##########################################################
 # old scripts here for potential re-use
 

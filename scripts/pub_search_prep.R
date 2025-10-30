@@ -218,11 +218,12 @@ pub_search_table |> filter(is.na(status))
 # pub_search_table |> 
 #   filter(str_detect(trial_id, "NCT")) |> 
 #   count(status, sort = TRUE)
-
-# pub_search_table <- pub_search_table |> 
+# 
+# pub_search_table <- pub_search_table |>
 #   mutate(is_withdrawn = trial_id %in% c(withdrawn_trn_ctgov$nct_id, withdrawn_trns_drks$trial_id))
 
 pub_search_table |> 
+  filter(!trial_id %in% withdrawn_cases$trial_id) |> 
   write_excel_csv(here("data", "processed", "pub_search_table.csv"))
 
 pub_search_table |> 
