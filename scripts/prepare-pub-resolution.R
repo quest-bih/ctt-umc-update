@@ -12,7 +12,10 @@ library(stringr)
 # Load and prepare manual extractions -------------------------------------
 
 # Load in (interim) data from the pub search from 29 October 2025
-data_extracted_raw <- read_csv("snapshot_1_29102025.csv")
+#data_extracted_raw <- read_csv("snapshot_1_29102025.csv")
+
+# Load in (interim) data from the pub search from 3 November 2025
+data_extracted_raw <- read_csv("reordered_snapshot_20251103.csv")
 
 # Filter for already reviewed cases
 data_extracted <- data_extracted_raw |>
@@ -32,44 +35,60 @@ data_extracted <- data_extracted_raw |>
       # or any in a cluster with an extracted record
       (!is.na(crossreg_id) & (extracted | any_extracted_in_cluster))
     ) |>
-  select(-extracted, any_extracted_in_cluster)
+  select(-extracted, -any_extracted_in_cluster)
+
+# Display missing extractions
+missing_extractions <- data_extracted |>
+  filter(
+    is.na(extractor)
+  )
+
+data_extracted <- data_extracted |>
+  mutate(
+    skipped_reg_in_crossreg = if_else(crossreg_id %in% missing_extractions$crossreg_id, TRUE, FALSE)
+  )
 
 # NCT01289301 (DF): skipped as withdrawn without enrolment
 # 2012-005717-39 (GB): skipped as no match in EUCTR
 # 2014-001427-79 (GB): skipped as not a cross-registration
-# NCT02310243 (DF): missing crossreg that was added - # EXTRACT!
-# NCT02733094 (LA): missing crossreg that was added - # EXTRACT! - done
-# NCT04631666 (DF): missing crossreg that was added - # EXTRACT!
-# DRKS00013740 (SY): skipped for no apparent reason - # EXTRACT! - email sent
 
 # Explore duplicates
 dupes <- janitor::get_dupes(data_extracted, trial_id)  
 
-dupes_differences <- dupes %>%
+# Check if dupes are identical or different
+dupes_check_differences <- dupes %>%
   group_by(trial_id) %>%
   summarise(
     all_same = all(across(-timestamp, ~ length(unique(.x)) == 1))
   )
 
-# Select dupes that can be removed based on max timestamp
+# Identical dupes
+dupes_no_differences <- dupes_check_differences |>
+  filter(all_same)
 
-# TODO: 2014-005344-17 clarify which to keep!
-
-dupes_to_remove <- c(
-  "DRKS00011653", # confirmed with the coder to keep most recent
-  "DRKS00009418" # no differences between duplicates
+# For non-identical dupes, select which can be removed based on max timestamp
+dupes_take_maxdate <- c(
+  "DRKS00011653", # MMP clarified to keep max timestamp
+  "2014-005344-17" # SY clarified to keep max timestamp
   )
 
-# Remove dupes
+# For non-identical dupes, select the one with the max timestamp
 data_extracted_deduped <- data_extracted |>
   group_by(trial_id) |>
   filter(
     case_when(
-      trial_id %in% dupes_to_remove ~ timestamp == max(timestamp),  # keep latest for target trials
+      trial_id %in% dupes_take_maxdate ~ timestamp == max(timestamp),  # keep latest for target trials
       TRUE ~ TRUE                                                 # keep all others
     )
   ) |>
   ungroup()
+
+# Remove all remaining identical dupes
+data_extracted_deduped <- data_extracted_deduped |>
+  distinct(
+    trial_id,
+    .keep_all = TRUE
+    )
 
 # Add counts and arrange data by crossreg cluster
 data_extracted_sorted <- data_extracted_deduped |>
@@ -86,12 +105,20 @@ data_extracted_sorted <- data_extracted_deduped |>
     crossreg_is_subsequent_reg
   )
 
+# List cases where `crossreg_is_subsequent_reg` wrongly encoded and needs to be corrected
+check_subsequent_crossreg <-
+  data_extracted_sorted |>
+  filter(
+    crossreg_n == 2 & n_subsequent_reg != 1 | crossreg_n == 3 & n_subsequent_reg != 2
+  ) |>
+  anti_join(missing_extractions, by = "crossreg_id")
+
 
 # Implement corrections ---------------------------------------------------
 
 
 # Log correction requested by TB (by mistake did not acknowledge pub already found in first reg of crossreg cluster)
-corrections <- tibble(
+corrections_1 <- tibble(
   trial_id = "2007-007262-38",             
   crossreg_pub_already_identified = "Yes",
   crossreg_new_earlier_pub_found = "No, neither linked in the registration nor via the Google search",
@@ -99,9 +126,20 @@ corrections <- tibble(
   is_pub_google = NA_character_
 )
 
-# Integrate corrections back into the dataset
+# Log corrections needed to the 'crossreg_is_subsequent_reg` variable
+corrections_2 <- tibble(
+  trial_id = c("NCT01614132", "NCT01717677"),
+  crossreg_is_subsequent_reg = c("No", "No"),
+  crossreg_pub_already_identified = c(NA_character_, NA_character_)
+  )
+
+# Integrate corrections_1 back into the dataset
 data_extracted_sorted <- data_extracted_sorted |>
-  rows_upsert(corrections, by = "trial_id")
+  rows_upsert(corrections_1, by = "trial_id")
+
+# Integrate corrections_2 back into the dataset
+data_extracted_sorted <- data_extracted_sorted |>
+  rows_upsert(corrections_2, by = "trial_id")
 
 # Add comments from Slack, emails, trial sheets, etc.
 # TODO see if I need to make a change for MW's comment in Slack
@@ -123,7 +161,6 @@ comment_updates <- c(
 
 data_extracted_sorted <- data_extracted_sorted |>
   mutate(
-    # Determine if this trial_id needs an update
     new_comment = comment_updates[trial_id],
     
     # Concatenate if existing comment is non-empty, otherwise just replace
@@ -138,8 +175,6 @@ data_extracted_sorted <- data_extracted_sorted |>
   ) |>
   select(-new_comment)
 
-
-# TODO Add corrections needed to the 'crossreg_is_subsequent_reg` variable
 # TODO Add any other corrections
 
 # Add variables for manual resolution ------------------------------------------
@@ -166,15 +201,58 @@ resolution_pubs <- data_extracted_sorted |>
   ) |>
   ungroup()
 
-# TODO: review pub type and align wigh VN code
+# Flag cases where no pub found
+resolution_pubs <- resolution_pubs |>
+  mutate(
+    no_pub = is.na(earliest_pub_type)
+  ) |>
+  group_by(
+    crossreg_id
+  ) |>
+  mutate(
+    no_pub_in_cluster = if_else(is.na(crossreg_id), NA, all(no_pub))
+  ) |>
+  ungroup() |>
+  mutate(
+    no_pub_found = if_else((is.na(crossreg_id) & no_pub) | (!is.na(crossreg_id) & no_pub_in_cluster), TRUE, FALSE)
+  ) |>
+  select(-no_pub, -no_pub_in_cluster)
+
 
 resolution_pubs <- resolution_pubs |>
   mutate(
+    pub_type_issue = if_else(!is.na(oa_pubtype) & oa_pubtype != "article" & oa_pubtype != "preprint", TRUE, NA),
     # Add flag for whether review is needed and pre-populate with second review field
-    review_flag = if_else(second_review_requested == "Yes, second review needed", "Review Requested", NA_character_),
+    review_action = case_when(
+      second_review_requested == "Yes, second review needed" ~ "Review Requested",
+      no_pub_found ~ "No publication Found",
+      earliest_pub_matches_reg == "I have a doubt" | !is.na(earliest_pub_matches_reg_comment) ~ "Review Needed",
+      !is.na(crossreg_comment1) | !is.na(crossreg_comment2) | !is.na(final_comments) ~ "Check Comments",
+      TRUE ~ "No Review Needed"
+    ),
+    review_status = NA_character_,
     reviewed_by = NA_character_,
     comments = NA_character_
-  )
+  ) |>
+  arrange(
+    factor(review_action, levels = c(
+      "Review Requested", 
+      "Review Needed", 
+      "Check Comments", 
+      "No Review Needed", 
+      "No publication Found"))
+    )
+
+resolution_pubs <- resolution_pubs |>
+  relocate(
+    euctr_comment_withdrawn,
+    crossreg_comment1,
+    crossreg_comment2,
+    earliest_pub_matches_reg_comment, 
+    final_comments,
+    .before = pub_type_issue
+    )
+
 
 
 
@@ -261,6 +339,6 @@ resolution_drks_sumres <- data_extracted_sorted |>
 
 # Notifications -----------------------------------------------------------
 
-print(paste0("There are ", length(unique(dupes$trial_id)), " duplicates in the dataset!"))
-print(paste0("A total of ", length(dupes_to_remove), " duplicates have been removed!"))
+print(paste0("There are ", length(unique(dupes$trial_id)), " unique duplicates in the dataset!"))
+print(paste0("A total of ", nrow(data_extracted) - nrow(data_extracted_deduped), " duplicated trial IDs have been removed!"))
   
