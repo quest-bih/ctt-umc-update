@@ -15,6 +15,9 @@ library(stringr)
 #data_extracted_raw <- read_csv("snapshot_1_29102025.csv")
 
 # Load in (interim) data from the pub search from 3 November 2025
+# data_extracted_raw <- read_csv("reordered_snapshot_20251103_old.csv")
+
+# Load in (interim) data from the pub search from 3 November 2025
 data_extracted_raw <- read_csv("reordered_snapshot_20251103.csv")
 
 # Filter for already reviewed cases
@@ -69,8 +72,8 @@ dupes_no_differences <- dupes_check_differences |>
 # For non-identical dupes, select which can be removed based on max timestamp
 dupes_take_maxdate <- c(
   "DRKS00011653", # MMP clarified to keep max timestamp
-  "2014-005344-17" # SY clarified to keep max timestamp
-  )
+  "2014-005344-17", # SY clarified to keep max timestamp
+  "DRKS00009418") # no differences
 
 # For non-identical dupes, select the one with the max timestamp
 data_extracted_deduped <- data_extracted |>
@@ -84,11 +87,11 @@ data_extracted_deduped <- data_extracted |>
   ungroup()
 
 # Remove all remaining identical dupes
-data_extracted_deduped <- data_extracted_deduped |>
-  distinct(
-    trial_id,
-    .keep_all = TRUE
-    )
+# data_extracted_deduped <- data_extracted_deduped |>
+#   distinct(
+#     trial_id,
+#     .keep_all = TRUE
+#     )
 
 # Add counts and arrange data by crossreg cluster
 data_extracted_sorted <- data_extracted_deduped |>
@@ -336,6 +339,47 @@ resolution_drks_sumres <- data_extracted_sorted |>
 
 # TODO Next, for all cases with summary results = YES, check or determine summary results date
 
+
+# Check of publication type (MMP) -----------------------------------------
+
+resolution_pubtype_mmp <- resolution_pubs |>
+  filter(
+    extractor == "Merle MP",
+    !no_pub_found,
+    !is.na(earliest_pub_url)
+    ) |>
+  select(
+    trial_id,
+    registry_url,
+    registry,
+    crossreg_id,
+    timestamp,
+    extractor,
+    earliest_pub_url,
+    earliest_pub_type,
+    earliest_pub_doi,
+    earliest_pub_pmid,
+    earliest_pub_matches_reg_comment,
+    final_comments
+  ) |>
+  arrange(timestamp)
+
+resolution_pubtype_mmp <- resolution_pubtype_mmp |>
+  relocate(
+    timestamp,
+    extractor,
+    .before = trial_id
+  ) |>
+  relocate(
+    earliest_pub_doi, .before = earliest_pub_type
+  ) |>
+  relocate(
+    earliest_pub_pmid, .after = final_comments
+  ) |>
+  mutate(
+    earliest_pub_type_new = NA_character_
+  ) |>
+  relocate(earliest_pub_type_corrected, .after = earliest_pub_type)
 
 # Notifications -----------------------------------------------------------
 
