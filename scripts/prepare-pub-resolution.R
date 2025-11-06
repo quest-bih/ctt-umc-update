@@ -219,21 +219,58 @@ pubtypes_to_check <- c("abstract", "communication", "conference", "letter", "new
 
 resolution_pubs <- resolution_pubs |>
   mutate(
+    
     # Create flag for publication types to check
     pub_type_check_needed = if_else(
       if_any(
-      c(earliest_pub_type, pub_type_openalex, pub_type_pmid),
-      ~str_detect(., regex(paste0("\\b(", paste(pubtypes_to_check, collapse = "|"), ")\\b"), ignore_case = TRUE))
-    ), TRUE, NA),
+        c(earliest_pub_type, pub_type_openalex, pub_type_pmid),
+        ~str_detect(., regex(paste0("\\b(", paste(pubtypes_to_check, collapse = "|"), ")\\b"), ignore_case = TRUE))
+        ), TRUE, NA
+      )
+  )
+
+resolution_pubs <- resolution_pubs |>
+  mutate(
+
     # Triage whether review is needed based on existing data and comments
-    review_action = case_when(
-      second_review_requested == "Yes, second review needed" ~ "Review Requested (+ pubtype if TRUE)",
+    review_action_single = case_when(
+      
+      second_review_requested == "Yes, second review needed" ~ "Review Requested",
       no_pub_found ~ "No publication Found",
-      earliest_pub_matches_reg == "I have a doubt" | !is.na(earliest_pub_matches_reg_comment) ~ "Review Needed (+ pubtype if TRUE)",
-      !is.na(crossreg_comment1) | !is.na(crossreg_comment2) | !is.na(final_comments) ~ "Check Comments (+ pubtype if TRUE)",
+      earliest_pub_matches_reg == "I have a doubt" | !is.na(earliest_pub_matches_reg_comment) ~ "Review Needed",
+      !is.na(crossreg_comment1) | !is.na(crossreg_comment2) | !is.na(final_comments) ~ "Check Comments",
       pub_type_check_needed ~ "Check pub type",
       TRUE ~ "No Review Needed"
-    ),
+    
+      )
+  ) |>
+  group_by(
+    crossreg_id
+    ) |>
+  mutate(
+    
+    review_action_cluster = case_when(
+      
+      # If at least one row needs review
+      !is.na(crossreg_id) & any(review_action_single == "Review Needed") ~ "Review Needed",
+      # If at least one row has comments to check
+      !is.na(crossreg_id) & any(review_action_single == "Check Comments") ~ "Check Comments",
+      # If at least one row has pub type to check
+      !is.na(crossreg_id) & any(review_action_single == "Check pub type") ~ "Check pub type",
+      
+      TRUE ~ review_action_single  # fallback to the row-level action
+    )
+  ) |>
+  ungroup()
+
+resolution_pubs <- resolution_pubs |> 
+  mutate(
+    review_action = if_else(is.na(crossreg_id), review_action_single, review_action_cluster)
+  )
+
+    
+resolution_pubs <- resolution_pubs |>
+  mutate(
     review_status = NA_character_,
     reviewer = NA_character_,
     review_has_pub = NA,
@@ -244,9 +281,9 @@ resolution_pubs <- resolution_pubs |>
   ) |>
   arrange(
     factor(review_action, levels = c(
-      "Review Requested (+ pubtype if TRUE)", 
-      "Review Needed (+ pubtype if TRUE)", 
-      "Check Comments (+ pubtype if TRUE)", 
+      "Review Requested", 
+      "Review Needed", 
+      "Check Comments", 
       "Check pub type",
       "No Review Needed", 
       "No publication Found"))
@@ -363,6 +400,7 @@ resolution_pubtype_mmp <- resolution_pubs |>
     extractor,
     earliest_pub_url,
     earliest_pub_type,
+    pub_type_check_needed,
     earliest_pub_doi,
     earliest_pub_matches_reg_comment,
     final_comments
@@ -370,6 +408,7 @@ resolution_pubtype_mmp <- resolution_pubs |>
   arrange(timestamp)
 
 resolution_pubtype_mmp <- resolution_pubtype_mmp |>
+  rename(pubtype_alert = pub_type_check_needed) |>
   relocate(
     timestamp,
     extractor,
@@ -381,7 +420,7 @@ resolution_pubtype_mmp <- resolution_pubtype_mmp |>
   mutate(
     earliest_pub_type_corrected = NA_character_
   ) |>
-  relocate(earliest_pub_type_corrected, .after = earliest_pub_type)
+  relocate(earliest_pub_type_corrected, .after = pubtype_alert)
 
 # Notifications -----------------------------------------------------------
 
