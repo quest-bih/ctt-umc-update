@@ -11,14 +11,14 @@ library(stringr)
 
 # Load and prepare manual extractions -------------------------------------
 
-# Load in (interim) data from the pub search from 29 October 2025
-#data_extracted_raw <- read_csv("snapshot_1_29102025.csv")
-
-# Load in (interim) data from the pub search from 3 November 2025
-# data_extracted_raw <- read_csv("reordered_snapshot_20251103_old.csv")
-
 # Load in (interim) data from the pub search from 3 November 2025
 data_extracted_raw <- read_csv("reordered_snapshot_20251103.csv")
+
+data_extracted_raw <- data_extracted_raw |>
+  rename(
+    pub_type_openalex = oa_pubtype,
+    pub_type_pmid = pubtype_pmid
+  )
 
 # Filter for already reviewed cases
 data_extracted <- data_extracted_raw |>
@@ -85,13 +85,6 @@ data_extracted_deduped <- data_extracted |>
     )
   ) |>
   ungroup()
-
-# Remove all remaining identical dupes
-# data_extracted_deduped <- data_extracted_deduped |>
-#   distinct(
-#     trial_id,
-#     .keep_all = TRUE
-#     )
 
 # Add counts and arrange data by crossreg cluster
 data_extracted_sorted <- data_extracted_deduped |>
@@ -221,27 +214,40 @@ resolution_pubs <- resolution_pubs |>
   ) |>
   select(-no_pub, -no_pub_in_cluster)
 
+# Update as needed
+pubtypes_to_check <- c("abstract", "communication", "conference", "letter", "news", "poster", "presentation", "review", "talk")
 
 resolution_pubs <- resolution_pubs |>
   mutate(
-    pub_type_issue = if_else(!is.na(oa_pubtype) & oa_pubtype != "article" & oa_pubtype != "preprint", TRUE, NA),
-    # Add flag for whether review is needed and pre-populate with second review field
+    # Create flag for publication types to check
+    pub_type_check_needed = if_else(
+      if_any(
+      c(earliest_pub_type, pub_type_openalex, pub_type_pmid),
+      ~str_detect(., regex(paste0("\\b(", paste(pubtypes_to_check, collapse = "|"), ")\\b"), ignore_case = TRUE))
+    ), TRUE, NA),
+    # Triage whether review is needed based on existing data and comments
     review_action = case_when(
-      second_review_requested == "Yes, second review needed" ~ "Review Requested",
+      second_review_requested == "Yes, second review needed" ~ "Review Requested (+ pubtype if TRUE)",
       no_pub_found ~ "No publication Found",
-      earliest_pub_matches_reg == "I have a doubt" | !is.na(earliest_pub_matches_reg_comment) ~ "Review Needed",
-      !is.na(crossreg_comment1) | !is.na(crossreg_comment2) | !is.na(final_comments) ~ "Check Comments",
+      earliest_pub_matches_reg == "I have a doubt" | !is.na(earliest_pub_matches_reg_comment) ~ "Review Needed (+ pubtype if TRUE)",
+      !is.na(crossreg_comment1) | !is.na(crossreg_comment2) | !is.na(final_comments) ~ "Check Comments (+ pubtype if TRUE)",
+      pub_type_check_needed ~ "Check pub type",
       TRUE ~ "No Review Needed"
     ),
     review_status = NA_character_,
-    reviewed_by = NA_character_,
-    comments = NA_character_
+    reviewer = NA_character_,
+    review_has_pub = NA,
+    review_doi = NA,
+    review_pub_type = NA,
+    review_pmid = NA,
+    review_comments = NA_character_
   ) |>
   arrange(
     factor(review_action, levels = c(
-      "Review Requested", 
-      "Review Needed", 
-      "Check Comments", 
+      "Review Requested (+ pubtype if TRUE)", 
+      "Review Needed (+ pubtype if TRUE)", 
+      "Check Comments (+ pubtype if TRUE)", 
+      "Check pub type",
       "No Review Needed", 
       "No publication Found"))
     )
@@ -253,11 +259,11 @@ resolution_pubs <- resolution_pubs |>
     crossreg_comment2,
     earliest_pub_matches_reg_comment, 
     final_comments,
-    .before = pub_type_issue
-    )
-
-
-
+    .before = pub_type_check_needed
+    ) |>
+  relocate(
+    pub_type_check_needed, .before = review_action
+  )
 
 # Resolution of EUCTR recruitment status ---------------------------------------
 
@@ -358,7 +364,6 @@ resolution_pubtype_mmp <- resolution_pubs |>
     earliest_pub_url,
     earliest_pub_type,
     earliest_pub_doi,
-    earliest_pub_pmid,
     earliest_pub_matches_reg_comment,
     final_comments
   ) |>
@@ -373,11 +378,8 @@ resolution_pubtype_mmp <- resolution_pubtype_mmp |>
   relocate(
     earliest_pub_doi, .before = earliest_pub_type
   ) |>
-  relocate(
-    earliest_pub_pmid, .after = final_comments
-  ) |>
   mutate(
-    earliest_pub_type_new = NA_character_
+    earliest_pub_type_corrected = NA_character_
   ) |>
   relocate(earliest_pub_type_corrected, .after = earliest_pub_type)
 
@@ -385,4 +387,6 @@ resolution_pubtype_mmp <- resolution_pubtype_mmp |>
 
 print(paste0("There are ", length(unique(dupes$trial_id)), " unique duplicates in the dataset!"))
 print(paste0("A total of ", nrow(data_extracted) - nrow(data_extracted_deduped), " duplicated trial IDs have been removed!"))
+
+# write_csv(your_data, "your_file.csv", na = "")
   
