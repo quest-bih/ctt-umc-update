@@ -20,6 +20,21 @@ data_extracted_raw <- data_extracted_raw |>
     pub_type_pmid = pubtype_pmid
   )
 
+# Integrate pub type corrections from MMP ---------------------------------
+
+pubtype_corrections_mmp <- read_excel("iv3_resolution_pubtype_mmp_03112025.xlsx") |>
+  filter (
+    !is.na(earliest_pub_type_corrected)
+    ) |> 
+  select(
+    trial_id,
+    earliest_pub_type_corrected
+    ) |>
+  rename(earliest_pub_type = earliest_pub_type_corrected)
+
+data_extracted_raw <- data_extracted_raw |>
+  rows_upsert(pubtype_corrections_mmp, by = "trial_id")
+
 # Filter for already reviewed cases
 data_extracted <- data_extracted_raw |>
   mutate(
@@ -274,9 +289,11 @@ resolution_pubs <- resolution_pubs |>
     review_status = NA_character_,
     reviewer = NA_character_,
     review_has_pub = NA,
-    review_doi = NA,
-    review_pub_type = NA,
-    review_pmid = NA,
+    review_earliest_doi = NA_character_,
+    review_earliest_pubtype = NA_character_,
+    review_earliest_pmid = NA_character_,
+    review_next_best_doi = NA_character_,
+    review_next_best_pubtype = NA_character_,
     review_comments = NA_character_
   ) |>
   arrange(
@@ -300,6 +317,46 @@ resolution_pubs <- resolution_pubs |>
     ) |>
   relocate(
     pub_type_check_needed, .before = review_action
+  )
+
+# Create separate files for resolution of cases
+
+# Cases where doubt about eligible publication
+res_pubs <- resolution_pubs |>
+  filter(
+    review_action == "Review Requested" | review_action == "Review Needed" | review_action == "Check Comments" | review_action == "No Review Needed"
+  )
+
+# Cases where doubt only about publication type
+res_pubtype <- resolution_pubs |>
+  filter(
+    review_action == "Check pub type"
+  ) |>
+  select(
+    -review_has_pub,
+    -review_earliest_doi,
+    -review_earliest_pmid
+  ) |>
+  mutate(
+    review_pubtype_is_eligible = NA,
+    review_earliest_pubtype = NA_character_,
+    review_ineligible_and_no_pub = NA_character_
+  )
+
+res_pubtype <- res_pubtype |>
+  relocate(
+    review_pubtype_is_eligible,
+    review_earliest_pubtype, 
+    review_next_best_doi,
+    review_next_best_pubtype,
+    review_ineligible_and_no_pub,
+    .after = reviewer
+    )
+
+# Cases where no publication was found
+res_no_pub <- resolution_pubs |>
+  filter(
+    review_action == "No publication Found"
   )
 
 # Resolution of EUCTR recruitment status ---------------------------------------
@@ -385,42 +442,43 @@ resolution_drks_sumres <- data_extracted_sorted |>
 
 # Check of publication type (MMP) -----------------------------------------
 
-resolution_pubtype_mmp <- resolution_pubs |>
-  filter(
-    extractor == "Merle MP",
-    !no_pub_found,
-    !is.na(earliest_pub_url)
-    ) |>
-  select(
-    trial_id,
-    registry_url,
-    registry,
-    crossreg_id,
-    timestamp,
-    extractor,
-    earliest_pub_url,
-    earliest_pub_type,
-    pub_type_check_needed,
-    earliest_pub_doi,
-    earliest_pub_matches_reg_comment,
-    final_comments
-  ) |>
-  arrange(timestamp)
+# resolution_pubtype_mmp <- resolution_pubs |>
+#   filter(
+#     extractor == "Merle MP",
+#     !no_pub_found,
+#     !is.na(earliest_pub_url)
+#     ) |>
+#   select(
+#     trial_id,
+#     registry_url,
+#     registry,
+#     crossreg_id,
+#     timestamp,
+#     extractor,
+#     earliest_pub_url,
+#     earliest_pub_type,
+#     pub_type_check_needed,
+#     earliest_pub_doi,
+#     earliest_pub_matches_reg_comment,
+#     final_comments
+#   ) |>
+#   arrange(timestamp)
+# 
+# resolution_pubtype_mmp <- resolution_pubtype_mmp |>
+#   rename(pubtype_alert = pub_type_check_needed) |>
+#   relocate(
+#     timestamp,
+#     extractor,
+#     .before = trial_id
+#   ) |>
+#   relocate(
+#     earliest_pub_doi, .before = earliest_pub_type
+#   ) |>
+#   mutate(
+#     earliest_pub_type_corrected = NA_character_
+#   ) |>
+#   relocate(earliest_pub_type_corrected, .after = pubtype_alert)
 
-resolution_pubtype_mmp <- resolution_pubtype_mmp |>
-  rename(pubtype_alert = pub_type_check_needed) |>
-  relocate(
-    timestamp,
-    extractor,
-    .before = trial_id
-  ) |>
-  relocate(
-    earliest_pub_doi, .before = earliest_pub_type
-  ) |>
-  mutate(
-    earliest_pub_type_corrected = NA_character_
-  ) |>
-  relocate(earliest_pub_type_corrected, .after = pubtype_alert)
 
 # Notifications -----------------------------------------------------------
 
@@ -428,4 +486,3 @@ print(paste0("There are ", length(unique(dupes$trial_id)), " unique duplicates i
 print(paste0("A total of ", nrow(data_extracted) - nrow(data_extracted_deduped), " duplicated trial IDs have been removed!"))
 
 # write_csv(your_data, "your_file.csv", na = "")
-  
