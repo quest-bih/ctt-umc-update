@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ctregistries)
 library(here)
+library(httr2)
 
 load_AACT_datasets <- function(AACT_folder, AACT_dataset_names) {
   #AACT filenames that we need to load
@@ -225,7 +226,7 @@ update_bidirectionality <- function(crossreg_tib) {
                      bidirectional = n() > 1 & selfref == FALSE | bidirectional)
 }
 
-
+# split a pub_table by reviewer and create individual files for each reviewer
 prep_and_print <- function(tib_pub_s, target_folder) {
   filename <- tib_pub_s |> 
     slice_head(n = 1) |> 
@@ -235,4 +236,135 @@ prep_and_print <- function(tib_pub_s, target_folder) {
   
   write_csv(tib_pub_s, filename)
   
+}
+
+# ping a url and return the response (to see if it resolves)
+# url_extract_response <- function(url_str) {
+#   
+#   if (is.na(url_str) | url_str == "") return(NA)
+#   
+#   try(url_str |>
+#         httr2::request() |>
+#         httr2::req_retry(backoff = ~ 10) |> 
+#         httr2::req_perform(verbosity = 3)
+#         
+#   )
+#   
+#   if (is.null(httr2::last_response())) return(0)
+#   
+#   httr2::last_response() |>
+#     httr2::resp_status()
+# }
+# 
+# url_str <- ""
+# 
+# url_str <- "https://doi.org/10.1200/JCO.2017.35.15_suppl.6016"
+# 
+# dois_ls <- extractions |> 
+#   filter(!is.na(earliest_pub_doi)) |> 
+#   slice(1:10) |> 
+#   pull(earliest_pub_doi)
+# 
+# ping_dois <- function(doi_ls) {
+#   request_base <- httr2::request("https://doi.org/") |> 
+#     httr2::req_throttle(capacity = 100, fill_time_s = 60) |> 
+#     httr2::req_retry(backoff = ~ 10)
+#   
+#   reqs <- purrr::map(dois_ls, \(x) httr2::req_url_path_append(request_base, x))
+#   resps <- httr2::req_perform_parallel(reqs, on_error = "continue")
+#   
+#   successes <- tibble::tibble()
+#   resps[[5]] |> 
+#     # httr2::resps_successes() |> 
+#     # httr2::resps_requests() |> 
+#     httr2::resp_status()
+# 
+#   resps |> httr2::resps_failures() |> 
+#     httr2::resps_requests()
+# }
+# 
+# respp <- request("https://doi.org/10.1200/JCO.2017.35.15_suppl.6016") |> 
+#   httr2::req_throttle(capacity = 100, fill_time_s = 60) |> 
+#   httr2::req_retry(backoff = ~ 10, max_tries = 5) |> 
+#   req_perform(verbosity = 3)
+# 
+# respp |> resp_status()
+# 
+# 
+# extract_response <- function(url_str) {
+#   try(url_str |>
+#         httr2::request() |>
+#         httr2::req_perform(verbosity = 3) |>
+#         httr2::req_retry(backoff = ~ 10)
+#   )
+#   
+#   if (is_null(httr2::last_response())) return(0)
+#   
+#   httr2::last_response() |>
+#     httr2::resp_status()
+# }
+#  
+
+
+# dois_ls <- extractions |>
+#   filter(!is.na(earliest_pub_doi)) |>
+#   # slice(1:10) |>
+#   pull(earliest_pub_doi)
+
+# ping a vector of DOIs (no urls, but pure DOIs!) using the handles API endpoint
+# and collect response statuses
+ping_dois <- function(doi_ls) {
+  request_base <- httr2::request("https://doi.org/api/handles/") |>
+    httr2::req_throttle(capacity = 100, fill_time_s = 60) |>
+    httr2::req_retry(backoff = ~ 10) |> 
+    httr2::req_error(is_error = \(resp) resp_status(resp) == 500)
+
+  reqs <- purrr::map(doi_ls, \(x) httr2::req_url_path_append(request_base, x))
+  resps <- httr2::req_perform_parallel(reqs, on_error = "continue")
+
+  statuses <- tibble::tibble(
+    doi = unlist(doi_ls),
+    status = resps |>
+      purrr::map_dbl(httr2::resp_status)
+  )
+  return(statuses)
+}
+url_ls <- letters
+ping_url <- function(url_ls) {
+  
+  reqs <- 
+  request_base <- url_ls |> 
+    httr2::request(url_i) |>
+    httr2::req_throttle(capacity = 100, fill_time_s = 60) |>
+    httr2::req_retry(backoff = ~ 10) |> 
+    httr2::req_error(is_error = \(resp) resp_status(resp) == 500)
+  
+  reqs <- purrr::map(doi_ls, \(x) httr2::req_url_path_append(request_base, x))
+  resps <- httr2::req_perform_parallel(reqs, on_error = "continue")
+  
+  statuses <- tibble::tibble(
+    doi = unlist(doi_ls),
+    status = resps |>
+      purrr::map_dbl(httr2::resp_status)
+  )
+  return(statuses)
+}
+
+
+# url_check
+
+update_error_log <- function(error_logs, qa_tib, rulename, colname) {
+  if (nrow(qa_tib) > 0) {
+    error_entry <- qa_tib |> 
+      dplyr::group_by(crossreg_id) |> 
+      dplyr::summarise(dplyr::across(dplyr::everything(), dplyr::first)) |> 
+      dplyr::ungroup() |> 
+      dplyr::select(trial_id, crossreg_id, extractor) |> 
+      dplyr::mutate(rule = rulename,
+                    col = colname)
+    
+    error_logs <- error_logs |> 
+      dplyr::bind_rows(error_entry)
+  }
+  return(error_logs)
 }

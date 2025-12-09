@@ -3,10 +3,13 @@ library(here)
 library(janitor)
 library(readxl)
 library(testthat)
+library(openalexR)
+library(easyRPubMed)
 
 source(here("scripts", "utils.R"))
 
-extractions_raw <- read_xlsx(here("data", "processed", "2025-10-29-iv3_pubsearch_main.xlsx"))
+# extractions_raw <- read_xlsx(here("data", "processed", "2025-10-29-iv3_pubsearch_main.xlsx"))
+extractions_raw <- read_xlsx(here("data", "processed", "2025-12-05_iv3_pubsearch_main.xlsx"))
 euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
 
 unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
@@ -127,7 +130,45 @@ extractions <- extractions_raw |>
     # Any final comments on the extraction can be entered here
     final_comments = any_final_comments_on_the_extraction_can_be_entered_here_dont_miss_to_click_submit
   ) |> 
-  left_join(unfiltered_crossreg_ids |> select(trial_id, crossreg_id), by = "trial_id")
+  filter(!str_detect(extractor, regex("training", ignore_case = TRUE))) |> 
+  left_join(unfiltered_crossreg_ids |> select(trial_id, crossreg_id), by = "trial_id") |> 
+  mutate(earliest_pub_doi = case_when(
+    str_detect(earliest_pub_doi, regex("elife", ignore_case = TRUE)) ~ earliest_pub_doi |> 
+      str_remove("\\.\\d($|\\..*)") |> 
+      tolower(),
+    .default = earliest_pub_doi |>
+      str_remove_all("\\?.*") |>
+      str_replace_all("%2F", "/") |>  
+      tolower()
+  )
+  )
+
+### TODO: revisit once all extractions are finished
+data_extracted <- extractions |>
+  group_by(crossreg_id) |>
+  mutate(
+    extracted = !is.na(extractor),
+    any_extracted_in_cluster = any(extracted, na.rm = TRUE)
+  ) |>
+  ungroup() |> 
+  filter(
+    # keep extracted single registrations
+    (is.na(crossreg_id) & extracted) |
+      # or any in a cluster with an extracted record
+      (!is.na(crossreg_id) & (extracted | any_extracted_in_cluster))
+  ) |>
+  select(-extracted, any_extracted_in_cluster)
+
+
+dupes <- get_dupes(extractions,  trial_id)
+
+#### deduplicate, but check with Delwen if taking latest entry makes sense
+
+extractions <- extractions |> 
+  group_by(trial_id, extractor) |> 
+  summarise(across(everything(), last)) |> 
+  ungroup() |> 
+  arrange(timestamp)
 
 ####### sanity checks
 n_per_extractor <- extractions |> 
@@ -139,6 +180,10 @@ missed_extractions <- pub_search_table |>
 
 nrow(missed_extractions) |> 
   expect_equal(0)
+
+## extractions not in pub_table that should have been excluded, last check n = 5, all were flagged as excluded
+qa_excluded <- extractions |> 
+  anti_join(pub_search_table, by = "trial_id")
 
 ## registry validation
 extractions |> 
@@ -159,17 +204,34 @@ prem_end_extracted <- extractions |>
 
 ## are there falsely marked prematurely ended TRNs 
 prem_euctr <- euctr_inex |> 
-  semi_join(prem_end_extracted, by = "trial_id") |> 
+  semi_join(extractions, by = "trial_id") |> 
   group_by(trial_id) |> 
-  mutate(has_prematurely_ended = any(status == "Prematurely Ended")) |> 
+  mutate(
+    is_premature_extracted = trial_id %in% prem_end_extracted$trial_id,
+    has_de_prematurely_ended = any(status == "Prematurely Ended" &
+                                     str_detect(eudract_number_with_country, "DE"))
+  ) |>
   select(trial_id, eudract_number_with_country,
-         has_prematurely_ended, status) |> 
-  arrange(trial_id)
+         is_premature_extracted,
+         has_trial_de_protocol,
+         has_de_prematurely_ended, status)
 
 prem_euctr |> 
-  filter(!has_prematurely_ended) |> 
+  filter(has_de_prematurely_ended == TRUE & is_premature_extracted == FALSE) |> 
   nrow() |> 
   expect_equal(0)
+
+prem_euctr |>
+  filter(has_de_prematurely_ended == FALSE,
+         is_premature_extracted == TRUE,
+         has_trial_de_protocol == FALSE) |> 
+  nrow() |> 
+  expect_equal(0)
+
+prematurely_ended_no_de_protocol <- prem_euctr |>
+  filter(has_de_prematurely_ended == FALSE,
+         is_premature_extracted == TRUE)
+# 2014-002765-30 has no German protocol, but prematurely ended in NL
 
 ## no enrolment
 extractions |> 
@@ -195,33 +257,38 @@ extracted_crossreg <- extractions |>
   filter(euctr_is_prematurely_ended != "Yes" | is.na(euctr_is_prematurely_ended)) |> 
   mutate(n = 1:n(),
          crossreg_n = if_else(is_crossreg_filtered == FALSE, 1, max(n)),
-         n_yes = sum(crossreg_pub_already_identified == "Yes", na.rm = TRUE),
+         n_subsequent_yes = sum(crossreg_is_subsequent_reg == "Yes", na.rm = TRUE),
+         n_previous_yes = sum(crossreg_pub_already_identified == "Yes", na.rm = TRUE),
          n_dois = sum(earliest_pub_has_doi == "Yes", na.rm = TRUE)) |> 
   ungroup()
 
 extracted_crossreg |> 
-  count(crossreg_n, n_yes)
+  count(crossreg_n, n_subsequent_yes)
 
 ## missed cross-registrations
 qa_missed_crossreg <- extracted_crossreg |> 
-  filter(crossreg_n == 1, n_yes == 1, has_prematurely_ended == FALSE) 
+  filter(crossreg_n == 1, n_subsequent_yes == 1, has_prematurely_ended == FALSE) 
 qa_missed_crossreg |>
   nrow() |> 
   expect_equal(0)
 
+error_logs <- NULL
 ## diads
 qa_diads <- extracted_crossreg |> 
-  filter(crossreg_n == 2, n_yes > 1)
+  filter(crossreg_n == 2, n_subsequent_yes > 1)
 qa_diads |> 
   nrow()  |> 
   expect_equal(0)
-  
+error_logs <- update_error_log(error_logs, qa_diads, "7_diads", "crossreg_is_subsequent_reg")
+
 ## triads
 qa_triads <- extracted_crossreg |> 
-  filter(crossreg_n == 3, n_yes != 2, n_yes > 0)
+  filter(crossreg_n == 3, n_subsequent_yes != 2, n_subsequent_yes > 0)
 qa_triads |> 
   nrow() |> 
   expect_equal(0)
+error_logs <- update_error_log(error_logs, qa_triads, "7_triads", "crossreg_is_subsequent_reg")
+
 
 ## crossreg_pub_already_identified
 extracted_crossreg |> 
@@ -233,33 +300,40 @@ extracted_crossreg |>
 
 ## diads crossreg_pub_already_identified
 qa_diads_yes <- extracted_crossreg |> 
-  # count(crossreg_n, n_yes, crossreg_pub_already_identified)
-  filter(crossreg_n == 2, n_yes == 1, n == 1, is.na(earliest_pub_has_doi))
+  # count(crossreg_n, n_previous_yes, crossreg_pub_already_identified)
+  filter(crossreg_n == 2, n_previous_yes == 1, n == 1, is.na(earliest_pub_has_doi))
 qa_diads_yes |> 
   nrow()  |> 
   expect_equal(0)
+error_logs <- update_error_log(error_logs, qa_diads_yes, "8_diads", "earliest_pub_has_doi")
+
 
 qa_diads_no <- extracted_crossreg |> 
-  # count(crossreg_n, n_yes, crossreg_pub_already_identified)
-  filter(crossreg_n == 2, n_yes == 0, n == 1, !is.na(earliest_pub_has_doi))
+  # count(crossreg_n, n_previous_yes, crossreg_pub_already_identified)
+  filter(crossreg_n == 2, n_previous_yes == 0, n == 1, !is.na(earliest_pub_has_doi))
 qa_diads_no |> 
   nrow()  |> 
   expect_equal(0)
+error_logs <- update_error_log(error_logs, qa_diads_no, "8_diads", "earliest_pub_has_doi")
+
 
 ## triads crossreg_pub_already_identified
 qa_triads_yes <- extracted_crossreg |> 
-  filter(crossreg_n == 3, n_yes > 0, n_dois == 0) 
+  filter(crossreg_n == 3, n_previous_yes > 0, n_dois == 0) 
   
 qa_triads_yes |> 
   nrow() |> 
   expect_equal(0)
+error_logs <- update_error_log(error_logs, qa_triads_yes, "8_triads", "earliest_pub_has_doi")
+
 
 qa_triads_no <- extracted_crossreg |> 
-  filter(crossreg_n == 3, n_yes == 0, n_dois > 0) 
+  filter(crossreg_n == 3, n_previous_yes == 0, n_dois > 0) 
 
 qa_triads_no |> 
   nrow() |> 
   expect_equal(0)
+error_logs <- update_error_log(error_logs, qa_triads_no, "8_triads", "earliest_pub_has_doi")
 
 ## crossreg_new_earlier_pub_found
 extracted_crossreg |> 
@@ -290,13 +364,13 @@ extracted_crossreg |>
 
 pub_type_clean <- extracted_crossreg |> 
   mutate(earliest_pub_type_clean = case_when(
-    str_detect(earliest_pub_type, regex("abstract", ignore_case = TRUE)) ~ "Abstract",
+    str_detect(earliest_pub_type, regex("abstract|conference", ignore_case = TRUE)) ~ "Abstract",
     str_detect(earliest_pub_type, regex("letter", ignore_case = TRUE)) ~ "Letter",
     str_detect(earliest_pub_type, regex("conference", ignore_case = TRUE)) ~ "Conference",
     .default = earliest_pub_type
   ))
   
-# pub_type_clean |> 
+# pub_type_clean |>
 # count(earliest_pub_type_clean)
 
 ## doi checks (offline)
@@ -327,46 +401,157 @@ extracted_crossreg |>
 
 
 ## identifier cleaning/format check
-extracted_crossreg |> 
+qa_format <- extracted_crossreg |> 
   mutate(is_valid_doi = str_detect(earliest_pub_doi , "^10\\."),
          is_valid_pmid = str_detect(earliest_pub_pmid, "[1-9]\\d{7}")) |> 
   filter(!is.na(earliest_pub_has_doi) | !is.na(earliest_pub_has_pmid),
-         is_valid_doi == FALSE | is_valid_pmid == FALSE) |> 
-  nrow() |> 
+         is_valid_doi == FALSE | is_valid_pmid == FALSE)
+
+nrow(qa_format) |> 
   expect_equal(0)
 
+error_logs <- update_error_log(error_logs, qa_format, "pid format", "earliest_pub_pmid or earliest_pub_doi")
+
+
 ## date format check
-extracted_crossreg |> 
+qa_date_format <- extracted_crossreg |> 
   # count(is.na(earliest_pub_date), is.na(ymd_date))
   mutate(ymd_date = dmy(earliest_pub_date)) |>
   filter(!is.na(earliest_pub_date),
-         is.na(ymd_date)) |> 
-  nrow() |> 
+         is.na(ymd_date))
+nrow(qa_date_format) |> 
   expect_equal(0)
+error_logs <- update_error_log(error_logs, qa_date_format, "date format", "earliest_pub_date")
 
 ## online tests
+urls_to_check <- extractions |>
+  filter(!is.na(pub_reglinked_url) | !is.na(earliest_pub_url)) |> 
+  select(trial_id, contains("url"), earliest_pub_doi, contains("pmid"), extractor, crossreg_id) |> 
+  mutate(pub_reglinked_url_clean = str_replace(pub_reglinked_url, "doi-org.proxy.kib.ki.se/", "doi.org/") |> 
+           str_remove_all("\\?.*"),
+         # doi_clean = str_extract(pub_reglinked_url, "10\\.\\d{1,}.*"),
+         # doi_clean2 = str_extract(earliest_pub_url, "10\\.\\d{1,}.*"), 
+         earliest_pub_url_clean = str_replace(earliest_pub_url, "doi-org.proxy.kib.ki.se/", "doi.org/") |> 
+           str_remove_all("\\?.*"))
+  
+dupe_dois <- get_dupes(urls_to_check, earliest_pub_doi)
 
+dois_to_check <- urls_to_check |> 
+  filter(!is.na(earliest_pub_doi)) |>
+  distinct(earliest_pub_doi) |> 
+  pull(earliest_pub_doi)
+
+doi_status_tib <- dois_to_check |> 
+  ping_dois()
+# 
+# url_check <- urls_to_check |> 
+#   filter(!is.na(earliest_pub_url_clean)) |>
+#   slice(1:10) |>
+#   pull(earliest_pub_url_clean) |> 
+#   ping_dois()
+
+non_resolving_dois <- doi_status_tib |> 
+  filter(status > 200) |>
+  mutate(doi = str_remove_all(doi, "(\\?|#).*")) |> 
+  pull(doi)
+
+non_resolving_dois |> 
+  ping_dois()
+
+qa_doi <- urls_to_check |> 
+  filter(earliest_pub_doi %in% non_resolving_dois)
+
+error_logs <- update_error_log(error_logs, qa_doi, "doi format", "earliest_pub_doi")
+
+# TODO: finish implementing this check
+url_responses <- urls_to_check |> 
+  mutate(pub_reglinked_response = map_dbl(pub_reglinked_url_clean, url_extract_response),
+         earliest_pub_response = map_dbl(earliest_pub_url_clean, url_extract_response))
+
+urls_to_check$pub_reglinked_url_clean
+
+## publication_type
+
+# tt <- tibble(doi = dois_to_check)
+
+oa_resp <- oa_fetch(entity = "works", doi = dois_to_check, mailto = Sys.getenv("EMAIL"))
+
+oa_pubtype <- oa_resp |> 
+  mutate(earliest_pub_doi = str_extract(doi, "10\\..*") |> 
+           tolower()) |> 
+  distinct(earliest_pub_doi, .keep_all = TRUE) |> 
+  select(earliest_pub_doi, oa_pubtype = type)
+
+missing_oa <- setdiff(dois_to_check, oa_pubtype$earliest_pub_doi) |> 
+  str_replace("%2F", "/") |> 
+  tolower()
+
+# retrying here just to make sure records were not missed due to 
+# temporary issues
+oa_missing <- oa_fetch(entity = "works", doi = missing_oa, mailto = Sys.getenv("EMAIL"))
+
+oa_resp |> 
+  count(type)
+
+oa_resp_pmids <- oa_resp |> 
+  # rowwise() |> 
+  unnest_longer(ids) |> 
+  filter(str_detect(ids, "pubmed")) |> 
+  mutate(pmid = str_extract(ids, "\\d+"),
+         doi = str_extract(doi, "10\\..*") |> 
+           tolower()) |> 
+  select(doi, pmid)
+
+#### the following code may break due to unresolvable DOIs
+
+pubtype_meta <- tibble(doi = dois_to_check) |>
+# pubtype_meta <- tibble(doi = missing_oa) |> 
+  distinct(doi) |> 
+  inner_join(oa_resp_pmids, by = "doi") |> 
+  get_metadata(pmid, chunksize = 20, api_key = Sys.getenv("NCBI_KEY"))
+
+pmid_pubtype <- pubtype_meta |> 
+  list_rbind() |> 
+  select(earliest_pub_doi = doi, pubtype_pmid = pubtype)
+
+
+
+## publication table for result integration
 clean_pub <- pub_search_table |> 
   select(trial_id, registry_url:crossreg_ctgov) |> 
   left_join(extractions |> select(-registry, -crossreg_id),
-            by = "trial_id", relationship = "many-to-many") |> 
-  write_excel_csv(here("data", "processed", "reordered_snapshot.csv"))
+            by = "trial_id") |> 
+  mutate(earliest_pub_doi = tolower(earliest_pub_doi)) |> 
+  left_join(oa_pubtype, by = "earliest_pub_doi") |> 
+  left_join(pmid_pubtype, by = "earliest_pub_doi") |> 
+  write_excel_csv(here("data", "processed", "reordered_snapshot_20251209_pubtypes_new.csv"))
+today()
+error_logs |> 
+  write_csv(here("data", "processed", paste0("error_logs_", today(), ".csv")))
+
+# clean_pub_old <- read_csv(here("data", "processed", "reordered_snapshot_20251105_pubtypes.csv")) |> 
+#   distinct(trial_id, .keep_all = TRUE)
+# clean_pub_n <- clean_pub |> 
+#   distinct(trial_id, .keep_all = TRUE)
+# all.equal(clean_pub_n, clean_pub_old)
+# count(clean_pub_n, is.na(oa_pubtype))
+# count(clean_pub, is.na(oa_pubtype))
+# count(clean_pub_n, is.na(pubtype_pmid))
+# count(clean_pub, is.na(pubtype_pmid))
+
+clean_pub_n |> 
+  left_join(clean_pub_old, by = "trial_id") |> 
+  filter(drks_sumres_date.x != drks_sumres_date.y | is.na(drks_sumres_date.x) | is.na(drks_sumres_date.y)) |> 
+  filter(is.na(drks_sumres_date.y) & !is.na(drks_sumres_date.x)) |> 
+  pull(trial_id)
 
 
-clean_pub |> 
-  count(is.na(timestamp))
-####Validate the publication type entered manually vs publication type obtained by querying OpenAlex (as coders reported making mistakes when entering the publication type)
-
-tribble(~trial_id, ~crossreg_id, ~extractor, ~rule,
-        # "DRKS00005040", "2009-013701-34_DRKS00005040", "Delwen", "missed_crossreg",
-        # "DRKS00000591", "2010-018539-16_DRKS00000591", "Delwen", "missed_crossreg",
-        # "NCT02486133", "2015-000360-34_NCT02486133", "Merle", "missed_crossreg",
-        # "NCT03160248", "2016-002351-16_NCT03160248", "Marwin", "missed_crossreg",
-        # "NCT03554200", "2017-002695-45_NCT03554200",  "Marwin", "missed_crossreg",
-        # "NCT03409757", "2017-003240-20_NCT03409757", "Love", "missed_crossreg",
-        "NCT00777244", "2007-007262-38_NCT00777244", "Till",  "8_diad",
-        "2014-003647-34", "2014-003647-34_NCT02310243", "Christie", "prematurely_ended"
-        )
 
 
-  
+extractions |> 
+  filter(!trial_id %in% pub_search_table$trial_id)
+
+dupes_extr <- extractions |> 
+  get_dupes(trial_id) |> 
+  select(extractor, trial_id, dupe_count)
+
