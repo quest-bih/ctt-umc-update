@@ -317,11 +317,14 @@ drks_results <- drks_tib |>
   select(drksId, trialResults) |> 
   unnest(trialResults) |> 
   select(drksId, publications, trialResultsDescriptions) |> 
-  unnest(publications) |> 
   unnest(trialResultsDescriptions) |> 
   unnest(idLocale)
 
-drks_results_reporting <- drks_results |> 
+drks_pubs <- drks_results |> 
+  unnest(publications) #### NB this step here deletes other entries
+  # when no data for publications available (NULL)!!!!!!
+
+drks_results_reporting <- drks_pubs |> 
   group_by(drksId) |> 
   summarise(results_reporting = 
               any(str_detect(description, "Ergebnisbericht|Abschlussbericht|(?<!keine )Studienergebnisse|Studienergebnisbericht|study results"),

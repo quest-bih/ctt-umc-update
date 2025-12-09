@@ -388,9 +388,9 @@ inex_per_registry <- function(tib) {
   
   fc |> 
     flowchart::fc_split(registry) |>
-    flowchart::fc_filter(is_interventional, label = "Interventional", show_exc = TRUE) |> 
     flowchart::fc_filter(is_german_umc, label = "German UMC", show_exc = TRUE) |> 
     flowchart::fc_filter(is_completed_2018_2021, label = "Completed 2018-2021", show_exc = TRUE) |>
+    flowchart::fc_filter(is_interventional, label = "Interventional", show_exc = TRUE) |> 
     flowchart::fc_filter(!is_crossreg, label = "Not crossregistered", show_exc = TRUE) |>
     flowchart::fc_filter(!is_withdrawn, label = "Not withdrawn", show_exc = TRUE) |>
     flowchart::fc_draw()
@@ -410,9 +410,9 @@ falling_clusters |>
   mutate(registry = get_registry_name(trial_id)) |> 
   as_fc(label = "Crossreg TRNs (at least one TRN in cluster is included according to 'simple' criteria") |> 
   fc_split(registry) |> 
+  fc_filter(has_completion_2018_2021, label = "Completed 2018-2021", show_exc = TRUE) |>
   fc_filter(has_interventional, label = "Interventional", show_exc = TRUE) |> 
   fc_filter(has_german_umc, label = "German UMC", show_exc = TRUE) |> 
-  fc_filter(has_completion_2018_2021, label = "Completed 2018-2021", show_exc = TRUE) |>
   fc_filter(!has_withdrawn_status, label = "Not withdrawn", show_exc = TRUE) |>
   flowchart::fc_draw()
 
