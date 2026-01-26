@@ -325,15 +325,19 @@ drks_pubs <- drks_results |>
   # when no data for publications available (NULL)!!!!!!
 
 drks_results_reporting <- drks_pubs |> 
-  group_by(drksId) |> 
+  group_by(drksId, type) |> 
   summarise(results_reporting = 
               any(str_detect(description, "Ergebnisbericht|Abschlussbericht|(?<!keine )Studienergebnisse|Studienergebnisbericht|study results"),
                   na.rm = TRUE)) |> 
-  select(trial_id = drksId, everything())
+  select(trial_id = drksId, everything()) |> 
+  ungroup()
 
-drks_results |> 
+drks_pubs |> 
   ungroup() |> 
   count(type, sort = TRUE)
+
+drks_results_reporting |> 
+  count(type, results_reporting)
 
 ############# prepare export with crossreg data and additional transparency practices measures
 validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
