@@ -21,6 +21,7 @@
 
 # Ignore raw files
 data/raw/
+data/publication_search_cleaning/
 
 # macOS
 .DS_Store
