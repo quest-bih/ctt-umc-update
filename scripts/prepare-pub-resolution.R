@@ -7,12 +7,13 @@ library(janitor)
 library(readxl)
 library(rlang)
 library(stringr)
+library(here)
 
 
 # Load and prepare manual extractions -------------------------------------
 
 # Load in (interim) data from the pub search from 3 November 2025
-data_extracted_raw <- read_csv("reordered_snapshot_20251103.csv")
+data_extracted_raw <- read_csv(here("data", "processed", "pub_search_cleaning", "phase_1", "reordered_snapshot_20251103.csv"))
 
 data_extracted_raw <- data_extracted_raw |>
   rename(
@@ -22,7 +23,7 @@ data_extracted_raw <- data_extracted_raw |>
 
 # Integrate pub type corrections from MMP ---------------------------------
 
-pubtype_corrections_mmp <- read_excel("iv3_resolution_pubtype_mmp_03112025.xlsx") |>
+pubtype_corrections_mmp <- read_excel(here("data", "processed", "pub_search_cleaning", "phase_1", "iv3_resolution_pubtype_mmp_03112025.xlsx")) |>
   filter (
     !is.na(earliest_pub_type_corrected)
     ) |> 
@@ -394,7 +395,7 @@ resolution_euctr_recruitment <- data_extracted_sorted |>
 
 
 # Add specific cases that TB flagged needing review in the trial sheet
-extraction_tb <- read_excel("extraction-tb.xlsx")
+extraction_tb <- read_excel(here("data", "processed", "pub_search_cleaning", "phase_1", "extraction-tb.xlsx"))
 
 extraction_tb_drks <- extraction_tb |>
   filter(
