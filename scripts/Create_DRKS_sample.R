@@ -96,8 +96,21 @@ umc_drks_pcis <- drks_trial_contacts |>
          raw_affil = str_squish(raw_affil))
 
 drks_study_characteristic <- drks_tib |> 
-  select(drksId, studyCharacteristic) |> 
-  unnest(studyCharacteristic)
+  select(trial_id = drksId, studyCharacteristic) |> 
+  unnest(studyCharacteristic) |> 
+  mutate(is_randomized = allocation == "RANDOMIZED_CONTROLLED_TRIAL",
+         is_blinded = blindingType == "BLINDED",
+         phase = case_when(
+           phase == "PHASE_0" ~ "0",
+           phase == "PHASE_I" ~ "I",
+           phase == "PHASE_II" ~ "II",
+           phase == "PHASE_III" ~ "III",
+           phase == "PHASE_II_III" ~ "II-III",
+           phase == "PHASE_IV" ~ "IV",
+           phase == "PHASE_I_II" ~ "I-II",
+           .default = NA
+         )) |> 
+  select(trial_id, contains("is_"), phase)
 
 drks_interventional <- drks_tib |> 
   select(drksId, studyCharacteristic) |> 
@@ -274,9 +287,9 @@ drks_inex |>
 DRKS_sample_save <- drks_tib |> 
   select(drksId:url) |> 
   right_join(drks_inex, by = "drksId") |> 
-  filter(is_interventional == TRUE, # apply interventional and time filter here
-         is_completed_2018_2021 == TRUE,
-         is_german_umc == TRUE) |> 
+  # filter(is_interventional == TRUE, # apply interventional and time filter here
+  #        is_completed_2018_2021 == TRUE,
+  #        is_german_umc == TRUE) |> 
   left_join(validated_umc_drks_deduplicated, by = "drksId") |> 
   select(-contains("is_"))
 
@@ -309,9 +322,6 @@ qa_na_excluded <- qa_excluded |>
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms))
 
-drks_results |> 
-  filter(drksId == "DRKS00007181")
-
 
 drks_results <- drks_tib |> 
   select(drksId, trialResults) |> 
@@ -325,39 +335,55 @@ drks_pubs <- drks_results |>
   # when no data for publications available (NULL)!!!!!!
 
 drks_results_reporting <- drks_pubs |> 
-  group_by(drksId, type) |> 
+  group_by(drksId) |> 
   summarise(results_reporting = 
               any(str_detect(description, "Ergebnisbericht|Abschlussbericht|(?<!keine )Studienergebnisse|Studienergebnisbericht|study results"),
                   na.rm = TRUE)) |> 
   select(trial_id = drksId, everything()) |> 
   ungroup()
 
-drks_pubs |> 
-  ungroup() |> 
-  count(type, sort = TRUE)
+# drks_pubs |> 
+#   ungroup() |> 
+#   count(type, sort = TRUE)
 
-drks_results_reporting |> 
-  count(type, results_reporting)
+# drks_results_reporting |> 
+#   count(type, results_reporting)
 
 ############# prepare export with crossreg data and additional transparency practices measures
 validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids.csv"))
 drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 
-drks_recruitment_dates <- drks_recruitment |> 
-  select(trial_id = drksId, contains("actual"), status)
+drks_recruitment_clean <- drks_recruitment |> 
+  mutate(all_countries = map_chr(countries, 
+                                 \(x) paste(unlist(x), collapse = ";")),
+    is_multinational = str_detect(all_countries, ";"),
+    is_multicentric = centricType == "MULTICENTRIC") |> 
+  select(trial_id = drksId, contains("actual"),
+         is_multinational, is_multicentric,
+         actual_enrolment = totalParticipants,
+         planned_enrolment = plannedParticipants)
 
 drks_export <- drks_export |> 
   rename(trial_id = drksId) |> 
-  left_join(validated_crossreg_ids, by = "trial_id") |> 
-  left_join(drks_recruitment_dates |> select(-status), by = "trial_id") |>
+  left_join(validated_crossreg_ids, by = "trial_id") |>
+  left_join(drks_recruitment_clean, by = "trial_id") |>
+  left_join(drks_study_characteristic, by = "trial_id") |>
   left_join(drks_results_reporting, by = "trial_id") |> 
   mutate(across(contains("Date"), ymd),
-    is_prospective =
-           (floor_date(registrationDrks, unit = "month") <=
-              floor_date(actualStartDate, unit = "month")),
+         primary_sponsor = if_else(sponsored == FALSE,
+                                   "Commercial", "Non-commercial"),
+         is_multinational = as.logical(is_multinational),
+         is_randomized = as.logical(is_randomized),
+         registration_date = as.Date(registration_date),
+         planned_enrolment = as.numeric(planned_enrolment),
+         actual_enrolment = as.numeric(actual_enrolment),
+    # is_prospective =
+    #        (floor_date(registrationDrks, unit = "month") <=
+    #           floor_date(actualStartDate, unit = "month")),
     results_reporting = replace_na(results_reporting, FALSE)) |> 
   select(trial_id, contains("umc"), last_updated, contains("_date"),
-         results_reporting, status)
+         results_reporting, status, phase,
+         contains("is_"), primary_sponsor, contains("enrolment"))
 
 write_excel_csv(drks_export, here("data", "processed", "DRKS_sample.csv"), na = "")
 
@@ -372,4 +398,4 @@ drks_recruitment |>
   distinct(drksId, .keep_all = TRUE) |>
   count(is.na(actualCompletionDate), is.na(scheduledCompletionDate))
 
-
+drks_tib |> select(contains("class")) |> names()

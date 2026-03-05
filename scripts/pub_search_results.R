@@ -8,9 +8,11 @@ library(easyRPubMed)
 
 source(here("scripts", "utils.R"))
 
-# extractions_raw <- read_xlsx(here("data", "processed", "2025-10-29-iv3_pubsearch_main.xlsx"))
-extractions_raw <- read_xlsx(here("data", "processed", "2025-12-05_iv3_pubsearch_main.xlsx"))
+# extractions_old <- read_xlsx(here("data", "processed", "2025-10-29-iv3_pubsearch_main.xlsx"))
+extractions_raw <- read_xlsx(here("data", "processed", "2026-02-24_iv3_pubsearch_main.xlsx"))
 euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
+# setdiff(names(extractions_raw), names(extractions_old))
+# setdiff(names(extractions_old), names(extractions_raw))
 
 unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
 filtered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_filtered.csv"))
@@ -19,9 +21,11 @@ drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 pub_search_table <- read_csv((here("data", "processed", "pub_search_table.csv")))
 
+# setdiff(old_names, new_names)
+# setdiff(new_names, old_names)
 
 extractions <- extractions_raw |>
-  clean_names() |> 
+  clean_names() |>
   rename(
     # Timestamp
     timestamp = timestamp,
@@ -63,13 +67,13 @@ extractions <- extractions_raw |>
     crossreg_is_subsequent_reg = does_your_extraction_sheet_indicate_that_this_is_a_cross_registration_of_a_trial_you_already_extracted,
     
     # In case you have a comment about the cross-registration, enter it here:
-    crossreg_comment1 = in_case_you_have_a_comment_about_the_cross_registration_enter_it_here_12,
+    crossreg_comment1 = in_case_you_have_a_comment_about_the_cross_registration_enter_it_here,
     
     # Was an eligible results publication already identified in the previous extraction(s) for this trial?
     crossreg_pub_already_identified = was_an_eligible_results_publication_already_identified_in_the_previous_extraction_s_for_this_trial,
     
     # In case you have a comment about the cross-registration, enter it here:
-    crossreg_comment2 = in_case_you_have_a_comment_about_the_cross_registration_enter_it_here_14,
+    crossreg_comment2 = in_case_you_have_a_comment_about_the_cross_registration_enter_it_here_2,
     
     # Based on the current trial ID, can you identify an earlier eligible results publication than the one already found?
     crossreg_new_earlier_pub_found = based_on_the_current_trial_id_can_you_identify_an_earlier_eligible_results_publication_than_the_one_already_found,
@@ -161,6 +165,8 @@ data_extracted <- extractions |>
 
 
 dupes <- get_dupes(extractions,  trial_id)
+# dupes |> 
+#   write_csv(here("data", "processed", "dupes_pub_search.csv"))
 
 #### deduplicate, but check with Delwen if taking latest entry makes sense
 
@@ -474,7 +480,9 @@ urls_to_check$pub_reglinked_url_clean
 
 # tt <- tibble(doi = dois_to_check)
 
-oa_resp <- oa_fetch(entity = "works", doi = dois_to_check, mailto = Sys.getenv("EMAIL"))
+oa_resp <- oa_fetch(entity = "works", doi = dois_to_check,
+                    mailto = Sys.getenv("EMAIL"),
+                    verbose = TRUE)
 
 oa_pubtype <- oa_resp |> 
   mutate(earliest_pub_doi = str_extract(doi, "10\\..*") |> 
@@ -524,7 +532,7 @@ clean_pub <- pub_search_table |>
   mutate(earliest_pub_doi = tolower(earliest_pub_doi)) |> 
   left_join(oa_pubtype, by = "earliest_pub_doi") |> 
   left_join(pmid_pubtype, by = "earliest_pub_doi") |> 
-  write_excel_csv(here("data", "processed", "reordered_snapshot_20251209_pubtypes_new.csv"))
+  write_excel_csv(here("data", "processed", "reordered_snapshot_2026-02-24_pubtypes_new.csv"))
 today()
 error_logs |> 
   write_csv(here("data", "processed", paste0("error_logs_", today(), ".csv")))

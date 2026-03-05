@@ -244,7 +244,7 @@ crossreg_title_ids |>
 
 # crossreg_title_ids <- crossreg_title_ids_new_clusters |>
 crossreg_title_ids |> 
-  write_csv(here("data", "processed", "crossreg_titles_ids.csv"))
+  write_csv(here("data", "processed", "crossreg_title_ids.csv"))
 
 # how many links (not triads, not many_to_many)
 qa_crossreg_title_ids <- crossreg_title_ids |> 
@@ -344,7 +344,7 @@ drks_inex <- read_csv(here("data", "processed", "inclusion_exclusion_drks.csv"))
   mutate(completion_date = ymd(completion_date),
          estimated_completion_date = ymd(estimated_completion_date),
          actual_completion_date = case_when(
-           is.na(estimated_completion_date) ~ completion_date,
+           !is.na(completion_date) ~ completion_date,
            .default = NA_Date_
          ))
 # Ct.gov inclusion and exclusion criteria
@@ -411,13 +411,8 @@ validated_crossreg_ids <- crossreg_validated |>
 falling_clusters <- validated_crossreg_ids |> 
   left_join(combined_inex, by = "trial_id") |>
   mutate(
-    # completion_date_type = case_when(
-    # has_euctr_results == FALSE & str_detect(trial_id, "-") ~ "ESTIMATED",
-    # has_euctr_results == TRUE & str_detect(trial_id, "-") ~ "ACTUAL",
-    # str_detect(trial_id, "DRKS") ~ "ACTUAL",
-    # .default = completion_date_type),
     filled_actual_completion_dates = case_when(
-      is.na(estimated_completion_date) & !is.na(completion_date) ~ actual_completion_date,
+      !is.na(actual_completion_date) ~ actual_completion_date,
       .default = NA_Date_),
     filled_euctr_completion_date = if_else(has_euctr_results == TRUE, results_completion_date, NA_Date_)) |>
   group_by(crossreg_id) |> 
@@ -442,12 +437,32 @@ falling_clusters <- validated_crossreg_ids |>
              first(filled_actual_completion_dates),
            all(is.na(filled_actual_completion_dates), na.rm = TRUE) ~
              max(estimated_completion_date, na.rm = TRUE),
-           # .default = first(only_actual_completion_dates)
            .default = NA_Date_
          ),
+         last_updated_actual = if_else(!is.na(actual_completion_date), last_updated, NA_Date_),
+         only_estimated = all(is.na(results_completion_date), na.rm = TRUE) &
+           all(is.na(actual_completion_date), na.rm = TRUE),
+         is_last_updated = last_updated_actual == max(last_updated_actual, na.rm = TRUE),
+         n_last_updated = sum(is_last_updated, na.rm = TRUE),
+         is_latest_actual = actual_completion_date == max(actual_completion_date, na.rm = TRUE),
+         is_latest_estimated = estimated_completion_date == max(estimated_completion_date, na.rm = TRUE),
+         n_latest_estimated = sum(is_latest_estimated, na.rm = TRUE),
+         is_index_reg = case_when(
+           !is.na(results_completion_date) ~ TRUE,
+           all(is.na(results_completion_date)) & 
+             n_last_updated == 1 &
+             is_last_updated & only_estimated == FALSE ~ TRUE,
+           all(is.na(results_completion_date)) & 
+             n_last_updated > 1 &
+             is_latest_actual & only_estimated == FALSE ~ TRUE,
+           only_estimated & is_latest_estimated & n_latest_estimated == 1 ~ TRUE,
+           only_estimated & is_last_updated & n_latest_estimated > 1 ~ TRUE,
+           .default = FALSE
+         ),
+         n_index_reg = sum(is_index_reg),
          has_completion_2018_2021 = any(between(hierarchical_completion_date,
-                                               as_date("2018-01-01"), as_date("2021-12-31")),
-                                       na.rm = TRUE),
+                                                as_date("2018-01-01"), as_date("2021-12-31")),
+                                        na.rm = TRUE),
          recent_status = first(status),
          has_withdrawn_status = any(str_detect(status, regex("withdrawn", ignore_case = TRUE))),
          many_to_many = is_mtm(crossreg_id),
@@ -455,6 +470,10 @@ falling_clusters <- validated_crossreg_ids |>
          mtm_validated = trial_id %in% mtm_resolved$trial_id |
            trial_id %in% mtm_resolved$linked_id) |> 
   ungroup()
+
+qa_index <- falling_clusters |> 
+  filter(is_index_reg == TRUE,
+         hierarchical_completion_date != completion_date)
 
 test_cases <- tribble(~crossreg_id, ~verified_cluster_completion_date,
                       "2017-005032-42_NCT04057261", ymd("2022-11-30"),
@@ -472,8 +491,10 @@ test_cases <- tribble(~crossreg_id, ~verified_cluster_completion_date,
                       "2016-001179-60_DRKS00017467_NCT02961257", ymd("2021-08-31"),
                       "2016-001815-19_DRKS00013701_NCT03362359", ymd("2020-07-03"), # because EUCTR results first
                       "2015-000465-31_DRKS00012657", ymd("2019-11-25"),
-                      "2016-001554-18_DRKS00008018", ymd("2020-09-29")
-                      )
+                      "2016-001554-18_DRKS00008018", ymd("2020-09-29"),
+                      "2015-005219-34_DRKS00009451", ymd("2021-08-03"),
+                      "2011-004228-37_DRKS00004186", ymd("2021-03-08")
+)
 
 cluster_check <- falling_clusters |>
   inner_join(test_cases, by = "crossreg_id", relationship = "many-to-many")
@@ -488,6 +509,7 @@ falling_clusters |>
 # falling_clusters <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
 qa_hier <- falling_clusters |> 
   filter(has_euctr_results == FALSE, 
+         # is_index_reg == TRUE,
          hierarchical_completion_date != filled_actual_completion_dates)
 
 # falling_clusters |>
@@ -568,10 +590,10 @@ crossreg_title_ids_new_clusters |>
   count(cluster_unique_id) |>
   nrow()
 
-crossreg_validated_included <- crossreg_validated |> 
-  filter(cl_meets_inclusion == TRUE)|>
-  select(-cl_meets_inclusion) |>
-  write_excel_csv(here("data", "processed", "crossreg_validated_mtm.csv"))
+# crossreg_validated_included <- crossreg_validated |> 
+#   filter(cl_meets_inclusion == TRUE)|>
+#   select(-cl_meets_inclusion) |>
+#   write_excel_csv(here("data", "processed", "crossreg_validated_mtm.csv"))
 
 filtered_clusters <- falling_clusters |>
   filter(has_completion_2018_2021, has_interventional, has_german_umc, !has_withdrawn_status) |> 

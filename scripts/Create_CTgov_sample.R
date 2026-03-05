@@ -35,16 +35,13 @@ source(here("scripts", "utils.R"))
 # AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
-                        "facilities", 
+                        "facilities", "designs",
                         "facility_investigators",
                         "interventions", "calculated_values", "id_information")
 
 AACT_datasets <- load_AACT_datasets(AACT_folder, AACT_dataset_names)
 studies <- AACT_datasets$studies |> 
   select(nct_id, source_class, everything())
-sponsors_cleaned <- AACT_datasets$sponsors |>
-  filter(lead_or_collaborator == "collaborator") |>  # Keep only lead sponsors
-  select(nct_id, agency_class, name)
 
 #----------------------------------------------------------------------------------------------------------------------
 # Load search terms for the affiliations/cities
@@ -252,7 +249,7 @@ validated_umc_ctgov_deduplicated <- validated_umc_ctgov |>
 
 validated_umc_ctgov_deduplicated |> 
   write_excel_csv(here("data", "processed", "validated_umc_inclusions_ctgov.csv"))
-
+# validated_umc_ctgov_deduplicated <- read_csv(here("data", "processed", "validated_umc_inclusions_ctgov.csv"))
 validated_exclusions_ctgov <- bind_rows(list(umc_ctgov_sponsors,
                                              umc_resp_party,
                                              umc_ctgov_pi_host)) |> 
@@ -306,12 +303,60 @@ qa_validated_umc_ctgov |>
 
 #filter cases for affiliation, years, study type, etc.
 # decision: no need to save interim file as no mutate or summaries done before filtering
+
+designs_cleaned <- AACT_datasets$designs |> 
+  mutate(is_randomized = if_else(is.na(allocation), NA, allocation == "RANDOMIZED"),
+         is_blinded = case_when(
+           masking == "NONE" ~ FALSE,
+           is.na(masking) ~ NA,
+           .default = TRUE
+         )) |> 
+  select(nct_id, is_randomized, is_blinded) 
+
+calculated_values_cleaned <- AACT_datasets$calculated_values |>
+  mutate(nct_id, is_multicentric = !has_single_facility,
+         .keep = "none")
+
+country_info <- facilities |> 
+  select(nct_id, country) |>
+  group_by(nct_id) |>
+  summarise(
+    countries = paste(unique(country), collapse = ";"),
+    is_multinational = n_distinct(country) > 1
+  )
+
+sponsors_cleaned <- AACT_datasets$sponsors |>
+  filter(lead_or_collaborator == "lead") |>  # Keep only lead sponsors
+  mutate(primary_sponsor = if_else(str_detect(agency_class, "INDUSTRY"), "Commercial", "Non-commercial")) |> 
+  select(nct_id, primary_sponsor)
+
 CTgov_sample <- AACT_datasets$studies |> 
-  filter(nct_id %in% inclusion_trns,
+  filter(
+    # nct_id %in% inclusion_trns,
          nct_id %in% validated_umc_ctgov_deduplicated$id) |> # apply inclusion filter here, incl. umc
   left_join(validated_umc_ctgov_deduplicated, by = c("nct_id" = "id")) |> 
-  select(nct_id, contains("umc"), everything())
-
+  left_join(designs_cleaned, by = "nct_id") |> 
+  left_join(calculated_values_cleaned, by = "nct_id") |> 
+  left_join(country_info, by = "nct_id") |> 
+  left_join(sponsors_cleaned, by = "nct_id") |> 
+  mutate(planned_enrolment = ifelse(enrollment_type == "ESTIMATED" & !is.na(enrollment), enrollment, NA),
+         actual_enrolment = ifelse(enrollment_type == "ACTUAL" & !is.na(enrollment), enrollment, NA),
+         phase = 
+           str_remove_all(phase, "PHASE") |> 
+           str_replace_all("/", "-") |> 
+           str_replace("EARLY_1", "0") |> 
+           str_replace("1", "I") |> 
+           str_replace("2", "II") |> 
+           str_replace("3", "III") |> 
+           str_replace("4", "IV"),
+         ) |> 
+  select(nct_id, contains("umc"), contains("is_"), 
+         primary_sponsor, phase, 
+         contains("_enrol"),
+         completion_date,
+         everything())
+euctr_combined |> select(contains("date")) |> names()
+names(CTgov_sample)
 CTgov_sample |> 
   count(is.na(umc_sponsor), is.na(umc_pi), is.na(umc_resp_party))
 

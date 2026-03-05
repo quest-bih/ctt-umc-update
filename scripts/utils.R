@@ -368,3 +368,50 @@ update_error_log <- function(error_logs, qa_tib, rulename, colname) {
   }
   return(error_logs)
 }
+
+# Function to extract sponsor classification from `sponsors` field in EUCTR table
+extract_sponsor_classifications <- function(json_text) {
+  
+  # Parse the JSON into a list
+  sponsors <- jsonlite::fromJSON(json_text, flatten = TRUE)
+  
+  if (!("status_of_the_sponsor" %in% colnames(sponsors))) {
+    return(NA)
+  } else {
+    # Fallback to product_code if product_name is missing
+    sponsor_classifications <- sponsors |>
+      filter(!is.na(status_of_the_sponsor)) |>
+      summarize(combined_names = paste(status_of_the_sponsor, collapse = "; ")) |>
+      pull(combined_names)
+  }
+  
+  # Return the product names as a single string, or NA if empty
+  if (sponsor_classifications == "") {
+    return(NA)
+  } else {
+    return(sponsor_classifications)
+  }
+}
+# sponsors <- euctr_sp[1] |> jsonlite::fromJSON(flatten = TRUE)
+# Function to extract sponsor name from `sponsors` field in EUCTR table
+extract_sponsor_name <- function(json_text) {
+  # Parse the JSON into a list
+  sponsors <- jsonlite::fromJSON(json_text, flatten = TRUE)
+  
+  if (!("name_of_sponsor" %in% colnames(sponsors))) {
+    return(NA)
+  } else {
+    # Fallback to product_code if product_name is missing
+    sponsor_names <- sponsors |>
+      filter(!is.na(name_of_sponsor)) |>
+      summarize(combined_names = paste(name_of_sponsor, collapse = "; ")) |>
+      pull(combined_names)
+  }
+  
+  # Return the product names as a single string, or NA if empty
+  if (sponsor_names == "") {
+    return(NA)
+  } else {
+    return(sponsor_names)
+  }
+}

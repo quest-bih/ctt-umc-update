@@ -88,7 +88,6 @@ euctr_filtered |>
   # filter(has_trial_de_protocol == TRUE) |> # here we exclude TRNs without DE protocols
   write_excel_csv(here("data", "processed", "EUCTR_sample.csv"), na = "")
 
-
 # sanity check results without german protocols
 # collapse by trial remove dupes, preferably by german protocol! exclude otherwise, but sanity check
 # sequence umc > completion_date > german protocol
