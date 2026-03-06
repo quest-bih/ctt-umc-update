@@ -9,7 +9,7 @@ library(easyRPubMed)
 source(here("scripts", "utils.R"))
 
 # extractions_old <- read_xlsx(here("data", "processed", "2025-10-29-iv3_pubsearch_main.xlsx"))
-extractions_raw <- read_xlsx(here("data", "processed", "2026-02-24_iv3_pubsearch_main.xlsx"))
+extractions_raw <- read_xlsx(here("data", "processed", "2026-03-05_iv3_pubsearch_main.xlsx"))
 euctr_inex <- read_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
 # setdiff(names(extractions_raw), names(extractions_old))
 # setdiff(names(extractions_old), names(extractions_raw))
@@ -24,7 +24,7 @@ pub_search_table <- read_csv((here("data", "processed", "pub_search_table.csv"))
 # setdiff(old_names, new_names)
 # setdiff(new_names, old_names)
 
-extractions <- extractions_raw |>
+extractions_with_dupes <- extractions_raw |>
   clean_names() |>
   rename(
     # Timestamp
@@ -148,33 +148,39 @@ extractions <- extractions_raw |>
   )
 
 ### TODO: revisit once all extractions are finished
-data_extracted <- extractions |>
-  group_by(crossreg_id) |>
-  mutate(
-    extracted = !is.na(extractor),
-    any_extracted_in_cluster = any(extracted, na.rm = TRUE)
-  ) |>
-  ungroup() |> 
-  filter(
-    # keep extracted single registrations
-    (is.na(crossreg_id) & extracted) |
-      # or any in a cluster with an extracted record
-      (!is.na(crossreg_id) & (extracted | any_extracted_in_cluster))
-  ) |>
-  select(-extracted, any_extracted_in_cluster)
+# data_extracted <- extractions |>
+#   group_by(crossreg_id) |>
+#   mutate(
+#     extracted = !is.na(extractor),
+#     any_extracted_in_cluster = any(extracted, na.rm = TRUE)
+#   ) |>
+#   ungroup() |> 
+#   filter(
+#     # keep extracted single registrations
+#     (is.na(crossreg_id) & extracted) |
+#       # or any in a cluster with an extracted record
+#       (!is.na(crossreg_id) & (extracted | any_extracted_in_cluster))
+#   ) |>
+#   select(-extracted, any_extracted_in_cluster)
 
 
-dupes <- get_dupes(extractions,  trial_id)
+dupes <- get_dupes(extractions_with_dupes,  trial_id)
 # dupes |> 
 #   write_csv(here("data", "processed", "dupes_pub_search.csv"))
 
-#### deduplicate, but check with Delwen if taking latest entry makes sense
-
-extractions <- extractions |> 
-  group_by(trial_id, extractor) |> 
-  summarise(across(everything(), last)) |> 
+extractions <- extractions_with_dupes |> 
+  group_by(trial_id, extractor) |>
+  # deduplication happens here
+  mutate(is_dupe = case_when(
+    n() > 1 & trial_id == "DRKS00013493" &
+      timestamp == max(timestamp) ~ TRUE,
+    trial_id != "DRKS00013493" &
+    n() > 1 & timestamp == min(timestamp) ~ TRUE,
+    .default = FALSE
+  )) |> 
   ungroup() |> 
-  arrange(timestamp)
+  filter(is_dupe == FALSE) |> 
+  arrange(timestamp) 
 
 ####### sanity checks
 n_per_extractor <- extractions |> 
@@ -184,6 +190,8 @@ n_per_extractor <- extractions |>
 missed_extractions <- pub_search_table |> 
   filter(!trial_id %in% extractions$trial_id)
 
+error_logs <- NULL
+
 nrow(missed_extractions) |> 
   expect_equal(0)
 
@@ -191,12 +199,13 @@ nrow(missed_extractions) |>
 qa_excluded <- extractions |> 
   anti_join(pub_search_table, by = "trial_id")
 
-## registry validation
+## registry name validation
 extractions |> 
   mutate(reg2 = get_registry_name(trial_id)) |> 
   filter(registry != reg2) |> 
   nrow() |>
   expect_equal(0)
+
 ## prematurely ended
 extractions |> 
   count(registry, euctr_is_prematurely_ended) |>
@@ -278,7 +287,7 @@ qa_missed_crossreg |>
   nrow() |> 
   expect_equal(0)
 
-error_logs <- NULL
+
 ## diads
 qa_diads <- extracted_crossreg |> 
   filter(crossreg_n == 2, n_subsequent_yes > 1)
@@ -450,10 +459,10 @@ dois_to_check <- urls_to_check |>
 doi_status_tib <- dois_to_check |> 
   ping_dois()
 # 
-# url_check <- urls_to_check |> 
+# url_check <- urls_to_check |>
 #   filter(!is.na(earliest_pub_url_clean)) |>
 #   slice(1:10) |>
-#   pull(earliest_pub_url_clean) |> 
+#   pull(earliest_pub_url_clean) |>
 #   ping_dois()
 
 non_resolving_dois <- doi_status_tib |> 
@@ -469,12 +478,12 @@ qa_doi <- urls_to_check |>
 
 error_logs <- update_error_log(error_logs, qa_doi, "doi format", "earliest_pub_doi")
 
-# TODO: finish implementing this check
-url_responses <- urls_to_check |> 
-  mutate(pub_reglinked_response = map_dbl(pub_reglinked_url_clean, url_extract_response),
-         earliest_pub_response = map_dbl(earliest_pub_url_clean, url_extract_response))
-
-urls_to_check$pub_reglinked_url_clean
+# TODO: finish implementing this check after url cleaning to ensure unique urls get pinged
+# url_responses <- urls_to_check |> 
+#   mutate(pub_reglinked_response = map_dbl(pub_reglinked_url_clean, url_extract_response),
+#          earliest_pub_response = map_dbl(earliest_pub_url_clean, url_extract_response))
+# 
+# urls_to_check$pub_reglinked_url_clean
 
 ## publication_type
 
@@ -516,13 +525,11 @@ pubtype_meta <- tibble(doi = dois_to_check) |>
 # pubtype_meta <- tibble(doi = missing_oa) |> 
   distinct(doi) |> 
   inner_join(oa_resp_pmids, by = "doi") |> 
-  get_metadata(pmid, chunksize = 20, api_key = Sys.getenv("NCBI_KEY"))
+  easyRPubMed::get_metadata(pmid, chunksize = 20, api_key = Sys.getenv("NCBI_KEY"))
 
 pmid_pubtype <- pubtype_meta |> 
   list_rbind() |> 
   select(earliest_pub_doi = doi, pubtype_pmid = pubtype)
-
-
 
 ## publication table for result integration
 clean_pub <- pub_search_table |> 
@@ -532,7 +539,7 @@ clean_pub <- pub_search_table |>
   mutate(earliest_pub_doi = tolower(earliest_pub_doi)) |> 
   left_join(oa_pubtype, by = "earliest_pub_doi") |> 
   left_join(pmid_pubtype, by = "earliest_pub_doi") |> 
-  write_excel_csv(here("data", "processed", "reordered_snapshot_2026-02-24_pubtypes_new.csv"))
+  write_excel_csv(here("data", "processed", paste0("reordered_snapshot_", today(), "_pubtypes_new.csv")))
 today()
 error_logs |> 
   write_csv(here("data", "processed", paste0("error_logs_", today(), ".csv")))
