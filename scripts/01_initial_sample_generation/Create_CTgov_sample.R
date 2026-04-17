@@ -32,7 +32,6 @@ library(progressr)
 source(here("scripts", "utils.R"))
 # the complete AACT was downloaded with the timestamp given and saved in the data/raw folder
 
-# AACT_folder <- "C:/Datenablage/AACT/AACT_dataset_240927"
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
 AACT_dataset_names <- c("studies", "overall_officials", "sponsors", "responsible_parties",
                         "facilities", "designs",

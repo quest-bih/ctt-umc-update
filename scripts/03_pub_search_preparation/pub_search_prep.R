@@ -113,7 +113,7 @@ premature_cases |> distinct(crossreg_id) |> nrow()
 
 
 crossreg_rev_7 <- pub_search_table |> 
-  filter(is_crossreg == TRUE) |> 
+  filter(is_crossreg == TRUE) |> # should have excluded the other previously assigned cases
   slice_sample(n = 20)
 
 crossreg_rev_7 <- pub_search_table |> 
@@ -269,6 +269,8 @@ all_xlsx_extractions[[7]] |>
 
 pub_table <- all_xlsx_extractions |> 
   list_rbind()
+dupes_pub <- pub_table |> 
+  get_dupes(trial_id)
 
 missed_cr_cases <- pub_table |> 
   filter(is_crossreg == FALSE, trial_id %in% filtered_crossreg_ids$trial_id)
@@ -435,3 +437,13 @@ qa_crossreg_pub_table <- pub_table |>
 
 qa_crossreg_pub_table |> 
   count(rev_nr)
+
+
+pub_ids <- pub_search_table |> 
+  mutate(crossreg_id = if_else(is_crossreg == FALSE, trial_id, crossreg_id)) |> 
+  distinct(crossreg_id) |> 
+  pull(crossreg_id)
+
+qa_pub_search <- trial_characteristics |> 
+  mutate(in_pub_search = crossreg_id %in% pub_ids) |> 
+  filter(in_pub_search == FALSE)

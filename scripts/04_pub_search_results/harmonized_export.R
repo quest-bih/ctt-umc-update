@@ -147,6 +147,9 @@ combined_data_filtered <- combined_inex_plus_crossreg |>
   mutate(is_index_reg = if_else(is_crossreg == FALSE, TRUE, is_index_reg)) |> 
   select(trial_id, crossreg_id, everything())
 
+combined_data_filtered |> 
+  write_csv(here("data", "processed", "harmonized_data_filtered.csv"))
+
 distinct(combined_data_filtered, crossreg_id) |> 
   nrow()
 
@@ -369,3 +372,11 @@ list(
 ) |> 
   ggVennDiagram(force_upset = TRUE)
 
+
+
+missing_in_pub_search <- combined_data_filtered |> 
+  filter(!trial_id %in% pub_search_table$trial_id)
+
+
+# missing_in_extractions <- combined_data_filtered |> 
+#   filter(!trial_id %in% extractions_filtered_exclusions$trial_id)
