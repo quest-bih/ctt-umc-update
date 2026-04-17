@@ -239,22 +239,29 @@ prep_and_print <- function(tib_pub_s, target_folder) {
 }
 
 # ping a url and return the response (to see if it resolves)
-# url_extract_response <- function(url_str) {
-#   
-#   if (is.na(url_str) | url_str == "") return(NA)
-#   
-#   try(url_str |>
-#         httr2::request() |>
-#         httr2::req_retry(backoff = ~ 10) |> 
-#         httr2::req_perform(verbosity = 3)
-#         
-#   )
-#   
-#   if (is.null(httr2::last_response())) return(0)
-#   
-#   httr2::last_response() |>
-#     httr2::resp_status()
-# }
+url_extract_response <- function(url_str) {
+
+  us_ag <- "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0"
+
+  if (is.na(url_str) | url_str == "") return(NA)
+
+  try(
+    url_str |>
+        httr2::request() |>
+        httr2::req_user_agent(us_ag) |>
+        httr2::req_headers(
+          `Connection` = "keep-alive",
+          `Upgrade-Insecure-Requests` = "1") |>
+        httr2::req_error(is_error = \(resp) FALSE) |>
+        httr2::req_perform(verbosity = 3)
+
+  )
+  # 
+  if (is.null(httr2::last_response())) return(0)
+  # 
+  httr2::last_response() |>
+    httr2::resp_status()
+}
 # 
 # url_str <- ""
 # 
@@ -415,3 +422,28 @@ extract_sponsor_name <- function(json_text) {
     return(sponsor_names)
   }
 }
+# str_date <- "2024-03-11"
+str_date_clean_floor <- function(str_date) {
+  
+  if (is.na(str_date)) return(str_date)
+  if (stringr::str_detect(str_date, "NA|N\\WA")) return(NA_character_)
+  
+  if (stringr::str_detect(str_date, "-")) {
+    str_year <- lubridate::year(str_date)
+    str_day <- lubridate::day(str_date)
+    str_month <- lubridate::month(str_date, label = TRUE)
+    return(paste(str_day, str_month, str_year))
+  }
+  
+  first_digit <- suppressWarnings(
+    stringr::str_sub(str_date, 1, 1) |> 
+      as.numeric()
+  )  
+  
+  if (is.na(first_digit)) {
+    return(paste("1", str_date))
+  } else {
+    return(str_date)
+  }
+}
+
