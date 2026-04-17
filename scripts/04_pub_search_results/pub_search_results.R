@@ -618,9 +618,9 @@ error_logs <- update_error_log(error_logs, qa_drks_date_format, "drks date forma
 # str_view("10.1016/S0140-6736(20)30167-7",
 #          regex("10.1016/s0140-6736(20)30167-7", ignore_case = TRUE))
 
-str_view(c("10.e930439403/full", "ddidfjk.full.pdf",
-           "https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2023.1280397/full#h3"),
-         "\\?(?!(article|reference)).*|(\\.|\\/)?full(\\.pdf)?$|(\\/full)?#.*")
+# str_view(c("10.e930439403/full", "ddidfjk.full.pdf",
+#            "https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2023.1280397/full#h3"),
+#          "\\?(?!(article|reference)).*|(\\.|\\/)?full(\\.pdf)?$|(\\/full)?#.*")
 
 ## online tests
 urls_to_check <- extractions_filtered_enriched |>
@@ -839,7 +839,7 @@ pmid_pubtype <- pubtype_meta |>
 #   left_join(pmid_pubtype, by = "earliest_pub_doi") |> 
 #   write_excel_csv(here("data", "processed", paste0("reordered_snapshot_", today(), "_pubtypes_new.csv")))
 
-clean_results <- extractions_filtered_enriched_cleaned_google |> 
+results_clean <- extractions_filtered_enriched_cleaned_google |> 
   filter(has_withdrawn == FALSE,
          trial_id != "2012-003604-13") |> 
   select(-contains("s_withdrawn")) |> 
@@ -877,4 +877,8 @@ extractions_filtered_enriched |>
 dupes_extr <- extractions_filtered_enriched |> 
   get_dupes(trial_id) |> 
   select(extractor, trial_id, dupe_count)
+
+
+### add further manual corrections if any, after validations complete
+results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
 
