@@ -329,17 +329,19 @@ sponsors_cleaned <- AACT_datasets$sponsors |>
   mutate(primary_sponsor = if_else(str_detect(agency_class, "INDUSTRY"), "Commercial", "Non-commercial")) |> 
   select(nct_id, primary_sponsor)
 
-CTgov_sample <- AACT_datasets$studies |> 
-  filter(
-    # nct_id %in% inclusion_trns,
-         nct_id %in% validated_umc_ctgov_deduplicated$id) |> # apply inclusion filter here, incl. umc
+ctgov_processed <- AACT_datasets$studies |> 
   left_join(validated_umc_ctgov_deduplicated, by = c("nct_id" = "id")) |> 
   left_join(designs_cleaned, by = "nct_id") |> 
   left_join(calculated_values_cleaned, by = "nct_id") |> 
   left_join(country_info, by = "nct_id") |> 
   left_join(sponsors_cleaned, by = "nct_id") |> 
-  mutate(planned_enrolment = ifelse(enrollment_type == "ESTIMATED" & !is.na(enrollment), enrollment, NA),
-         actual_enrolment = ifelse(enrollment_type == "ACTUAL" & !is.na(enrollment), enrollment, NA),
+  mutate(planned_enrolment = ifelse(
+          enrollment_type == "ESTIMATED" & !is.na(enrollment),
+          enrollment,
+          NA),
+         actual_enrolment = ifelse(
+           enrollment_type == "ACTUAL" & !is.na(enrollment),
+           enrollment, NA),
          phase = 
            str_remove_all(phase, "PHASE") |> 
            str_replace_all("/", "-") |> 
@@ -348,30 +350,36 @@ CTgov_sample <- AACT_datasets$studies |>
            str_replace("2", "II") |> 
            str_replace("3", "III") |> 
            str_replace("4", "IV"),
-         ) |> 
-  select(nct_id, contains("umc"), contains("is_"), 
+         results_reporting = if_else(
+           !is.na(results_first_submitted_date),
+           TRUE,
+           FALSE)) |> 
+  rename(last_updated = last_update_posted_date,
+         status = overall_status) |>
+  select(trial_id = nct_id, contains("umc"), contains("is_"), 
          primary_sponsor, phase, 
          contains("_enrol"),
          completion_date,
          everything())
-euctr_combined |> select(contains("date")) |> names()
-names(CTgov_sample)
-CTgov_sample |> 
+
+ctgov_processed |> 
+  saveRDS(here("data", "processed", "ctgov_processed.rds"))
+  
+# apply inclusion filter here, incl. umc
+ctgov_export <- ctgov_processed |> 
+  filter(nct_id %in% validated_umc_ctgov_deduplicated$id) 
+  
+write_excel_csv(ctgov_export, here("data", "processed", "CTgov_sample.csv"), na = "")
+
+ctgov_export |> 
   count(is.na(umc_sponsor), is.na(umc_pi), is.na(umc_resp_party))
 
-CTgov_sample_save <- CTgov_sample |> 
-  rename(last_updated = last_update_posted_date, status = overall_status) |> 
-  mutate(results_reporting = if_else(!is.na(results_first_submitted_date), TRUE, FALSE))
-
-write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
-
-qa_CTgov <- CTgov_sample |> 
+qa_ctgov <- ctgov_export |> 
   select(nct_id, umc, everything()) 
 
+ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 
-CTgov_sample_save <- read_csv(here("data", "processed", "CTgov_sample.csv"))
-
-CTgov_sample_save |> 
+ctgov_export |> 
   summarise(total = n(),
             n_umc_sponsor = sum(!is.na(umc_sponsor)),
             n_umc_resp_party = sum(!is.na(umc_resp_party)),
@@ -381,7 +389,7 @@ CTgov_sample_save |>
          prop = round(n / total, 2)) |> 
   select(definition, everything())
 
-count(qa_CTgov, umc, sort = TRUE)
+count(qa_ctgov, umc, sort = TRUE)
 
 qa_excluded <- AACT_datasets$studies |>
   filter(nct_id %in% inclusion_trns,

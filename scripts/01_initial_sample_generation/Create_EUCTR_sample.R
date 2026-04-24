@@ -27,7 +27,7 @@ euctr_results <- read_csv(here("data", "raw", "euctr_data_quality_results_scrape
   rename_with(\(x) paste0("results_", x), !starts_with(c("eudract", "results_"))) |> 
   mutate(results_reporting = results_type %in% c("Tabular", "Mixed", "Document"))
 
-euctr_combined <- euctr_tib |> 
+euctr_processed <- euctr_tib |> 
   full_join(euctr_results, by = "eudract_number") |> 
   left_join(euctr_umc, by = "eudract_number") |> 
   group_by(eudract_number) |> 
@@ -48,10 +48,10 @@ euctr_combined <- euctr_tib |>
 #one_off <- euctr_results |> 
 #  filter(!eudract_number %in% euctr_tib$eudract_number) ?
 
-euctr_combined |> 
-  saveRDS(here("data", "raw", "euctr_combined.rds"))
+euctr_processed |> 
+  saveRDS(here("data", "raw", "euctr_processed.rds"))
 
-euctr_inex <- euctr_combined |> 
+euctr_inex <- euctr_processed |> 
   mutate(is_interventional = TRUE,
          is_completed_2018_2021 = between(as_date(completion_date), as_date("2018-01-01"), as_date("2021-12-31")),
          is_german_umc = !is.na(umc),
@@ -69,14 +69,14 @@ euctr_inex <- euctr_combined |>
 euctr_inex |> 
   write_excel_csv(here("data", "processed", "inclusion_exclusion_euctr.csv"))
 
-euctr_filtered <- euctr_combined |> 
+euctr_filtered <- euctr_processed |> 
   select(trial_id = eudract_number, everything(), -has_trial_de_protocol,
          -completion_date, -results_reporting) |> 
   right_join(euctr_inex, by = c("trial_id", "eudract_number_with_country")) |> 
   filter(is_interventional == TRUE, is_completed_2018_2021 == TRUE, is_german_umc == TRUE)
 
 # # number of new TRNs from EUCTR
-# euctr_combined |> 
+# euctr_processed |> 
 #   select(results_global_end_of_trial_date,
 #          date_of_the_global_end_of_the_trial,
 #          umc, eudract_number, eudract_number_with_country, everything()) |> 
@@ -101,7 +101,7 @@ qa_missing_de_protocols |>
   distinct(trial_id) |> 
   count()
 
-missing_de_protocols <- euctr_combined |> 
+missing_de_protocols <- euctr_processed |> 
   select(trial_id = eudract_number, everything(), -has_trial_de_protocol) |> 
   filter(trial_id %in% qa_missing_de_protocols$trial_id) |> 
   left_join(euctr_inex, by = c("trial_id", "eudract_number_with_country")) |>  
@@ -132,6 +132,3 @@ missing_de_protocols |>
 #   count(results_actual_enrollment >= 88888)
 # qa_enrollment <- euctr_results |> 
 #   filter( eudract_number %in% euctr_export$trial_id) 
-
-
-

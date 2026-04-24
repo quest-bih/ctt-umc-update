@@ -4,7 +4,7 @@ library(progressr)
 library(furrr)
 library(here)
 
-euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
+euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
 source(here("scripts", "utils.R"))
 
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
@@ -18,7 +18,7 @@ drks_ids <- read_csv(here("data", "raw", "drks_ids.csv")) |>
 
 regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 
-euctr_trns <- euctr_combined |> 
+euctr_trns <- euctr_processed |> 
   select(contains("eudract_number"), contains("isrctn"),
          contains("nct_"), contains("who\\b"), other_identifiers, results_other_ids) |> 
   rename(isrctn_number = isrctn_international_standard_randomised_controlled_trial_numbe,

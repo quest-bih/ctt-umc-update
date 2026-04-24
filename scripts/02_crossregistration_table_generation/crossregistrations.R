@@ -59,14 +59,14 @@ drks_titles <- drks_tib |>
 ###########################################################
 
 # Extract EU IDs plus process EU titles to be used in title matching
-euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
+euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
 
-euctr_de_protocols <- euctr_combined |> 
+euctr_de_protocols <- euctr_processed |> 
   group_by(eudract_number) |> 
   summarise(has_trial_de_protocol = any(has_trial_de_protocol, na.rm = TRUE), .groups = "drop")
 
 # Process EU titles
-euctr_titles <- euctr_combined |>
+euctr_titles <- euctr_processed |>
   tidyr::drop_na(full_title_of_the_trial) |>
   mutate(title_processed = str_remove_all(full_title_of_the_trial, "\\n.*") |> 
            process_title(),
@@ -553,7 +553,7 @@ premature_status <- status_euctr_crossreg |>
   select(trial_id, has_premature, has_de_premature)
 
 
-# status_euctr <- euctr_combined |>
+# status_euctr <- euctr_processed |>
 #   filter(end_of_trial_status == "Prematurely Ended", eudract_number %in% pub_search_table_crossreg$trial_id) |> 
 #   select(contains("eudract"), contains("results_actual_enrollment"), contains("status"))
 

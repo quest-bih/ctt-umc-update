@@ -82,7 +82,7 @@ umc_drks_sponsors <- drks_trial_contacts |>
   filter(type == "PRIMARY_SPONSOR",
     str_detect(city, umc_search_terms) |
       str_detect(affiliation, umc_search_terms)) |> 
-  unite("raw_affil", c(affiliation, city), sep = ", ") |> 
+  tidyr::unite("raw_affil", c(affiliation, city), sep = ", ") |> 
   mutate(field = "primary_sponsor_affil_city",
          raw_affil = str_squish(raw_affil))
 
@@ -91,7 +91,7 @@ umc_drks_pcis <- drks_trial_contacts |>
            otherType == "OTHER_PRINCIPAL_COORDINATING_INVESTIGATOR",
          str_detect(city, umc_search_terms) |
            str_detect(affiliation, umc_search_terms)) |> 
-  unite("raw_affil", c(affiliation, city), sep = ", ") |> 
+  tidyr::unite("raw_affil", c(affiliation, city), sep = ", ") |> 
   mutate(field = "pci_affil_city",
          raw_affil = str_squish(raw_affil))
 
@@ -357,8 +357,13 @@ drks_recruitment_clean <- drks_recruitment |>
   mutate(all_countries = map_chr(countries, 
                                  \(x) paste(unlist(x), collapse = ";")),
     is_multinational = str_detect(all_countries, ";"),
-    is_multicentric = centricType == "MULTICENTRIC") |> 
+    is_multicentric = centricType == "MULTICENTRIC",
+    start_date = case_when(
+      !is.na(actualStartDate) ~ actualStartDate,
+      .default = scheduledStartDate
+    )) |> 
   select(trial_id = drksId, contains("actual"),
+         start_date,
          is_multinational, is_multicentric,
          actual_enrolment = totalParticipants,
          planned_enrolment = plannedParticipants)
