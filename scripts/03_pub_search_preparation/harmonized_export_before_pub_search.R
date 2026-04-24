@@ -3,10 +3,7 @@ library(progressr)
 library(furrr)
 library(here)
 library(janitor)
-# library(skimr)
-# library(flextable)
-# library(flowchart)
-# library(ggVennDiagram)
+
 
 source(here("scripts", "utils.R"))
 
@@ -16,10 +13,8 @@ handlers(global = TRUE)
 
 unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
 filtered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_filtered.csv"))
-drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
-ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv")) 
 euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
-clean_pub_search_results <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
+# clean_pub_search_results <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
 
   # read_csv(here("data", "processed", "EUCTR_sample.csv"))
 
@@ -42,9 +37,9 @@ drks_inex <- read_csv(here("data", "processed", "inclusion_exclusion_drks.csv"))
 # # Ct.gov inclusion and exclusion criteria
 ctgov_inex <- read_csv(here("data", "processed", "inclusion_exclusion_ctgov.csv")) 
 
-combined_inex <- bind_rows(euctr_inex_deduped, drks_inex, ctgov_inex)
+inex_combined <- bind_rows(euctr_inex_deduped, drks_inex, ctgov_inex)
   
-combined_inex <- combined_inex |> 
+inex_combined <- inex_combined |> 
   mutate(is_withdrawn = status == "WITHDRAWN",
          is_crossreg = trial_id %in% unfiltered_crossreg_ids$trial_id,
          registry = get_registry_name(trial_id),
@@ -60,7 +55,7 @@ combined_inex <- combined_inex |>
          has_withdrawn_status = is_withdrawn)
 
 
-combined_inex_plus_crossreg <- combined_inex |> 
+inex_combined_plus_crossreg <- inex_combined |> 
   mutate(crossreg_id = trial_id,
          has_premature = NA,
          hierarchical_completion_date = NA_Date_,
@@ -78,8 +73,10 @@ combined_inex_plus_crossreg <- combined_inex |>
          mtm_validated = FALSE) |> 
   rows_upsert(falling_clusters, by = "trial_id")
 
+inex_combined_plus_crossreg |> 
+  write_csv(here("data", "processed", "inex_combined.csv"))
 
-combined_data_filtered <- combined_inex_plus_crossreg |> 
+combined_data_filtered <- inex_combined_plus_crossreg |> 
   filter(has_german_umc, has_completion_2018_2021, has_interventional,
          !has_withdrawn_status) |> 
   mutate(is_index_reg = if_else(is_crossreg == FALSE, TRUE, is_index_reg)) |> 

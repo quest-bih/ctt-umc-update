@@ -407,12 +407,17 @@ extractions_filtered_enriched <- extractions_filtered_enriched |>
   ) |>
   rows_upsert(euctr_enrolment, by = "trial_id") |> 
   group_by(crossreg_id) |> 
-  mutate(has_withdrawn = any(is_withdrawn, na.rm = TRUE)) |> 
+  mutate(has_withdrawn_validated = any(is_withdrawn, na.rm = TRUE)) |> 
   ungroup()
 
 
 withdrawn_exclusions <- extractions_filtered_enriched |> 
-  filter(has_withdrawn)
+  filter(has_withdrawn_validated) |> 
+  select(trial_id, has_withdrawn_validated) |> 
+  # add cross-registered exclusions due to withdrawn
+  rows_insert(tibble(trial_id = "NCT01289301", 
+                     has_withdrawn_validated = TRUE)) |> 
+  write_csv(here("data", "processed", "euctr_withdrawn_exclusions.csv"))
 
 ## sumres
 extractions_filtered_enriched |> 
@@ -428,7 +433,7 @@ extracted_crossreg <- extractions_filtered_enriched |>
   mutate(has_prematurely_ended = any(euctr_is_prematurely_ended == "Yes", na.rm = TRUE),
          # is_crossreg_filtered = trial_id %in% filtered_crossreg_ids$trial_id
          ) |>
-  filter(has_withdrawn == FALSE) |>  
+  filter(has_withdrawn_validated == FALSE) |>  
   mutate(n = 1:n(),
          crossreg_n = max(n),
          n_subsequent_yes = sum(crossreg_is_subsequent_reg == "Yes", na.rm = TRUE),
@@ -840,7 +845,7 @@ pmid_pubtype <- pubtype_meta |>
 #   write_excel_csv(here("data", "processed", paste0("reordered_snapshot_", today(), "_pubtypes_new.csv")))
 
 results_clean <- extractions_filtered_enriched_cleaned_google |> 
-  filter(has_withdrawn == FALSE,
+  filter(has_withdrawn_validated == FALSE,
          trial_id != "2012-003604-13") |> 
   select(-contains("s_withdrawn")) |> 
   mutate(earliest_pub_doi = tolower(earliest_pub_doi)) |> 
