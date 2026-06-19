@@ -326,7 +326,7 @@ country_info <- facilities |>
 
 sponsors_cleaned <- AACT_datasets$sponsors |>
   filter(lead_or_collaborator == "lead") |>  # Keep only lead sponsors
-  mutate(primary_sponsor = if_else(str_detect(agency_class, "INDUSTRY"), "Commercial", "Non-commercial")) |> 
+  mutate(primary_sponsor = if_else(str_detect(agency_class, "INDUSTRY"), "Commercial", "Non-Commercial")) |> 
   select(nct_id, primary_sponsor)
 
 ctgov_processed <- AACT_datasets$studies |> 
@@ -367,7 +367,7 @@ ctgov_processed |>
   
 # apply inclusion filter here, incl. umc
 ctgov_export <- ctgov_processed |> 
-  filter(nct_id %in% validated_umc_ctgov_deduplicated$id) 
+  filter(trial_id %in% validated_umc_ctgov_deduplicated$id) 
   
 write_excel_csv(ctgov_export, here("data", "processed", "CTgov_sample.csv"), na = "")
 
@@ -483,4 +483,3 @@ setdiff(ctgov_inex |>
 #please be aware that not all associations of the trials to the cites are correct (there are still false positives)
 #such that the city associations had to be checked manually during publication search
 # write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
-

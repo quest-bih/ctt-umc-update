@@ -4,6 +4,7 @@ library(skimr)
 library(flextable)
 library(furrr)
 library(progressr)
+library(ggVennDiagram)
 
 plan(multisession)
 handlers(global = TRUE)
@@ -21,7 +22,7 @@ euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
 combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered.csv"))
 
 excluded_ct <- ctgov_export |> 
-  filter(!nct_id %in% combined_data_filtered$trial_id)
+  filter(!trial_id %in% combined_data_filtered$trial_id)
 
 euctr_combined_deduped <- euctr_combined |>
   rename(trial_id = eudract_number) |> 
@@ -72,7 +73,7 @@ euctr_trial_characteristics <- euctr_combined_deduped |>
 
 ### trial_characteristics
 trial_characteristics <- drks_export |> 
-  bind_rows(ctgov_export |> rename(trial_id = nct_id)) |> 
+  bind_rows(ctgov_export) |> 
   bind_rows(euctr_trial_characteristics) |> 
   # left_join(combined_inex_plus_crossreg |> select(trial_id, is_index_reg,
   # crossreg_id)) |>
@@ -91,29 +92,7 @@ trial_characteristics <- drks_export |>
          `Primary sponsor` = primary_sponsor |> 
            str_to_sentence(),
          Phase = phase,
-         Status = case_when(
-           status %in% c("COMPLETE_FOLLOW_UP_COMPLETE",
-                         "COMPLETED",
-                         "Completed") ~ "Completed",
-           status %in% c("INVITE_ONLY",
-                         "PENDING",
-                         "COMPLETE_FOLLOW_UP_CONTINUING",
-                         "RECRUITING",
-                         "Ongoing") ~ "Ongoing",
-           status %in% c("DISCONTINIUED",
-                         "Prematurely Ended",
-                         "TERMINATED") ~ "Terminated",
-           status == "WITHDRAWN" ~ "Withdrawn",
-           str_detect(status,
-                      regex("suspended",
-                            ignore_case = TRUE)
-           ) ~ "Suspended",
-           status == "UNKNOWN" ~ "Unknown",
-           # status == "\\N" |
-           #    ~ "Other",
-           .default = NA
-         )
-         ,
+         Status = recode_status(status),
          Enrolment = actual_enrolment,
          `Completion year` = year(completion_date) |> factor()
   ) 
@@ -128,11 +107,14 @@ trial_characteristics |>
   as_flextable() |>
   footnote(i = c(1,2,3), j = 2,
            value = as_paragraph("may also be cross-registered in another registry"),
-           ref_symbols = "a")
+           ref_symbols = "a") |> 
+  footnote(i = c(28, 32), j = 1,
+           value = as_paragraph("actual or anticipated, if actual not available"),
+           ref_symbols = "b")
 
 
 in_table_not_fc <- drks_export |> 
-  bind_rows(ctgov_export |> rename(trial_id = nct_id)) |> 
+  bind_rows(ctgov_export) |> 
   bind_rows(euctr_trial_characteristics) |> 
   left_join(combined_data_filtered |> select(trial_id, is_index_reg,
                                              crossreg_id)) |> 
@@ -153,7 +135,7 @@ umc_info_drks <- drks_export |>
 #   rename_with(\(x) paste0("dks_", x), .cols = contains("umc"))
 
 umc_info_ctgov <- ctgov_export |> 
-  select(trial_id = nct_id, contains("umc"))
+  select(trial_id, contains("umc"))
 
 umc_euctr <- euctr_combined_deduped |> 
   select(trial_id, umc)

@@ -6,6 +6,8 @@ library(janitor)
 
 
 source(here("scripts", "utils.R"))
+qa_drks_compl <- drks_inex |> 
+  filter(is_interventional, is_german_umc)
 
 
 plan(multisession)
@@ -13,7 +15,7 @@ handlers(global = TRUE)
 
 unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
 filtered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_filtered.csv"))
-euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
+# euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
 # clean_pub_search_results <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
 
   # read_csv(here("data", "processed", "EUCTR_sample.csv"))
@@ -29,7 +31,6 @@ euctr_inex_deduped <- euctr_inex |>
   ungroup() |>
   mutate(completion_date = ymd(completion_date),
          estimated_completion_date = ymd(estimated_completion_date))
-
 
 # # DRKS inclusion and exclusion criteria
 drks_inex <- read_csv(here("data", "processed", "inclusion_exclusion_drks.csv")) |>

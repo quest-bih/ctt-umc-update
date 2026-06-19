@@ -379,6 +379,8 @@ update_error_log <- function(error_logs, qa_tib, rulename, colname) {
 # Function to extract sponsor classification from `sponsors` field in EUCTR table
 extract_sponsor_classifications <- function(json_text) {
   
+  if (is.na(json_text)) return(json_text)
+  
   # Parse the JSON into a list
   sponsors <- jsonlite::fromJSON(json_text, flatten = TRUE)
   
@@ -423,6 +425,7 @@ extract_sponsor_name <- function(json_text) {
   }
 }
 # str_date <- "2024-03-11"
+# Helper function to add day 1 to a date missing the day
 str_date_clean_floor <- function(str_date) {
   
   if (is.na(str_date)) return(str_date)
@@ -447,3 +450,34 @@ str_date_clean_floor <- function(str_date) {
   }
 }
 
+
+# Helper function to calculate duration in days
+duration_days <- function(start, end){
+  as.numeric(lubridate::as.duration(lubridate::interval(start, end)), "days")
+}
+
+# Helper function to harmonize trial status across registries
+recode_status <- function(status) {
+  case_when(
+    status %in% c("COMPLETE_FOLLOW_UP_COMPLETE",
+                  "COMPLETED",
+                  "Completed") ~ "Completed",
+    status %in% c("INVITE_ONLY",
+                  "PENDING",
+                  "COMPLETE_FOLLOW_UP_CONTINUING",
+                  "RECRUITING",
+                  "Ongoing") ~ "Ongoing",
+    status %in% c("DISCONTINIUED",
+                  "Prematurely Ended",
+                  "TERMINATED") ~ "Terminated",
+    status == "WITHDRAWN" ~ "Withdrawn",
+    str_detect(status,
+               regex("suspended",
+                     ignore_case = TRUE)
+    ) ~ "Suspended",
+    status == "UNKNOWN" ~ "Unknown",
+    # status == "\\N" |
+    #    ~ "Other",
+    .default = NA
+  )
+}

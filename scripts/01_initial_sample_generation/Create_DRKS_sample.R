@@ -376,7 +376,7 @@ drks_export <- drks_export |>
   left_join(drks_results_reporting, by = "trial_id") |> 
   mutate(across(contains("Date"), ymd),
          primary_sponsor = if_else(sponsored == FALSE,
-                                   "Commercial", "Non-commercial"),
+                                   "Commercial", "Non-Commercial"),
          is_multinational = as.logical(is_multinational),
          is_randomized = as.logical(is_randomized),
          registration_date = as.Date(registration_date),

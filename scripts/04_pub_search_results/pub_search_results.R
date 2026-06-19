@@ -147,7 +147,7 @@ extractions_with_dupes <- extractions_raw |>
       str_remove("\\.\\d($|\\..*)") |> 
       tolower(),
     .default = earliest_pub_doi |>
-      str_remove_all("\\?.*") |>
+      str_remove_all("(\\?|#).*") |>
       str_replace_all("%2F", "/") |>  
       tolower()
   ),
@@ -851,11 +851,28 @@ results_clean <- extractions_filtered_enriched_cleaned_google |>
   mutate(earliest_pub_doi = tolower(earliest_pub_doi)) |> 
   left_join(oa_pubtype, by = "earliest_pub_doi") |> 
   left_join(pmid_pubtype, by = "earliest_pub_doi") |> 
+  left_join(urls_to_check |>
+              select(trial_id, earliest_pub_url,
+                     earliest_pub_doi_clean = earliest_pub_doi),
+            by = c("trial_id", "earliest_pub_url")) |> 
   arrange(crossreg_id, trial_id) |>
   write_csv(here("data", "processed", paste0("results_clean_", today(), ".csv")))
 
 error_logs |> 
   write_csv(here("data", "processed", paste0("error_logs_", today(), ".csv")))
+
+results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv")) |> 
+  select(-earliest_pub_doi) |> 
+  left_join(urls_to_check |>
+              select(trial_id, earliest_pub_url,
+                     earliest_pub_doi),
+            by = c("trial_id", "earliest_pub_url")) |> 
+  select(trial_id, contains("_pub_doi"), everything()) |> 
+  mutate(earliest_pub_doi = case_when(
+    earliest_pub_doi == "10.1007/s00701-023-05512-" ~ "10.1007/s00701-023-05512-x",
+    
+    .default = earliest_pub_doi
+  ))
 
 # clean_pub_old <- read_csv(here("data", "processed", "reordered_snapshot_20251105_pubtypes.csv")) |> 
 #   distinct(trial_id, .keep_all = TRUE)

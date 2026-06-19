@@ -2,13 +2,16 @@ library(tidyverse)
 library(here)
 library(ctregistries)
 library(furrr)
+library(progressr)
 library(janitor)
+
+plan(multisession)
+handlers(global = TRUE)
 
 source(here("scripts", "utils.R"))
 # regexes <- yaml::read_yaml(here("inst", "extdata", "keywords_patterns.yaml"))
 regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 
-# dedupe trial tracker data
 euctr_umc <- read_csv(here("data", "processed", "umc_trials_euctr.csv")) |> 
   select(-sponsor, -contains("title")) |> 
   rename(eudract_number = id) |> 
@@ -31,7 +34,8 @@ euctr_processed <- euctr_tib |>
   full_join(euctr_results, by = "eudract_number") |> 
   left_join(euctr_umc, by = "eudract_number") |> 
   group_by(eudract_number) |> 
-  mutate(completion_date = case_when(
+  mutate(results_reporting = replace_na(results_reporting, FALSE),
+         completion_date = case_when(
     !is.na(results_global_end_of_trial_date) ~ results_global_end_of_trial_date,
     !is.na(date_of_the_global_end_of_the_trial) &
       str_detect(eudract_number_with_country, "DE") ~ date_of_the_global_end_of_the_trial,
@@ -43,8 +47,13 @@ euctr_processed <- euctr_tib |>
   ungroup() |> 
   select(contains("eudract_number"), contains("global"), umc, has_trial_de_protocol,
          umc_validated,
-         everything()) 
+         everything())
 
+euctr_tib |>
+  # select(eudract_number, contains("sponsor")) |> 
+  filter(eudract_number == "2006-005253-30")
+euctr_results |> 
+  filter(eudract_number == "2006-005253-30")
 #one_off <- euctr_results |> 
 #  filter(!eudract_number %in% euctr_tib$eudract_number) ?
 
