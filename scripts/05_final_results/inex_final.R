@@ -9,25 +9,30 @@ euctr_withdrawn_exclusions <- read_csv(here("data", "processed", "euctr_withdraw
 
 results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
 
+manual_crossreg_info <- read_xlsx(here("data", "manual", "iv3_crossreg.xlsx"))
+
 inex_combined <- read_csv(here("data", "processed", "inex_combined.csv")) |> 
   mutate(resolves = TRUE,
          is_withdrawn_euctr = trial_id %in% euctr_withdrawn_exclusions$trial_id) |> 
   # rows_upsert(non_resolving_trns, by = "trial_id") |> 
-  mutate(in_results_clean = trial_id %in% results_clean$trial_id)
-
-count(inex_combined, is_interventional)
+  mutate(in_results_clean = trial_id %in% results_clean$trial_id) |> 
+  update_crossreg_manual(manual_crossreg_info)
 
 sample_data_filtered <- inex_combined |> 
   filter(has_german_umc, has_completion_2018_2021, has_interventional,
          !has_withdrawn_status,
          in_results_clean) |> 
-  mutate(is_index_reg = if_else(is_crossreg == FALSE, TRUE, is_index_reg)) |> 
-  select(trial_id, crossreg_id, everything())
-
-
-
-sample_data_filtered |> 
-  write_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
+  rows_upsert(results_clean |> select(trial_id, crossreg_id),
+              by = "trial_id") |> 
+  mutate(is_crossreg = str_detect(crossreg_id, "_"),
+         is_index_reg = case_when(
+           is_crossreg == FALSE ~ TRUE,
+           ### newly linked cases!!!!
+           .default = is_index_reg)) |> 
+  select(trial_id, crossreg_id, everything()) 
+  
+  sample_data_filtered |> 
+    write_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
 
 n_crossreg_trials <- sample_data_filtered |> 
   distinct(crossreg_id, .keep_all = TRUE) |> 

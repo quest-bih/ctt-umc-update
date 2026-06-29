@@ -481,3 +481,54 @@ recode_status <- function(status) {
     .default = NA
   )
 }
+
+# correct crossregistration status from manual extractions
+update_crossreg_manual <- function(tib, manual_tib) {
+  manual_tib <-  manual_tib |> 
+    filter(
+      # action != "none", 
+      str_detect(action, "link") # may revisit this later to add "add"
+    ) |> 
+    mutate(crossreg_id = if_else(!is.na(new_crossreg),
+                                 paste(trial_id, new_crossreg, sep = "_"),
+                                 trial_id))
+  manual_crossreg <- manual_tib |> 
+    select(trial_id, new_crossreg, crossreg_id) |> 
+    pivot_longer(-crossreg_id, values_to = "trial_id") |> 
+    select(-name) |> 
+    filter(!is.na(trial_id))
+  
+  manual_unlinked_crossreg <- manual_tib |> 
+    filter(action == "unlink") |> 
+    mutate(trial_id = ctregistries::which_trn(comments)) |> 
+    pull(trial_id)
+  
+  results_tib <- tib |> 
+    # remove unlinked registrations
+    filter(!trial_id %in% manual_unlinked_crossreg) |> 
+    # update crossreg_id of newly linked registrations
+    rows_upsert(manual_crossreg, by = "trial_id") 
+  
+  if (results_tib |> select(contains("index")) |> nrow() > 1) {
+    index_info <- manual_tib |>
+      select(trial_id, is_index_reg)
+    
+    
+   index_reg <-  manual_crossreg |> 
+      left_join(index_info, by = "trial_id") |> 
+      group_by(crossreg_id) |> 
+      mutate(is_index_reg = if_else(
+        is.na(is_index_reg),
+        !any(is_index_reg, na.rm = TRUE),
+        is_index_reg
+      )) |> 
+     ungroup()
+   
+   results_tib <- results_tib |>
+     rows_upsert(index_reg, by = c("trial_id", "crossreg_id"))
+   
+  }
+    
+  return(results_tib)
+}
+

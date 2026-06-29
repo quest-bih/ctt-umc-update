@@ -165,6 +165,8 @@ validation_umcs_ctgov <- bind_rows(list(umc_ctgov_sponsors,
          correction = NA,
          comments = "")
 
+validation_umcs_ctgov |> write_csv(here("data", "processed", "validation_umcs_ctgov_complete.csv"))
+
 validation_umcs_ctgov_deduplicated <- validation_umcs_ctgov |>
   filter(!is.na(umc), umc != "") |> 
   group_by(raw_affil, umc) |>

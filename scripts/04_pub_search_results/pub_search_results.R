@@ -290,21 +290,35 @@ extractions_filtered_enriched |>
 
 ### updating crossreg info
 
-manual_crossreg_info <- read_xlsx(here("data", "manual", "iv3_crossreg.xlsx")) |> 
-  filter(
+update_crossreg_manual <- function(tib, manual_tib) {
+  manual_tib <-  manual_tib |> 
+    filter(
     # action != "none", 
-         str_detect(action, "link") # may revisit this later to add "add"
-         ) |> 
-  mutate(crossreg_id = if_else(!is.na(new_crossreg),
-                               paste(trial_id, new_crossreg, sep = "_"),
-                               trial_id)) |> 
-  select(trial_id, new_crossreg, crossreg_id) |> 
-  pivot_longer(-crossreg_id, values_to = "trial_id") |> 
-  select(-name) |> 
-  filter(!is.na(trial_id))
+    str_detect(action, "link") # may revisit this later to add "add"
+  ) |> 
+    mutate(crossreg_id = if_else(!is.na(new_crossreg),
+                                 paste(trial_id, new_crossreg, sep = "_"),
+                                 trial_id))
+  manual_crossreg <- manual_tib |> 
+    select(trial_id, new_crossreg, crossreg_id) |> 
+    pivot_longer(-crossreg_id, values_to = "trial_id") |> 
+    select(-name) |> 
+    filter(!is.na(trial_id))
+  
+  manual_unlinked_crossreg <- manual_tib |> 
+    filter(action == "unlink") |> 
+    mutate(trial_id = ctregistries::which_trn(comments)) |> 
+    pull(trial_id)
+  
+  tib |> 
+    filter(!trial_id %in% manual_unlinked_crossreg) |> 
+    rows_upsert(manual_crossreg, by = "trial_id") 
+}
+
+manual_crossreg_info <- read_xlsx(here("data", "manual", "iv3_crossreg.xlsx"))
 
 extractions_filtered_enriched <- extractions_filtered_enriched |> 
-  rows_upsert(manual_crossreg_info, by = "trial_id")
+  update_crossreg_manual(manual_crossreg_info)
 
 # #earliest_pub_pmid = character
 # extractions_filtered_enriched$earliest_pub_date |> 
@@ -410,6 +424,8 @@ extractions_filtered_enriched <- extractions_filtered_enriched |>
   mutate(has_withdrawn_validated = any(is_withdrawn, na.rm = TRUE)) |> 
   ungroup()
 
+euctr_enrolment |> 
+  write_csv(here("data", "processed", "euctr_status_recoded.csv"))
 
 withdrawn_exclusions <- extractions_filtered_enriched |> 
   filter(has_withdrawn_validated) |> 

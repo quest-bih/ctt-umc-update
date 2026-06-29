@@ -9,18 +9,22 @@ plan(multisession)
 handlers(global = TRUE)
 
 source(here("scripts", "utils.R"))
-combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
-drks_processed <- read_csv(here("data", "processed", "DRKS_sample.csv"))
-ctgov_processed <- readRDS(here("data", "processed", "ctgov_processed.rds"))
-euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
-# euctr_sponsors_raw <- read_csv(here("data", "raw", ""))
-updated_sumres_2026 <- read_csv(here("data", "processed", "updated_sumres_2026.csv"))
+
 results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv")) |> 
   mutate(earliest_pub_date = dmy(earliest_pub_date),
          results_search_end_date = as.Date(timestamp)) |> 
   group_by(crossreg_id) |> 
   mutate(cluster_results_search_end_date = min(results_search_end_date)) |> 
   ungroup()
+
+combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
+
+drks_processed <- read_csv(here("data", "processed", "DRKS_sample.csv"))
+ctgov_processed <- readRDS(here("data", "processed", "ctgov_processed.rds"))
+euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
+# euctr_sponsors_raw <- read_csv(here("data", "raw", ""))
+updated_sumres_2026 <- read_csv(here("data", "processed", "updated_sumres_2026.csv"))
+
 
 # This needs to be updated with every registry update
 
@@ -157,7 +161,12 @@ ctgov_enrichment_data <- ctgov_processed |>
   rows_upsert(updated_sumres_2026 |>
                 filter(str_detect(trial_id, "NCT")) |>
                 semi_join(combined_data_filtered, by = "trial_id"),
-              by = "trial_id")
+              by = "trial_id") 
+
+qa_umc_resp_party <- 
+ctgov_enrichment_data |> 
+  filter(umc_sponsor != umc_resp_party |
+           is.na(umc_sponsor) & !is.na(umc_resp_party))
 
 euctr_enrichment_data <- euctr_processed |>
   rename(trial_id = eudract_number) |> 
@@ -256,7 +265,10 @@ combined_data_enriched <- combined_data_filtered |>
            \(x) if_else(is.na(x), FALSE, x)) # consider this for survival analysis
     ) |> 
   group_by(crossreg_id) |> 
-  mutate(has_sumres = any(is_sumres_combined, na.rm = TRUE),
+  mutate(umc_pi = deduplicate_collapsed(umc_pi),
+         umc_sponsor = deduplicate_collapsed(umc_sponsor),
+         umc = deduplicate_collapsed(umc),
+         has_sumres = any(is_sumres_combined, na.rm = TRUE),
          has_sumres_all = all(is_sumres_combined),
          has_summary_results_1y = any(is_summary_results_1y,
                                       na.rm = TRUE),
@@ -300,6 +312,13 @@ qa_km <- combined_data_enriched |>
   select(crossreg_id, trial_id, earliest_pub_date, has_pub, contains("pre_completion"), contains("negative_censor_time"),
          has_sumres, contains("days_cd"),
          contains("cluster_"), completion_date, summary_results_date)
+
+euctr_status_recoded <- 
+  read_csv(here("data", "processed", "euctr_status_recoded.csv")) |> 
+  rename(status = status_cleaned)
+
+combined_data_enriched <- combined_data_enriched |> 
+  rows_upsert(euctr_status_recoded, by = "trial_id")
 
 combined_data_enriched |> 
   write_csv(here("data", "processed", "analysis_results.csv"))
@@ -537,21 +556,44 @@ combined_data_trial_level |> count(completion_date_type)
 qa_cdt <- combined_data_enriched |>
   select(trial_id, crossreg_id, contains("completion"), contains("index"))
 
-role <- "umc"
-route_col <- "has_any_pub_5y"
+# role <- "umc_resp_party"
+# 
+# qa_any_filter <- combined_data_trial_level |> 
+#   separate_longer_delim(all_of(role), delim = ";") |>
+#   mutate(has_any = has_sumres | has_pub,
+#          # has_any_pub_1y = has_summary_results_1y | has_publication_1y,
+#          # has_any_pub_2y = has_summary_results_2y | has_publication_2y,
+#          has_any_pub_5y = has_summary_results_5y | has_publication_5y,
+#          has_followup_any_5y = has_followup_pub_5y & has_followup_sumres_5y,
+#          result = .data[[route_col]] == TRUE,
+#          across(all_of(c(role, "result")), factor)
+#   ) |> 
+#   select(trial_id, crossreg_id, has_any_pub_5y, has_followup_any_5y,
+#          has_summary_results_5y, has_publication_5y, days_cd_to_publication,
+#          days_cd_to_summary, results_followup_pub,
+#          results_followup_sumres, has_followup_pub_5y, has_followup_sumres_5y)
 
-qa_any_filter <- combined_data_trial_level |> 
-  separate_longer_delim(all_of(role), delim = ";") |>
-  mutate(has_any = has_sumres | has_pub,
-         # has_any_pub_1y = has_summary_results_1y | has_publication_1y,
-         # has_any_pub_2y = has_summary_results_2y | has_publication_2y,
-         has_any_pub_5y = has_summary_results_5y | has_publication_5y,
-         has_followup_any_5y = has_followup_pub_5y & has_followup_sumres_5y,
-         result = .data[[route_col]] == TRUE,
-         across(all_of(c(role, "result")), factor)
-  ) |> 
-  select(trial_id, crossreg_id, has_any_pub_5y, has_followup_any_5y,
-         has_summary_results_5y, has_publication_5y, days_cd_to_publication,
-         days_cd_to_summary, results_followup_pub,
-         results_followup_sumres, has_followup_pub_5y, has_followup_sumres_5y)
 
+
+qa_umc_cluster <- combined_data_enriched |> 
+  filter(umc_sponsor != umc | is.na(umc_sponsor)) |> 
+  select(trial_id, crossreg_id, contains("umc"))
+
+
+
+qa_status <- combined_data_enriched |> 
+  # filter(str_detect(crossreg_id, "_")) |>
+  select(trial_id, crossreg_id, status_raw, status, is_index_reg) |> 
+  arrange(crossreg_id) |> 
+  group_by(crossreg_id) |> 
+  mutate(index_status = status [is_index_reg == TRUE],
+         cluster_status = deduplicate_collapsed(status),
+         has_discrepant_status = str_detect(cluster_status, ";")) |> 
+  ungroup()
+
+qa_status |> 
+  write_csv(here("data", "processed", "qa_status.csv"))
+
+qa_status |>
+  filter(has_discrepant_status == TRUE) |> 
+  count(cluster_status, sort = TRUE)

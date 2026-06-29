@@ -61,7 +61,9 @@ primaryServer <- function(id, results, route, role,
       gg_plot <- plot_data |> 
         ggplot(aes(.data[[role]], perc,
                    text = paste("prop:", n, "out of", total))) +
-        geom_col(fill = color_fill) +
+        geom_col(fill = color_fill,
+                 color = color_fill,
+                 linewidth = 0.15) +
         ylim(0, 100) +
         labs(x = "", y = "% Results available", title = title) +
         theme_minimal() +
@@ -205,6 +207,12 @@ get_prop_measure <- function(tib, route = c("has_sumres", "has_sumres_all", "has
     tib <- tib |> 
       filter(status %in% status_filter, .preserve = TRUE)
   }
+  #### TODO: check if this actually is FALSE
+  if (estimated_cd != TRUE) {
+    tib <- tib |> 
+      filter(completion_date_type == TRUE | is.na(completion_date_type),
+             .preserve = TRUE)
+  }
   
   if (length(selected_years) < 4) {
     tib <- tib |> 
@@ -212,11 +220,7 @@ get_prop_measure <- function(tib, route = c("has_sumres", "has_sumres_all", "has
       filter(compl_year %in% selected_years, .preserve = TRUE)
   }
   
-  if (estimated_cd == FALSE) {
-    tib <- tib |> 
-      filter(completion_date_type == TRUE | is.na(completion_date_type),
-             .preserve = TRUE)
-  }
+
   
   if (euctr_involvement != "all_trials") {
     if (euctr_involvement == "only_euctr_trials") {

@@ -41,8 +41,9 @@ show_dashboard <- function(...) {
   
   ui <-
     tagList(
-      page_sidebar(theme = bs_theme(version = 5, bootswatch = "minty"),
+      page_sidebar(
         title = "German UMC Clinical Trials Update 2018-2021",
+        theme = bs_theme(version = 5, bootswatch = "pulse"),
         sidebar = sidebar(
                           width = 350,
                           resizable = FALSE,
@@ -132,7 +133,7 @@ show_dashboard <- function(...) {
           layout_columns(
               h5("Sponsor, responsible party, or host of the Principal Investigator",
                  style = "font-weight: bold;"),
-              h5("Sponsor or responsible party",
+              h5("Sponsor",
                  style = "margin-bottom: 8.5mm; font-weight: bold;")
             ),
         layout_columns(
@@ -143,79 +144,6 @@ show_dashboard <- function(...) {
           primaryOutput("umcPlot"),
           primaryOutput("umcsponsorPlot")
         )
-            
-        
-             # wellPanel(
-           #         br(),
-           #         fluidRow(
-           #           column(8,
-           #                  h1(style = "margin-left:0cm", strong("Charité Dashboard on Responsible Research"), align = "left"),
-           #                  h4(style = "margin-left:0cm",
-           #                     HTML('Charité has committed itself to establish, promote and maintain a
-           #                  research environment which enhances the robustness of research and
-           #                  the reproducibility of results
-           #                       (<a href="https://www.charite.de/en/charite/about_us/strategic_direction_2030/">Rethinking Health – Charité 2030</a>).')),
-           #                  h4(style = "margin-left:0cm",
-           #                     HTML('This dashboard gives an overview of several metrics of open and responsible
-           #                  research at the Charité (including the Berlin Institute of Health).
-           #                  For a detailed discussion about monitoring core Open Science practices see
-           #                  (<a href = "https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3001949">Cobey et al. 2023</a>).
-           #                  For more detailed information on the methods used to calculate those metrics, the dataset
-           #                  underlying the metrics, or resources to improve your own research practices, click one of
-           #                       the following buttons on the right.')),
-           #                  # h4(style = "margin-left:0cm",
-           #                  #"This dashboard is a pilot that is still under development. More metrics will be added in the future."),
-           #                  h4(style = "margin-left:0cm",
-           #                     HTML('For more detailed open access metrics you can visit the
-           #                  <a href="https://medbib-charite.github.io/oa-dashboard/">Charité Open Access Dashboard</a>
-           #                       developed by the Charité Medical Library.')),
-           #                  br()
-           #           ),
-           #           column(4,
-           #                  hr(),
-           #                  br(),
-           #                  br(),
-           #                  br(),
-           #                  actionButton(style = "color: white; background-color: #aa1c7d;",
-           #                               'buttonMethods',
-           #                               'See methods'),
-           #                  actionButton(style = "color: white; background-color: #aa1c7d;",
-           #                               'buttonResources',
-           #                               'See resources'),
-           #                  actionButton(style = "color: white; background-color: #aa1c7d;",
-           #                               'buttonDatasets',
-           #                               'See dataset'),
-           #                  br(),
-           #                  br(),
-           #                  h4(style = "margin-left:18mm", strong("Latest Update: April 2025")))
-           #         ),
-           #         fluidRow(column(1,
-           #                         selectInput("citationStyle",
-           #                                     h5(HTML("<b>Cite us:</b>")),
-           #                                     c("APA",
-           #                                       "MLA",
-           #                                       "Chicago"),
-           #                                     width = "100px")),
-           #                  column(11,
-           #                         hr(),
-           #                         # br(),
-           #                         htmlOutput("citation_text"))
-           #         )
-           #       ),
-                 
-                 # generate Open Science & Clinical trial metrics UI dynamically to determine column width during start of the app
-                 # uiOutput("OpenScience_metrics") |>
-                 #   shinycssloaders::withSpinner(color = "#007265"),
-                 # 
-                 # uiOutput("CT_metrics") |>
-                 #   shinycssloaders::withSpinner(color = "#007265"),
-                 # 
-                 # uiOutput("Broader_transparency_metrics") |>
-                 #   shinycssloaders::withSpinner(color = "#007265"),
-                 # 
-                 # uiOutput("Visualizations_metrics") |>
-                 #   shinycssloaders::withSpinner(color = "#007265"),
-                 
         )
     )
   #----------------------------------------------------------------------------------------------------------------------
@@ -230,32 +158,32 @@ show_dashboard <- function(...) {
     RVs <- reactiveValues(route = NA, timing = NA, status = NA, estimated_cd = NA, euctr_involvement = NA, sponsor_status = NA)
     
     observe({
-      RVs$route <- req(input$route)
+      RVs$route <- input$route
     }) |> 
       bindEvent(input$route)
     
     observe({
-      RVs$timing <- req(input$timing)
+      RVs$timing <- input$timing
     }) |> 
       bindEvent(input$timing)
     
     observe({
-      RVs$status <- req(input$status)
+      RVs$status <- input$status
     }) |> 
       bindEvent(input$status)
     
     observe({
-      RVs$selected_years <- req(input$year)
+      RVs$selected_years <- input$year
     }) |> 
       bindEvent(input$year)
     
     observe({
-      RVs$estimated_cd <- req(input$estimated_cd)
+      RVs$estimated_cd <- input$estimated_cd
     }) |> 
       bindEvent(input$estimated_cd)
     
     observe({
-      RVs$euctr_involvement <- req(input$euctr_involvement)
+      RVs$euctr_involvement <- input$euctr_involvement
     }) |> 
       bindEvent(input$euctr_involvement)
     

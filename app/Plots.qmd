@@ -1,0 +1,264 @@
+---
+title: "German UMC Clinical Trials Update 2018-2021"
+format:
+  html:
+    page-layout: custom
+server: shiny
+---
+
+
+```{r}
+#| include: false
+#| label: setup      
+
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(here)
+library(shiny)
+
+analysis_results <- read_csv(here("data", "processed", "analysis_results.csv")) |> 
+    group_by(crossreg_id) |> 
+    mutate(has_publication_1y = any(days_cd_to_publication < 365,
+                                      na.rm = TRUE)) |>
+    ungroup() |> 
+    filter(is_index_reg == TRUE)
+
+source(here("app", "modules", "selectUMC.R"))
+source(here("app", "modules", "dataset_panel.R"))
+source(here("app", "modules", "primary_outcomes.R"))
+source(here("scripts", "utils.R"))
+
+
+institutions_raw <- get_umc_terms(collapse = FALSE) |> names()
+institutions <- c(institutions_raw[!str_detect(institutions_raw, "Munich")], "München_LMU", "München_TU") |> 
+  sort()
+
+
+```
+
+## Results Overview
+
+```{r}
+#| panel: sidebar
+
+selectUMCInput("mainUMC",
+               strong("Select a University Medical Center from the drop-down menu"),
+                         choices = c(
+                           # "All",
+                           "All (cumulative, side-by-side)",
+                           institutions
+                         )
+                       )
+
+radioButtons( 
+    inputId = "route", 
+    label = h4("Reporting route"), 
+    choices = list(
+      "Summary results on any registry" = "has_sumres",
+      "Summary results on every registry" = "has_sumres_all",
+      "Journal publications" = "has_pub",
+      "Any" = "has_any"
+    ))
+
+radioButtons( 
+    inputId = "timing", 
+    label = h4("Timing"), 
+    choices = list(
+      "At followup" = 6,
+      "Within 5 years of completion (excluding trials with less than 5-year follow-up)" = 5,
+      "Within 2 years of completion" = 2,
+      "Within 1 year of completion" = 1 
+    ))
+
+checkboxGroupInput( 
+    inputId = "status", 
+    label = h4("Status (of index registration)"), 
+    choices = c(
+      "Completed",
+      "Ongoing",
+      "Terminated",
+      "Suspended",
+      "Unknown"
+    ),
+    selected = c(
+      "Completed",
+      "Ongoing",
+      "Terminated",
+      "Suspended",
+      "Unknown"
+    ))
+
+checkboxGroupInput(
+    inputId = "year", 
+    label = h4("Completion year (of the index registration)"), 
+    choices = 2018:2021,
+    selected = 2018:2021,
+    inline = TRUE
+  )
+
+checkboxInput(
+  inputId = "estimated_cd",
+  label = "Include index registrations with only estimated completion dates?",
+  value = TRUE,
+  width = "100%"
+)
+
+radioButtons( 
+    inputId = "euctr_involvement", 
+    label = h4("EUCTR involvement"), 
+    choices = list(
+      "All trials" = "all_trials",
+      "Only trials with EUCTR registrations" = "only_euctr_trials",
+      "Only trials without EUCTR registrations" = "no_euctr_trials"
+    ))
+
+
+radioButtons(
+  inputId = "sponsor_status",
+  label = h4("Sponsor status"),
+  choices = list(
+      "Any" = "all_trials",
+      "Only commercial" = "only_comm",
+      "Only non-commercial" = "non_comm"
+    )
+)
+
+```
+
+
+
+```{r}
+#| panel: fill
+#| layout-ncol: 2
+
+# Tab A
+uiOutput("text1")
+uiOutput("text2")
+
+overallOutput("umcValueBox")
+overallOutput("umcsponsorValueBox")
+
+primaryOutput("umcPlot")
+primaryOutput("umcsponsorPlot")
+
+
+# DT::dataTableOutput("table")
+```
+
+
+```{r}
+#| context: server
+
+data_summaries_sponsors <- selectUMCServer("mainUMC", analysis_results, "umc_sponsor")
+
+data_summaries <- selectUMCServer("mainUMC", analysis_results, "umc")
+
+RVs <- reactiveValues(route = NA, timing = NA, status = NA, estimated_cd = NA, euctr_involvement = NA, sponsor_status = NA)
+    
+    observe({
+      RVs$route <- input$route
+    }) |> 
+      bindEvent(input$route)
+    
+    observe({
+      RVs$timing <- input$timing
+    }) |> 
+      bindEvent(input$timing)
+    
+    observe({
+      RVs$status <- input$status
+    }) |> 
+      bindEvent(input$status)
+    
+    observe({
+      RVs$selected_years <- input$year
+    }) |> 
+      bindEvent(input$year)
+    
+    observe({
+      RVs$estimated_cd <- input$estimated_cd
+    }) |> 
+      bindEvent(input$estimated_cd)
+    
+    observe({
+      RVs$euctr_involvement <- input$euctr_involvement
+    }) |> 
+      bindEvent(input$euctr_involvement)
+    
+    observe({
+      RVs$sponsor_status <- input$sponsor_status
+    }) |> 
+      bindEvent(input$sponsor_status)
+
+primaryServer("umcPlot", data_summaries,
+              route = reactive(RVs$route),
+              role = "umc",
+              status_filter = reactive(RVs$status),
+              timing = reactive(RVs$timing),
+              selected_years = reactive(RVs$selected_years),
+              estimated_cd = reactive(RVs$estimated_cd),
+              euctr_involvement = reactive(RVs$euctr_involvement),
+              sponsor_status = reactive(RVs$sponsor_status),
+              color_fill = "darkgreen",
+              title = "")
+
+primaryServer("umcsponsorPlot", data_summaries_sponsors,
+              route = reactive(RVs$route),
+              role = "umc_sponsor",
+              status_filter = reactive(RVs$status),
+              timing = reactive(RVs$timing),
+              selected_years = reactive(RVs$selected_years),
+              estimated_cd = reactive(RVs$estimated_cd),
+              euctr_involvement = reactive(RVs$euctr_involvement),
+              sponsor_status = reactive(RVs$sponsor_status),
+              color_fill = "navy",
+              title = "")
+
+primaryServer("umcValueBox", analysis_results,
+              route = reactive(RVs$route),
+              role = "umc",
+              status_filter = reactive(RVs$status),
+              timing = reactive(RVs$timing),
+              selected_years = reactive(RVs$selected_years),
+              estimated_cd = reactive(RVs$estimated_cd),
+              euctr_involvement = reactive(RVs$euctr_involvement),
+              sponsor_status = reactive(RVs$sponsor_status),
+              color_fill = "bg-gradient-purple-green",
+              title = ""
+              ) 
+
+primaryServer("umcsponsorValueBox", analysis_results,
+              route = reactive(RVs$route),
+              role = "umc_sponsor",
+              status_filter = reactive(RVs$status),
+              timing = reactive(RVs$timing),
+              selected_years = reactive(RVs$selected_years),
+              estimated_cd = reactive(RVs$estimated_cd),
+              euctr_involvement = reactive(RVs$euctr_involvement),
+              sponsor_status = reactive(RVs$sponsor_status),
+              color_fill = "bg-gradient-purple-blue",
+              title = ""
+              ) 
+
+# get_prop_measure(analysis_results, measure = "has_sumres",
+#                  role = "umc_sponsor", status_filter = "Completed",
+#                  timing = "1") |> 
+#   filter(umc_sponsor == "Würzburg")
+
+# output$val1 <- renderValueBox({
+#   valueBox(20, caption = "Registratoins", icon = icon("list"),
+#       color = "purple")
+# })
+
+# output$test <- renderText(paste(data_summaries()$label))
+
+output$text1 <- renderUI(h3("Sponsor, responsible party, or\nhost of the Principal Investigator"))
+
+output$text2 <- renderUI(h3("Sponsor"))
+
+output$table <- DT::renderDataTable({
+      make_datatable(analysis_results)
+    })
+
+```

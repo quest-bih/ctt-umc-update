@@ -138,6 +138,9 @@ validation_umcs_drks <- umc_drks_sponsors |>
          comments = "") |> 
   select(id = drksId, umc, raw_affil, field, validation, search_needed, correction, comments)
 
+validation_umcs_drks |>
+  write_excel_csv(here("data", "processed", "validation_umcs_drks_complete.csv"))
+
 validation_umcs_drks_deduplicated <- validation_umcs_drks |> 
   group_by(raw_affil, umc) |> 
   summarise(across(everything(), first),
