@@ -47,9 +47,14 @@ primaryServer <- function(id, results, route, role,
         results <- results()$data
       }
       
+      if (shiny::is.reactive(role)) {
+        role <- role()
+      }
+      
       plot_data <- results |> 
         get_prop_measure(route = route(),
                          role = role,
+                         global = FALSE,
                          status_filter = status_filter(),
                          timing = timing(),
                          selected_years = selected_years(),
@@ -68,7 +73,7 @@ primaryServer <- function(id, results, route, role,
         labs(x = "", y = "% Results available", title = title) +
         theme_minimal() +
         scale_x_discrete(drop = FALSE) +
-        theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust = 1))
+        theme(axis.text.x = element_text(size = 14, angle = 90, vjust = .5, hjust = 1))
       
       ggplotly(gg_plot)
     })
@@ -81,9 +86,14 @@ primaryServer <- function(id, results, route, role,
         results <- results()$data
       }
       
+      if (shiny::is.reactive(role)) {
+        role <- role()
+      }
+      
       valuebox_data <- results |> 
         get_prop_measure(route = route(),
                          role = role,
+                         global = TRUE,
                          status_filter = status_filter(),
                          timing = timing(),
                          selected_years = selected_years(),
@@ -92,8 +102,10 @@ primaryServer <- function(id, results, route, role,
                          sponsor_status = sponsor_status()) |> 
         ungroup() |> 
         summarise(n = sum(n), total = sum(total)) |> 
-        mutate(perc = round(n / total, 2) * 100) |> 
-        pull(perc)
+        mutate(perc = round(n / total, 2) * 100)
+      
+      # valuebox_perc <- valuebox_data |> 
+      #   pull(perc)
       
       route_text <- case_when(
         route() == "has_any" ~ "Overall proportion of any publications",
@@ -112,8 +124,9 @@ primaryServer <- function(id, results, route, role,
 
       bslib::value_box(
         title = route_text,
-        value = paste0(valuebox_data, "%"),
+        value = paste0(valuebox_data$perc, "%"),
         showcase = shiny::icon("list"),
+        p(valuebox_data$n, "out of ", valuebox_data$total, "trials"),
         theme = color_fill 
       )
       # flexdashboard::valueBox(
@@ -134,6 +147,7 @@ primaryServer <- function(id, results, route, role,
 
 get_prop_measure <- function(tib, route = c("has_sumres", "has_sumres_all", "has_pub", "has_any"),
                              role = c("umc_sponsor", "umc"),
+                             global = FALSE,
                              status_filter,
                              timing = c("1", "2", "5", "6"),
                              selected_years,
@@ -185,8 +199,14 @@ get_prop_measure <- function(tib, route = c("has_sumres", "has_sumres_all", "has
 
   
   tib <- tib |>
-    filter(!is.na(.data[[role]]), .preserve = TRUE) |> 
-    separate_longer_delim(all_of(role), delim = ";") |>
+    filter(!is.na(.data[[role]]), .preserve = TRUE)
+  
+  if (global == FALSE) {
+    tib <- tib |> 
+      separate_longer_delim(all_of(role), delim = ";")
+  }
+    
+  tib <- tib |>
     mutate(has_any = has_sumres | has_pub,
            has_any_pub_1y = has_summary_results_1y | has_publication_1y,
            has_any_pub_2y = has_summary_results_2y | has_publication_2y,

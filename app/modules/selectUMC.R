@@ -11,13 +11,18 @@ selectUMCInput <- function(id, label, choices, ...) {
 selectUMCServer <- function(id, datasource, umc_type) {
   moduleServer(id, function(input, output, session) {
     reactive({
+      
+      if (shiny::is.reactive(umc_type)) {
+        umc_type <- umc_type()
+      }
+      
       list(data = switch(input$selectUMC,
                          "None" = NULL,
                          "All" = datasource,
                          "All (cumulative, side-by-side)" = datasource |> 
-                           separate_longer_delim(.data[[umc_type]], ";"),
+                           separate_longer_delim(all_of(umc_type), ";"),
                          datasource |>
-                           separate_longer_delim(.data[[umc_type]], ";") |> 
+                           separate_longer_delim(all_of(umc_type), ";") |> 
                            filter(str_detect(.data[[umc_type]], input$selectUMC))),
            label = switch(input$selectUMC, 
                           "None" = "",
