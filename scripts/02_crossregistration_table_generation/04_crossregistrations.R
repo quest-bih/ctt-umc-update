@@ -59,7 +59,7 @@ drks_titles <- drks_tib |>
 ###########################################################
 
 # Extract EU IDs plus process EU titles to be used in title matching
-euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
+euctr_processed <- readRDS(here("data", "processed", "euctr_processed.rds"))
 
 euctr_de_protocols <- euctr_processed |> 
   group_by(eudract_number) |> 
@@ -149,7 +149,7 @@ CTgov_sample <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 
 # by taking crossregistrations to only involve at least one trial in-sample
 # we avoid having to refilter here yet again and getting filter criteria potentially out-of-sync
-sample_ids <- c(EUCTR_sample$trial_id, DRKS_sample$trial_id, CTgov_sample$nct_id) |>
+sample_ids <- c(EUCTR_sample$trial_id, DRKS_sample$trial_id, CTgov_sample$trial_id) |>
   unique()
 
 crossreg_euctr_drks_ctgov <- read_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))
@@ -274,6 +274,7 @@ other_info_euctr_collapsed <- other_info_euctr |>
   summarise(other_nr_euctr = deduplicate_collapsed(other_nr_euctr)) |>
   ungroup()
 
+
 mtm_other <- qa_mtm  |>
   left_join(other_info, by = "trial_id") |>
   left_join(other_info, by = c("linked_id" = "trial_id")) |>
@@ -286,8 +287,10 @@ mtm_other <- qa_mtm  |>
          other_nr_euctr = deduplicate_collapsed(c(other_nr_euctr.x, other_nr_euctr.y))) |>
   ungroup() |>
   select(-contains(c(".x", ".y"))) |>
-  mutate(other_match = str_detect(other_nr_ctgov, other_nr_euctr) |
-           str_detect(other_nr_euctr, other_nr_ctgov),
+  filter(!is.na(other_nr_ctgov),
+             !is.na(other_nr_euctr)) |> 
+  mutate(other_match = str_detect(other_nr_ctgov, coll(other_nr_euctr)) |
+           str_detect(other_nr_euctr, coll(other_nr_ctgov)),
          euctr_ctgov = trial_registry == "EUCTR" & linked_registry == "ClinicalTrials.gov" |
            trial_registry == "ClinicalTrials.gov" & linked_registry == "EUCTR") |>
   group_by(cluster_unique_id, euctr_ctgov) |>
@@ -408,65 +411,76 @@ validated_crossreg_ids <- crossreg_validated |>
   distinct(trial_id, .keep_all = TRUE) |>
   write_excel_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
 #validated_crossreg_ids <- read_csv(here("data", "processed", "crossreg_ids_unfiltered.csv"))
+# falling_clusters <- validated_crossreg_ids |> 
+#   left_join(combined_inex, by = "trial_id") |>
+#   mutate(
+#     filled_actual_completion_date = case_when(
+#       !is.na(actual_completion_date) ~ actual_completion_date,
+#       .default = NA_Date_),
+#     filled_euctr_completion_date = if_else(has_euctr_results == TRUE, results_completion_date, NA_Date_)) |>
+#   group_by(crossreg_id) |> 
+#   arrange(crossreg_id, desc(last_updated), desc(registration_date)) |> 
+#   fill(c(filled_actual_completion_date, filled_euctr_completion_date), .direction = "up") |> 
+#   mutate(has_euctr_results = any(has_euctr_results, na.rm = TRUE),
+#          has_interventional = any(is_interventional, na.rm = TRUE),
+#          has_german_umc = any(is_german_umc, na.rm = TRUE),
+#          registries = get_registry_names(crossreg_id),
+#          has_premature = any(has_premature, na.rm = TRUE),
+#          has_de_premature = any(has_de_premature, na.rm = TRUE),
+#          has_cluster_de_protocol = any(has_trial_de_protocol, na.rm = TRUE),
+#          # recent_completion_2018_2021 = first(is_completed_2018_2021),
+#          # max_completion_date = max(estimated_completion_date, na.rm = TRUE),
+#          # has_only_estimated_cd = all(is.na(only_actual_completion_dates)),
+#          hierarchical_completion_date = case_when(
+#            str_detect(crossreg_id, "-") &
+#              any(has_euctr_results == TRUE, na.rm = TRUE) &
+#              !is.na(first(filled_euctr_completion_date)) ~
+#              first(filled_euctr_completion_date),
+#            any(!is.na(filled_actual_completion_date), na.rm = TRUE) ~
+#              first(filled_actual_completion_date),
+#            all(is.na(filled_actual_completion_date), na.rm = TRUE) ~
+#              max(estimated_completion_date, na.rm = TRUE),
+#            .default = NA_Date_
+#          ),
+#          last_updated_actual = if_else(!is.na(actual_completion_date), last_updated, NA_Date_),
+#          only_estimated = all(is.na(results_completion_date), na.rm = TRUE) &
+#            all(is.na(actual_completion_date), na.rm = TRUE),
+#          is_last_updated = last_updated_actual == max(last_updated_actual, na.rm = TRUE),
+#          n_last_updated = sum(is_last_updated, na.rm = TRUE),
+#          is_latest_actual = actual_completion_date == max(actual_completion_date, na.rm = TRUE),
+#          is_latest_estimated = estimated_completion_date == max(estimated_completion_date, na.rm = TRUE),
+#          n_latest_estimated = sum(is_latest_estimated, na.rm = TRUE),
+#          is_index_reg = case_when(
+#            !is.na(results_completion_date) ~ TRUE,
+#            all(is.na(results_completion_date)) & 
+#              n_last_updated == 1 &
+#              is_last_updated & only_estimated == FALSE ~ TRUE,
+#            all(is.na(results_completion_date)) & 
+#              n_last_updated > 1 &
+#              is_latest_actual & only_estimated == FALSE ~ TRUE,
+#            only_estimated & is_latest_estimated & n_latest_estimated == 1 ~ TRUE,
+#            only_estimated & is_last_updated & n_latest_estimated > 1 ~ TRUE,
+#            .default = FALSE
+#          ),
+#          n_index_reg = sum(is_index_reg),
+#          has_completion_2018_2021 = any(between(hierarchical_completion_date,
+#                                                 as_date("2018-01-01"), as_date("2021-12-31")),
+#                                         na.rm = TRUE),
+#          recent_status = first(status),
+#          has_withdrawn_status = any(str_detect(status, regex("withdrawn", ignore_case = TRUE))),
+#          many_to_many = is_mtm(crossreg_id),
+#          trns_in_cluster = str_count(crossreg_id, "_") + 1,
+#          mtm_validated = trial_id %in% mtm_resolved$trial_id |
+#            trial_id %in% mtm_resolved$linked_id) |> 
+#   ungroup()
+# 
+
 falling_clusters <- validated_crossreg_ids |> 
-  left_join(combined_inex, by = "trial_id") |>
-  mutate(
-    filled_actual_completion_dates = case_when(
-      !is.na(actual_completion_date) ~ actual_completion_date,
-      .default = NA_Date_),
-    filled_euctr_completion_date = if_else(has_euctr_results == TRUE, results_completion_date, NA_Date_)) |>
+  left_join(combined_inex, by = "trial_id") |> 
+  get_hierarchical_completion_date() |> 
   group_by(crossreg_id) |> 
-  arrange(crossreg_id, desc(last_updated), desc(registration_date)) |> 
-  fill(c(filled_actual_completion_dates, filled_euctr_completion_date), .direction = "up") |> 
-  mutate(has_euctr_results = any(has_euctr_results, na.rm = TRUE),
-         has_interventional = any(is_interventional, na.rm = TRUE),
-         has_german_umc = any(is_german_umc, na.rm = TRUE),
-         registries = get_registry_names(crossreg_id),
-         has_premature = any(has_premature, na.rm = TRUE),
+  mutate(has_premature = any(has_premature, na.rm = TRUE),
          has_de_premature = any(has_de_premature, na.rm = TRUE),
-         has_cluster_de_protocol = any(has_trial_de_protocol, na.rm = TRUE),
-         # recent_completion_2018_2021 = first(is_completed_2018_2021),
-         # max_completion_date = max(estimated_completion_date, na.rm = TRUE),
-         # has_only_estimated_cd = all(is.na(only_actual_completion_dates)),
-         hierarchical_completion_date = case_when(
-           str_detect(crossreg_id, "-") &
-             any(has_euctr_results == TRUE, na.rm = TRUE) &
-             !is.na(first(filled_euctr_completion_date)) ~
-             first(filled_euctr_completion_date),
-           any(!is.na(filled_actual_completion_dates), na.rm = TRUE) ~
-             first(filled_actual_completion_dates),
-           all(is.na(filled_actual_completion_dates), na.rm = TRUE) ~
-             max(estimated_completion_date, na.rm = TRUE),
-           .default = NA_Date_
-         ),
-         last_updated_actual = if_else(!is.na(actual_completion_date), last_updated, NA_Date_),
-         only_estimated = all(is.na(results_completion_date), na.rm = TRUE) &
-           all(is.na(actual_completion_date), na.rm = TRUE),
-         is_last_updated = last_updated_actual == max(last_updated_actual, na.rm = TRUE),
-         n_last_updated = sum(is_last_updated, na.rm = TRUE),
-         is_latest_actual = actual_completion_date == max(actual_completion_date, na.rm = TRUE),
-         is_latest_estimated = estimated_completion_date == max(estimated_completion_date, na.rm = TRUE),
-         n_latest_estimated = sum(is_latest_estimated, na.rm = TRUE),
-         is_index_reg = case_when(
-           !is.na(results_completion_date) ~ TRUE,
-           all(is.na(results_completion_date)) & 
-             n_last_updated == 1 &
-             is_last_updated & only_estimated == FALSE ~ TRUE,
-           all(is.na(results_completion_date)) & 
-             n_last_updated > 1 &
-             is_latest_actual & only_estimated == FALSE ~ TRUE,
-           only_estimated & is_latest_estimated & n_latest_estimated == 1 ~ TRUE,
-           only_estimated & is_last_updated & n_latest_estimated > 1 ~ TRUE,
-           .default = FALSE
-         ),
-         n_index_reg = sum(is_index_reg),
-         has_completion_2018_2021 = any(between(hierarchical_completion_date,
-                                                as_date("2018-01-01"), as_date("2021-12-31")),
-                                        na.rm = TRUE),
-         recent_status = first(status),
-         has_withdrawn_status = any(str_detect(status, regex("withdrawn", ignore_case = TRUE))),
-         many_to_many = is_mtm(crossreg_id),
-         trns_in_cluster = str_count(crossreg_id, "_") + 1,
          mtm_validated = trial_id %in% mtm_resolved$trial_id |
            trial_id %in% mtm_resolved$linked_id) |> 
   ungroup()
@@ -493,7 +507,8 @@ test_cases <- tribble(~crossreg_id, ~verified_cluster_completion_date,
                       "2015-000465-31_DRKS00012657", ymd("2019-11-25"),
                       "2016-001554-18_DRKS00008018", ymd("2020-09-29"),
                       "2015-005219-34_DRKS00009451", ymd("2021-08-03"),
-                      "2011-004228-37_DRKS00004186", ymd("2021-03-08")
+                      "2011-004228-37_DRKS00004186", ymd("2021-03-08"),
+                      "2017-002429-39_DRKS00014953_NCT03437226", ymd("2021-12-31")
 )
 
 cluster_check <- falling_clusters |>
@@ -503,14 +518,14 @@ cluster_check |>
   filter(hierarchical_completion_date != verified_cluster_completion_date) |>
   nrow() |> 
   testthat::expect_equal(0)
-  
+
 falling_clusters |> 
   write_csv(here("data", "processed", "crossreg_unfiltered.csv"))
-# falling_clusters <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
-qa_hier <- falling_clusters |> 
+
+qa_hierarchical <- falling_clusters |> 
   filter(has_euctr_results == FALSE, 
          # is_index_reg == TRUE,
-         hierarchical_completion_date != filled_actual_completion_dates)
+         hierarchical_completion_date != filled_actual_completion_date)
 
 # falling_clusters |>
 #   select(-completion_date_type) |> 
@@ -608,214 +623,3 @@ setdiff(qa_clusters$crossreg_id, filtered_clusters$crossreg_id)
 
 setdiff(filtered_clusters$crossreg_id, qa_clusters$crossreg_id)
 
-##########################################################
-# old scripts here for potential re-use
-
-# min_title_length <- 5
-# 
-# # function for chunked title match to be able to process e.g. full registries
-# 
-# chunked_title_match <- function(tib_1, tib_2, title_col, chunksize, output_filename, max_dist, min_length) {
-#   
-#   if (nrow(tib_1) > nrow(tib_2)) {
-#     tib_large <- tib_1
-#     tib_small <- tib_2
-#   } else {
-#     tib_large <- tib_2
-#     tib_small <- tib_1
-#   }
-#   
-#   tib_large <- tib_large |>
-#     filter({{ title_col }} >= min_length)
-#   
-#   tib_small <- tib_small |> 
-#     filter({{ title_col }} >= min_length)
-#   
-#   col_name <- rlang::as_label(rlang::enquo(title_col))
-#   # return(col_name)
-#   
-#   assertthat::assert_that(chunksize <= 50000, msg = "Chunksize should not exeed 50,000!")
-#   
-#   nrows <- nrow(tib_large)
-#   
-#   
-#   if (nrows > chunksize) { # if the total number of rows exceeds the chunksize
-#     chunks <- 1:nrows%%chunksize == 0 # build the chunk numbers
-#     chunks <- chunks |>
-#       as.numeric() |>
-#       cumsum()
-#     
-#     tib_chunked <- split(tib_large, chunks) # split vector into chunks
-#     p <- progressr::progressor(along = tib_chunked)
-#     return(furrr::future_map(tib_chunked, \(chunk) {
-#       p()
-#       fuzzyjoin::stringdist_inner_join(
-#         tib_small,
-#         chunk,
-#         by = col_name,
-#         max_dist = max_dist,
-#         distance_col = "dist"
-#       )
-#     }))
-#   }
-# }
-# 
-# plan(multisession)
-# # plan(sequential)
-# handlers(global = TRUE)
-# 
-# ct_cleaned_bogus <- bogus_titles_ct |> 
-#   select(trial_id, official_title = title, title = brief_title) |> 
-#   tidyr::drop_na(title) |>
-#   mutate(title_processed = tolower(title) |>
-#            stringr::str_squish() |> # remove whitespace at start and end, as well as any "\t" whitespace characters
-#            stringr::str_remove_all("[:punct:]") |>
-#            stringr::str_remove_all(" "),
-#          title_length = str_length(title_processed))
-#   
-# 
-# #QA title matches in the bogus sample using brief_title instead
-# # not a single match, so ignore bogus title sample
-# tic() # took 5.5 hours with no glitches
-# title_matches_ct_drks <- chunked_title_match(ct_cleaned,
-#                                                    drks_titles,
-#                                                    title_col = title_processed, chunksize = 5000, max_dist = 20, min_length = 5)
-# toc()
-# 
-# matches_ct_drks <- title_matches_ct_drks |> 
-#   list_rbind() |> 
-#     mutate(rel_match = 1 - dist * 2/ (title_length.x + title_length.y),
-#            is_match = rel_match > 0.6 # to be empirically dediced
-#     )  |>
-#     select(is_match, rel_match, dist, contains("title"), contains("length"), contains("processed"), everything())  |>
-#     mutate(x_longer = title_length.x > title_length.y,
-#            y_longer = title_length.x < title_length.y,
-#            x_in_y = str_detect(title_processed.x, title_processed.y),
-#            y_in_x = str_detect(title_processed.y, title_processed.x)
-#     ) |> 
-#     arrange(desc(rel_match)) |>
-#     filter(title_length.x >= min_title_length,
-#            title_length.y >= min_title_length)
-# 
-# matches_ct_drks |> 
-#   saveRDS(here("data", "processed", "title_matches_ct_drks.rds"))
-# 
-# matches_ct_drks <- readRDS(here("data", "processed", "title_matches_ct_drks.rds")) |> 
-#   filter(!str_detect(title_processed.y, "bio\\|")) |> 
-#   mutate(jarowinkler = stringdist(title_processed.x, title_processed.y, method = "jw"),
-#          lcs = stringdist(title_processed.x, title_processed.y, method = "lcs"),
-#          is_match = jarowinkler < 0.2) |> 
-#   select(rel_match, jarowinkler, lcs, is_match, everything())
-# 
-# counts <- matches_ct_drks |> 
-#   filter(is_match) |> 
-#   count(dist, sort = TRUE)
-# 
-# matches_ct_drks |> 
-#   filter(is_match) |>
-#   ggplot(aes(dist)) +
-#   geom_density()
-# 
-# embeded_titles <- matches_ct_drks |> 
-#   filter(x_in_y | y_in_x,
-#          rel_match < 1)
-# # tic("joining euctr and drks")
-# # titles_joined_euctr_drks <- euctr_updated_titles |> 
-# #   fuzzyjoin::stringdist_inner_join(drks_updated_titles, by = "title_processed", max_dist = 20, distance_col = "dist")
-# # toc()
-# 
-# # 
-# # title_matches <- titles_joined_euctr_drks |> 
-# #   # bind_rows(titles_joined_ct_drks) |> 
-# #   mutate(rel_match = 1 - dist * 2/ (title_length.x + title_length.y),
-# #          is_match = rel_match > 0.6 # to be empirically dediced
-# #   )  |> 
-# #   select(is_match, rel_match, dist, contains("official"), contains("length"), contains("processed"), everything())  |> 
-# #   mutate(x_longer = title_length.x > title_length.y,
-# #          y_longer = title_length.x < title_length.y,
-# #          x_in_y = str_detect(title_processed.x, title_processed.y),
-# #          y_in_x = str_detect(title_processed.y, title_processed.x)
-# #   )
-# 
-# 
-# # title_matches_drks_euctr <- title_matches |> 
-# #   arrange(desc(rel_match)) |> 
-# #   filter(title_length.x >= min_title_length,
-# #          title_length.y >= min_title_length)
-# # title_matches_drks_euctr |> 
-# #   saveRDS(here("data", "processed", "title_matches_drks_euctr_20.rds"))
-# 
-# 
-# # 
-# # bogus_titles_euctr <- euctr_updated_titles |>
-# #   filter(str_detect(official_title, "^(N|n)(o|O|a)[nNtT]?|see") & title_length < 20
-# #   )
-# # 
-# # euctr_cleaned <- euctr_updated_titles |> 
-# #   filter(!trial_id %in% bogus_titles_euctr$trial_id)
-# 
-# tic()
-# ct_subresult <- chunked_title_match(ct_cleaned,
-#                                     drks_updated_titles,
-#                                     title_col = title_processed, chunksize = 10000, max_dist = 20, min_length = 5)
-# toc()
-# 
-# ct_sbr <- ct_subresult |> 
-#   list_rbind() 
-# 
-# title_matches_ct_drks <- ct_sbr |> 
-#   mutate(rel_match = 1 - dist * 2/ (title_length.x + title_length.y),
-#          is_match = rel_match > 0.6 # to be empirically dediced
-#   )  |> 
-#   select(is_match, rel_match, dist, contains("official"), contains("length"), contains("processed"), everything())  |> 
-#   mutate(x_longer = title_length.x > title_length.y,
-#          y_longer = title_length.x < title_length.y,
-#          x_in_y = str_detect(title_processed.x, title_processed.y),
-#          y_in_x = str_detect(title_processed.y, title_processed.x)
-#   )
-# 
-# title_matches_ct_drks <- title_matches_ct_drks |> 
-#   arrange(desc(rel_match)) |> 
-#   filter(title_length.x >= min_title_length,
-#          title_length.y >= min_title_length)
-# title_matches_ct_drks |> 
-#   saveRDS(here("data", "processed", "title_matches_ct_drks_20.rds"))
-### as doing the ct_cleaned in one go fails, split the dataset into two chunks
-# ct_cleaned_first_half <- ct_cleaned |> 
-#   slice(1:230000)
-# ct_cleaned_second_half <- ct_cleaned |> 
-#   filter(!trial_id %in% ct_cleaned_first_half$trial_id)
-
-
-# tic() 
-# title_matches_ct_euctr_ls <- chunked_title_match(ct_cleaned_first_half,
-#                                                  euctr_cleaned,
-#                                                  title_col = title_processed, chunksize = 5000, max_dist = 20, min_length = 5)
-# toc()
-
-# tic()
-# title_matches_ct_euctr_ls2 <- chunked_title_match(ct_cleaned_second_half,
-#                                                   euctr_cleaned,
-#                                                   title_col = title_processed, chunksize = 5000, max_dist = 20, min_length = 5)
-# toc()
-
-# title_matches_ct_euctr <- list_rbind(title_matches_ct_euctr_ls) |> 
-#   bind_rows(list_rbind(title_matches_ct_euctr_ls2))
-# 
-# title_matches_ct_euctr <- title_matches_ct_euctr |> 
-#   mutate(rel_match = 1 - dist * 2/ (title_length.x + title_length.y),
-#          is_match = rel_match > 0.6 # to be empirically dediced
-#   )  |> 
-#   select(is_match, rel_match, dist, contains("official"), contains("length"), contains("processed"), everything())  |> 
-#   mutate(x_longer = title_length.x > title_length.y,
-#          y_longer = title_length.x < title_length.y,
-#          x_in_y = str_detect(title_processed.x, title_processed.y),
-#          y_in_x = str_detect(title_processed.y, title_processed.x)
-#   )
-# 
-# title_matches_ct_euctr <- title_matches_ct_euctr |> 
-#   arrange(desc(rel_match)) |> 
-#   filter(title_length.x >= min_title_length,
-#          title_length.y >= min_title_length)
-# title_matches_ct_euctr |> 
-#   saveRDS(here("data", "processed", "title_matches_ct_euctr_20.rds"))

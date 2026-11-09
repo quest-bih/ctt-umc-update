@@ -16,12 +16,23 @@ library(here)
 library(shiny)
 library(bslib)
 
+
+source("scripts/utils.R")
+
 analysis_results <- read_csv(here("data", "processed", "analysis_results.csv")) |> 
   group_by(crossreg_id) |> 
   mutate(has_publication_1y = any(days_cd_to_publication < 365,
-                                  na.rm = TRUE)) |>
+                                  na.rm = TRUE),
+         .before = has_publication_2y) |> 
+  mutate(umc_pi_resp_party_no_sponsor = deduplicate_collapsed(c(umc_resp_party, umc_pi),
+                                                              exclude = umc_sponsor),
+         .after = umc_resp_party) |>
   ungroup() |> 
   filter(is_index_reg == TRUE)
+# qa_umc <- analysis_results |> select(trial_id, crossreg_id, contains("umc")) |> 
+#   mutate(has_charite_sponsor = str_detect(umc_sponsor, "Charite"),
+#          has_charite_pi_or_resp_party = str_detect(umc_pi, "Charite") |
+#            str_detect(umc_resp_party, "Charite"))
 
 source(here("app", "modules", "selectUMC.R"))
 source(here("app", "modules", "dataset_panel.R"))
@@ -71,7 +82,8 @@ show_dashboard <- function(...) {
             label = h4("Role of University Medical Center"), 
             choices = list(
               "Sponsor, responsible party, or host of the Principal Investigator" = "umc",
-              "Sponsor" = "umc_sponsor"
+              "Sponsor" = "umc_sponsor",
+              "UMC affiliation without lead sponsorship" = "umc_pi_resp_party_no_sponsor"
                
             )),
           

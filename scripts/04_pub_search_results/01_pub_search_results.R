@@ -386,6 +386,9 @@ euctr_enrolment <- read_xlsx(here("data", "manual",
   filter(registry == "EUCTR") |> 
   select(trial_id, status_cleaned = status)
 
+extractions_filtered_enriched |> 
+  count(euctr_is_prematurely_ended, euctr_is_no_enrolment)
+
 extractions_filtered_enriched <- extractions_filtered_enriched |> 
   mutate(status_cleaned = case_when(
     euctr_is_no_enrolment ==
@@ -423,7 +426,8 @@ extractions_filtered_enriched <- extractions_filtered_enriched |>
   group_by(crossreg_id) |> 
   mutate(has_withdrawn_validated = any(is_withdrawn, na.rm = TRUE)) |> 
   ungroup()
-
+extractions_filtered_enriched |> 
+  filter(is.na(status))
 euctr_enrolment |> 
   write_csv(here("data", "processed", "euctr_status_recoded.csv"))
 
@@ -775,6 +779,22 @@ extractions_filtered_enriched_cleaned_dois <- extractions_filtered_enriched |>
          pub_reglinked_url_clean = NA_character_) |> 
   rows_upsert(clean_doi_urls, by = "trial_id")
 
+qa_reglinked <- extractions_filtered_enriched_cleaned_dois |>
+  select(trial_id, crossreg_id, registry_url, registry,
+         is_pub_reglinked,
+         is_earlier_pub_google,
+         earliest_pub_matches_reg,
+         earliest_pub_matches_reg_comment,
+         earliest_pub_date,
+         earliest_pub_doi,
+         earliest_pub_url_clean,
+         pub_reglinked_url_clean) |>
+  mutate(across(c(earliest_pub_doi,
+                  earliest_pub_url_clean,
+                  pub_reglinked_url_clean), tolower)) |> 
+  write_csv(here("data", "processed", "qa_reglinked.csv"))
+  
+
 ## is_earlier_pub_google
 
 qa_google_no <- extractions_filtered_enriched_cleaned_dois |> 
@@ -804,12 +824,7 @@ google_corrected <- extractions_filtered_enriched |>
 extractions_filtered_enriched_cleaned_google <- extractions_filtered_enriched |> 
   rows_upsert(google_corrected, by = "trial_id")
 
-## publication_type
-
-# tt <- tibble(doi = dois_to_check)
-
 oa_resp <- oa_fetch(entity = "works", doi = dois_to_check,
-                    mailto = Sys.getenv("EMAIL"),
                     verbose = TRUE)
 
 oa_pubtype <- oa_resp |> 
@@ -817,6 +832,9 @@ oa_pubtype <- oa_resp |>
            tolower()) |> 
   distinct(earliest_pub_doi, .keep_all = TRUE) |> 
   select(earliest_pub_doi, pub_type_openalex = type)
+
+dupe_dois <- oa_resp |> 
+  get_dupes(doi)
 
 # missing_oa <- setdiff(dois_to_check, oa_pubtype$earliest_pub_doi) |> 
 #   str_replace("%2F", "/") |> 
@@ -877,8 +895,20 @@ results_clean <- extractions_filtered_enriched_cleaned_google |>
 error_logs |> 
   write_csv(here("data", "processed", paste0("error_logs_", today(), ".csv")))
 
-results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv")) |> 
+results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
+  
+extractions_filtered_enriched |> 
+  filter(!trial_id %in% pub_search_table$trial_id)
+
+dupes_extr <- extractions_filtered_enriched |> 
+  get_dupes(trial_id) |> 
+  select(extractor, trial_id, dupe_count)
+
+### add further manual corrections if any, after validations complete
+reviews_integrated <- read_csv(here("data", "manual", "2026-10-09_CORRECTED-iv3-pubsearch.csv")) |> 
+  ### harmonize date formats
   select(-earliest_pub_doi) |> 
+  mutate(across(contains("date"), dmy)) |> 
   left_join(urls_to_check |>
               select(trial_id, earliest_pub_url,
                      earliest_pub_doi),
@@ -888,35 +918,49 @@ results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.cs
     earliest_pub_doi == "10.1007/s00701-023-05512-" ~ "10.1007/s00701-023-05512-x",
     
     .default = earliest_pub_doi
-  ))
-
-# clean_pub_old <- read_csv(here("data", "processed", "reordered_snapshot_20251105_pubtypes.csv")) |> 
-#   distinct(trial_id, .keep_all = TRUE)
-# clean_pub_n <- clean_pub |> 
-#   distinct(trial_id, .keep_all = TRUE)
-# all.equal(clean_pub_n, clean_pub_old)
-# count(clean_pub_n, is.na(oa_pubtype))
-# count(clean_pub, is.na(oa_pubtype))
-# count(clean_pub_n, is.na(pubtype_pmid))
-# count(clean_pub, is.na(pubtype_pmid))
-
-clean_pub_n |> 
-  left_join(clean_pub_old, by = "trial_id") |> 
-  filter(drks_sumres_date.x != drks_sumres_date.y | is.na(drks_sumres_date.x) | is.na(drks_sumres_date.y)) |> 
-  filter(is.na(drks_sumres_date.y) & !is.na(drks_sumres_date.x)) |> 
-  pull(trial_id)
+  )) |> 
+  rows_upsert(euctr_enrolment, by = "trial_id")
 
 
+# date_cols <- reviews_integrated |> 
+#   select(contains("_id"), contains("date")) 
+# date_cols
 
+count(reviews_integrated, review_action, is.na(date_of_check))
 
-extractions_filtered_enriched |> 
-  filter(!trial_id %in% pub_search_table$trial_id)
+resolution <- reviews_integrated |> 
+  select(crossreg_id, trial_id, review_ineligible_and_no_pub, review_status, review_has_pub, earliest_pub_doi, review_earliest_doi,  everything()) |> 
+  # double-check that filling works for all review_columns
+  fill(contains("review_"), .by = crossreg_id) |> 
+  mutate(earliest_pub_doi = case_when(
+          review_has_pub == FALSE | !is.na(review_earliest_doi) ~ tolower(review_earliest_doi),
+          (is.na(review_has_pub) |
+            review_has_pub == TRUE) &
+            str_detect(earliest_pub_url, "doi") &
+            is.na(earliest_pub_doi) ~ str_extract(earliest_pub_url, "10\\..*") |> 
+            tolower(),
+          .default = tolower(earliest_pub_doi)),
+         earliest_pub_type = case_when(
+           !is.na(review_has_pub) ~ review_earliest_pubtype,
+           review_pubtype_correction != "No check needed" ~ review_pubtype_correction,
+           .default = earliest_pub_type),
+         earliest_pub_pmid = if_else(!is.na(review_has_pub),
+                                     review_earliest_pmid, earliest_pub_pmid),
+         earliest_pub_date = if_else(!is.na(review_has_pub),
+                                     review_pub_date, earliest_pub_date)
+  ) |> 
+  fill(all_of(c("earliest_pub_doi",
+                "earliest_pub_type",
+                "earliest_pub_pmid",
+                "earliest_pub_date")), 
+       .by = crossreg_id,
+       .direction = "downup")
+# resolution |> 
+#   count(review_has_pub, is.na(earliest_pub_date))
+# 
+# qa_review_has_pub <- resolution |> 
+#   filter(review_has_pub == TRUE,
+#          is.na(earliest_pub_date))
 
-dupes_extr <- extractions_filtered_enriched |> 
-  get_dupes(trial_id) |> 
-  select(extractor, trial_id, dupe_count)
-
-
-### add further manual corrections if any, after validations complete
-results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
-
+resolution |> 
+  write_csv(here("data", "processed", "results_corrected_2026-10-27.csv"))

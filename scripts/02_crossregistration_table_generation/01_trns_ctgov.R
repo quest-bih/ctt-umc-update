@@ -20,7 +20,7 @@ source(here("scripts", "utils.R"))
 
 regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
 
-euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
+euctr_processed <- readRDS(here("data", "processed", "euctr_processed.rds"))
 
 drks_ids <- read_csv(here("data", "raw", "drks_ids.csv")) |> 
   pull(drksId)
@@ -61,7 +61,7 @@ id_info <- id_info |>
          ctgov_exists = ctgov_clean %in% nct_id,
          drks_exists = drks_clean %in% drks_ids, # non-exisent ones were almost all removed dupes
          # with the exception of this one DRKS00005436
-         euctr_exists = euctr_clean %in% euctr_combined$eudract_number)
+         euctr_exists = euctr_clean %in% euctr_processed$eudract_number)
 
 # replace non-existent euctrs with NA
 id_info <- id_info |> 
@@ -181,69 +181,3 @@ crossreg_ctgov <- id_info |>
 
 crossreg_ctgov |> 
   write_excel_csv(here("data", "processed", "crossreg_ctgov.csv"))
-
-crossreg_euctr_drks <- read_csv(here("data", "processed", "crossreg_euctr_drks.csv")) 
-
-bidirectional_euctr_drks <- crossreg_euctr_drks |> 
-  semi_join(crossreg_ctgov, by = "binary_id") |> 
-  pull(binary_id)
-
-new_crossregs_ctgov <- crossreg_ctgov |> 
-  filter(!binary_id %in% bidirectional_euctr_drks) |> 
-  mutate(bidirectional = FALSE)
-
-crossreg_euctr_drks_ctgov <- crossreg_euctr_drks |>
-  bind_rows(new_crossregs_ctgov) |> 
-  mutate(bidirectional = case_when(
-    binary_id %in% bidirectional_euctr_drks ~ TRUE,
-    str_detect(linked_id, "NCT") ~ FALSE,
-    .default = bidirectional
-  )) |> 
-  distinct(trial_id, linked_id, .keep_all = TRUE) |> 
-  group_by(linked_id) |> 
-  mutate(triad = case_when(
-    str_detect(linked_id, "-") ~ any(str_detect(trial_id, "DRKS")) &
-      any(str_detect(trial_id, "NCT")),
-    str_detect(linked_id, "DRKS") ~ any(str_detect(trial_id, "-")) &
-      any(str_detect(trial_id, "NCT")),
-    str_detect(linked_id, "NCT") ~ any(str_detect(trial_id, "-")) &
-      any(str_detect(trial_id, "DRKS")),
-    .default = triad
-  ),
-  many_to_many = ifelse(any(many_to_many == TRUE), TRUE, n() > 1 & triad == FALSE)) |> 
-  group_by(trial_id) |> 
-  mutate(triad = case_when(
-    any(triad == TRUE) ~ TRUE,
-    str_detect(trial_id, "-") ~ any(str_detect(linked_id, "DRKS")) &
-      any(str_detect(linked_id, "NCT")),
-    str_detect(trial_id, "DRKS") ~ any(str_detect(linked_id, "-")) &
-      any(str_detect(linked_id, "NCT")),
-    str_detect(trial_id, "NCT") ~ any(str_detect(linked_id, "-")) &
-      any(str_detect(linked_id, "DRKS")),
-    .default = triad
-  ),
-  many_to_many = ifelse(any(many_to_many == TRUE), TRUE, n() > 1 & triad == FALSE)) |> 
-  ungroup()
-
-assertthat::are_equal(crossreg_euctr_drks_ctgov |> 
-                        filter(is.na(bidirectional)) |> 
-                        nrow(), 0) 
-
-assertthat::are_equal(crossreg_euctr_drks_ctgov |>
-  get_dupes(trial_id) |> 
-  filter(triad == FALSE,
-         many_to_many == FALSE) |> 
-    nrow(), 0)
-
-assertthat::are_equal(crossreg_euctr_drks_ctgov |>
-                        get_dupes(linked_id) |> 
-                        filter(triad == FALSE,
-                               many_to_many == FALSE) |> 
-                        nrow(), 0)
-
-# 
-# dupes_trial <- crossreg_euctr_drks_ctgov |> 
-#   get_dupes(trial_id)
-
-crossreg_euctr_drks_ctgov |> 
-  write_excel_csv(here("data", "processed", "crossreg_euctr_drks_ctgov.csv"))

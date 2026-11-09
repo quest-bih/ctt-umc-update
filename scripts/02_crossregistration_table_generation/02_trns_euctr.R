@@ -4,8 +4,10 @@ library(progressr)
 library(furrr)
 library(here)
 
-euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
 source(here("scripts", "utils.R"))
+
+
+euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
 
 AACT_folder <- here("data", "raw", "AACT", "AACT_dataset_250513")
 
@@ -205,10 +207,9 @@ qa_multicountry_de_only <- euctr_trns_updated |>
     drks_all = deduplicate_collapsed(c(drks_clean, drks_clean_results)),
     euctr_all = deduplicate_collapsed(c(euctr_clean, euctr_clean_results))
   )
-
-qa_discrep_de <- qa_multicountry_de |> 
-  left_join(qa_multicountry_de_only, by = "eudract_number") |> 
-  filter(ctgov_protocol_all.x != ctgov_protocol_all.y) |> 
-  select(eudract_number, contains("ctgov_protocol_all")) |> 
-  left_join(euctr_inex, by = join_by("eudract_number" == "trial_id"))
-
+# 
+# qa_discrep_de <- qa_multicountry_de |> 
+#   left_join(qa_multicountry_de_only, by = "eudract_number") |> 
+#   filter(ctgov_protocol_all.x != ctgov_protocol_all.y) |> 
+#   select(eudract_number, contains("ctgov_protocol_all")) |> 
+#   left_join(euctr_inex, by = join_by("eudract_number" == "trial_id"))

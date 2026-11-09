@@ -19,7 +19,8 @@ ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv"))
 euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
 # euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 # clean_pub_search_results <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
-combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered.csv"))
+combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
+
 
 excluded_ct <- ctgov_export |> 
   filter(!trial_id %in% combined_data_filtered$trial_id)

@@ -13,7 +13,10 @@ qa_drks_compl <- drks_inex |>
 plan(multisession)
 handlers(global = TRUE)
 
-unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv"))
+unfiltered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_unfiltered.csv")) |> 
+  # expected 62 parsing errors because of missing completion_dates
+  mutate(hierarchical_completion_date = ymd(hierarchical_completion_date))
+
 filtered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_filtered.csv"))
 # euctr_processed <- readRDS(here("data", "raw", "euctr_processed.rds"))
 # clean_pub_search_results <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
@@ -55,11 +58,13 @@ inex_combined <- inex_combined |>
          has_interventional = is_interventional,
          has_withdrawn_status = is_withdrawn)
 
-
 inex_combined_plus_crossreg <- inex_combined |> 
   mutate(crossreg_id = trial_id,
          has_premature = NA,
          hierarchical_completion_date = NA_Date_,
+         actual_completion_date = NA_Date_,
+         filled_actual_completion_date = NA_Date_,
+         filled_euctr_completion_date = NA_Date_,
          last_updated_actual = NA_Date_,
          only_estimated = NA,
          is_last_updated = NA,
@@ -72,7 +77,10 @@ inex_combined_plus_crossreg <- inex_combined |>
          many_to_many = FALSE,
          trns_in_cluster = 1,
          mtm_validated = FALSE) |> 
-  rows_upsert(falling_clusters, by = "trial_id")
+  rows_upsert(unfiltered_crossreg_ids |> 
+                select(-recent_status, -registries,
+                       -has_de_premature,
+                       -has_cluster_de_protocol), by = "trial_id")
 
 inex_combined_plus_crossreg |> 
   write_csv(here("data", "processed", "inex_combined.csv"))

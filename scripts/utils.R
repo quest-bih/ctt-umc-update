@@ -21,18 +21,31 @@ get_registry_regex <- function(registry_names_vec) {
     as.list()
 }
 # regexes <- get_registry_regex(c("DRKS", "ClinicalTrials.gov", "EudraCT"))
+# str_vec <- "Düsseldorf;Köln;Magdeburg"
+# exclude <- "Düsseldorf;Magdeburg"
 
-# combine separator-listed vectors into a single collapsed, deduplicated string
-deduplicate_collapsed <- function(str_vec, collapse = ";") {
+vectorize_clean <- function(str_vec, sep = ";") {
   str_vec |>
-    strsplit(split = collapse) |> 
+    strsplit(split = sep) |> 
     unlist() |> 
     unique() |> 
     sort() |> 
     dplyr::na_if("") |>
     dplyr::na_if("-") |>
     dplyr::na_if("NA") |> 
-    stats::na.omit() |> 
+    stats::na.omit()
+}
+
+# combine separator-listed vectors into a single collapsed, deduplicated string
+deduplicate_collapsed <- function(str_vec, collapse = ";", exclude = NULL) {
+  
+  vectorized_input <- vectorize_clean(str_vec)
+  if (!is.null(exclude)) {
+    vectorized_exclusions <- vectorize_clean(exclude)
+    vectorized_input <- vectorized_input[!vectorized_input %in% vectorized_exclusions]
+  }
+  
+  vectorized_input |> 
     paste(collapse = collapse) |> 
     dplyr::na_if("")
 }
@@ -213,6 +226,84 @@ get_registry_url <- function(name_str) {
 get_cluster_num_reg <- function(cluster_str, reg_regex) {
   stringr::str_count(cluster_str, reg_regex)
 }
+
+
+get_hierarchical_completion_date <- function(crossreg_tib) {
+  
+  stopifnot("Input must be a data frame with complete metadata on crossregistrations" =
+              all(c("crossreg_id", "trial_id", "results_completion_date",
+                    "estimated_completion_date", "actual_completion_date",
+                    "last_updated",
+                    "registration_date",
+                    "completion_date",
+                    "completion_date_type")
+                  %in% names(crossreg_tib))) |> 
+    try()
+  
+  hierarchical_tib <- crossreg_tib |> 
+    dplyr::mutate(
+      filled_actual_completion_date = dplyr::case_when(
+        !is.na(actual_completion_date) ~ actual_completion_date,
+        .default = NA_Date_),
+      filled_euctr_completion_date = dplyr::if_else(has_euctr_results == TRUE, results_completion_date, NA_Date_)) |>
+    dplyr::group_by(crossreg_id) |> 
+    dplyr::arrange(crossreg_id, dplyr::desc(last_updated), dplyr::desc(registration_date)) |> 
+    fill(c(filled_actual_completion_date, filled_euctr_completion_date), .direction = "up") |> 
+    mutate(has_euctr_results = any(has_euctr_results, na.rm = TRUE),
+           has_interventional = any(is_interventional, na.rm = TRUE),
+           has_german_umc = any(is_german_umc, na.rm = TRUE),
+           registries = get_registry_names(crossreg_id),
+           has_cluster_de_protocol = any(has_trial_de_protocol, na.rm = TRUE),
+           hierarchical_completion_date = dplyr::case_when(
+             stringr::str_detect(crossreg_id, "-") &
+               any(has_euctr_results == TRUE, na.rm = TRUE) &
+               !is.na(dplyr::first(filled_euctr_completion_date)) ~
+               dplyr::first(filled_euctr_completion_date),
+             any(!is.na(filled_actual_completion_date), na.rm = TRUE) ~
+               dplyr::first(filled_actual_completion_date),
+             all(is.na(filled_actual_completion_date), na.rm = TRUE) ~
+               max(estimated_completion_date, na.rm = TRUE),
+             .default = NA_Date_
+           ),
+           last_updated_actual = dplyr::if_else(!is.na(actual_completion_date),
+                                                last_updated, NA_Date_),
+           only_estimated = all(is.na(results_completion_date), na.rm = TRUE) &
+             all(is.na(actual_completion_date), na.rm = TRUE),
+           is_last_updated = last_updated_actual ==
+             max(last_updated_actual, na.rm = TRUE),
+           n_last_updated = sum(is_last_updated, na.rm = TRUE),
+           is_latest_actual = actual_completion_date ==
+             max(actual_completion_date, na.rm = TRUE),
+           is_latest_estimated = estimated_completion_date ==
+             max(estimated_completion_date, na.rm = TRUE),
+           n_latest_estimated = sum(is_latest_estimated, na.rm = TRUE),
+           is_index_reg = dplyr::case_when(
+             !is.na(results_completion_date) ~ TRUE,
+             all(is.na(results_completion_date)) & 
+               n_last_updated == 1 &
+               is_last_updated & only_estimated == FALSE ~ TRUE,
+             all(is.na(results_completion_date)) & 
+               n_last_updated > 1 &
+               is_latest_actual & only_estimated == FALSE ~ TRUE,
+             only_estimated & is_latest_estimated & n_latest_estimated == 1 ~ TRUE,
+             only_estimated & is_last_updated & n_latest_estimated > 1 ~ TRUE,
+             .default = FALSE
+           ),
+           n_index_reg = sum(is_index_reg),
+           has_completion_2018_2021 = any(dplyr::between(hierarchical_completion_date,
+                                                         lubridate::as_date("2018-01-01"),
+                                                         lubridate::as_date("2021-12-31")),
+                                          na.rm = TRUE),
+           recent_status = dplyr::first(status),
+           has_withdrawn_status = any(stringr::str_detect(status, regex("withdrawn", ignore_case = TRUE))),
+           many_to_many = is_mtm(crossreg_id),
+           trns_in_cluster = stringr::str_count(crossreg_id, "_") + 1) |> 
+    ungroup()
+  
+  return(hierarchical_tib)
+  
+}
+
 
 
 update_bidirectionality <- function(crossreg_tib) {
@@ -481,33 +572,58 @@ recode_status <- function(status) {
     .default = NA
   )
 }
-
+# manual_tib <- manual_crossreg_info
+# tib <- inex_combined
 # correct crossregistration status from manual extractions
 update_crossreg_manual <- function(tib, manual_tib) {
-  manual_tib <-  manual_tib |> 
+  
+  new_links <-  manual_tib |> 
     filter(
-      # action != "none", 
-      str_detect(action, "link") # may revisit this later to add "add"
+      str_detect(action, "link")
     ) |> 
+    rowwise() |> 
     mutate(crossreg_id = if_else(!is.na(new_crossreg),
-                                 paste(trial_id, new_crossreg, sep = "_"),
-                                 trial_id))
-  manual_crossreg <- manual_tib |> 
+                                 paste(c(trial_id, new_crossreg) |> sort(),
+                                       collapse = "_"),
+                                 trial_id)) |> 
+    ungroup()
+  
+  missed_crossregs <- manual_tib |> 
+    filter(str_detect(action, "add")) |> 
+    select(trial_id, missed_crossreg = new_crossreg)
+  
+  manual_crossreg <- new_links |> 
     select(trial_id, new_crossreg, crossreg_id) |> 
     pivot_longer(-crossreg_id, values_to = "trial_id") |> 
     select(-name) |> 
     filter(!is.na(trial_id))
   
   manual_unlinked_crossreg <- manual_tib |> 
-    filter(action == "unlink") |> 
-    mutate(trial_id = ctregistries::which_trn(comments)) |> 
+    filter(action == "unlink")
+  partially_unlinked <- manual_unlinked_crossreg  |> 
+    mutate(trial_id = purrr::map_chr(comments, ctregistries::which_trn)) |> 
     pull(trial_id)
+  manual_removal_crossreg <- manual_unlinked_crossreg |> 
+    filter(is_index_reg == FALSE) |> 
+    pull(trial_id)
+  
+  manual_unlinked <- c(partially_unlinked,
+                                manual_removal_crossreg) |> 
+    unique()
+
   
   results_tib <- tib |> 
     # remove unlinked registrations
-    filter(!trial_id %in% manual_unlinked_crossreg) |> 
+    # filter(!trial_id %in% manual_unlinked_crossreg) |>
+    # flag unlinked registrations |> 
+    mutate(is_unlinked = if_else(trial_id %in% manual_unlinked,
+                                 TRUE,
+                                 FALSE)
+           ) |> 
     # update crossreg_id of newly linked registrations
-    rows_upsert(manual_crossreg, by = "trial_id") 
+    rows_upsert(manual_crossreg, by = "trial_id") |> 
+    mutate(missed_crossreg = NA_character_) |> 
+    rows_upsert(missed_crossregs, by = "trial_id")
   
   if (results_tib |> select(contains("index")) |> nrow() > 1) {
     index_info <- manual_tib |>
@@ -525,10 +641,10 @@ update_crossreg_manual <- function(tib, manual_tib) {
      ungroup()
    
    results_tib <- results_tib |>
-     rows_upsert(index_reg, by = c("trial_id", "crossreg_id"))
+     rows_upsert(index_reg, by = c("trial_id", "crossreg_id")) |> 
+     mutate(is_crossreg = str_detect(crossreg_id, "_"))
    
   }
     
   return(results_tib)
 }
-

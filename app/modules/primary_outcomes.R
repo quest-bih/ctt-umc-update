@@ -21,11 +21,8 @@ primaryServer <- function(id, results, route, role,
                           title) {
   moduleServer(id, function(input, output, session) {
     
-    print(class(results))
-    print(str(results))
-    
-
-    
+    # print(class(results))
+    # print(str(results))
     # 
     # if (sbs() == FALSE) {
     #   plot_data <- plot_data |>
@@ -146,7 +143,7 @@ primaryServer <- function(id, results, route, role,
 #----------------------------------------------------------------------
 
 get_prop_measure <- function(tib, route = c("has_sumres", "has_sumres_all", "has_pub", "has_any"),
-                             role = c("umc_sponsor", "umc"),
+                             role = c("umc_sponsor", "umc", "umc_pi_resp_party_no_sponsor"),
                              global = FALSE,
                              status_filter,
                              timing = c("1", "2", "5", "6"),
@@ -225,12 +222,12 @@ get_prop_measure <- function(tib, route = c("has_sumres", "has_sumres_all", "has
   
   if (length(status_filter) < 5) {
     tib <- tib |> 
-      filter(status %in% status_filter, .preserve = TRUE)
+      filter(cluster_status %in% status_filter, .preserve = TRUE)
   }
-  #### TODO: check if this actually is FALSE
+
   if (estimated_cd != TRUE) {
     tib <- tib |> 
-      filter(completion_date_type == TRUE | is.na(completion_date_type),
+      filter(has_completion_date_estimated == FALSE,
              .preserve = TRUE)
   }
   

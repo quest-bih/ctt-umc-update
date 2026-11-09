@@ -52,13 +52,11 @@ euctr_processed <- euctr_tib |>
 euctr_tib |>
   # select(eudract_number, contains("sponsor")) |> 
   filter(eudract_number == "2006-005253-30")
-euctr_results |> 
-  filter(eudract_number == "2006-005253-30")
 #one_off <- euctr_results |> 
 #  filter(!eudract_number %in% euctr_tib$eudract_number) ?
 
 euctr_processed |> 
-  saveRDS(here("data", "raw", "euctr_processed.rds"))
+  saveRDS(here("data", "processed", "euctr_processed.rds"))
 
 euctr_inex <- euctr_processed |> 
   mutate(is_interventional = TRUE,

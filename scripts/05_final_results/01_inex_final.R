@@ -2,6 +2,7 @@ library(tidyverse)
 library(here)
 library(flowchart)
 library(ggVennDiagram)
+library(readxl)
 
 source(here("scripts", "utils.R"))
 
@@ -12,27 +13,45 @@ results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.cs
 manual_crossreg_info <- read_xlsx(here("data", "manual", "iv3_crossreg.xlsx"))
 
 inex_combined <- read_csv(here("data", "processed", "inex_combined.csv")) |> 
-  mutate(resolves = TRUE,
-         is_withdrawn_euctr = trial_id %in% euctr_withdrawn_exclusions$trial_id) |> 
-  # rows_upsert(non_resolving_trns, by = "trial_id") |> 
-  mutate(in_results_clean = trial_id %in% results_clean$trial_id) |> 
+  mutate(is_withdrawn_euctr = trial_id %in% euctr_withdrawn_exclusions$trial_id,
+         in_results_clean = trial_id %in% results_clean$trial_id) |> 
   update_crossreg_manual(manual_crossreg_info)
+
+qa_inex_delinked <- inex_combined |> 
+  filter(trial_id %in% c("NCT01406678", "DRKS00009418",
+                         "DRKS00020364",
+                         "DRKS00020240",
+                         "DRKS00014040")) |> 
+  select(trial_id, crossreg_id, everything())
 
 sample_data_filtered <- inex_combined |> 
   filter(has_german_umc, has_completion_2018_2021, has_interventional,
          !has_withdrawn_status,
-         in_results_clean) |> 
-  rows_upsert(results_clean |> select(trial_id, crossreg_id),
-              by = "trial_id") |> 
+         in_results_clean,
+         !is_unlinked) |> 
+  # rows_upsert(results_corrected |> select(trial_id, crossreg_id),
+  #             by = "trial_id") |> 
   mutate(is_crossreg = str_detect(crossreg_id, "_"),
          is_index_reg = case_when(
            is_crossreg == FALSE ~ TRUE,
            ### newly linked cases!!!!
-           .default = is_index_reg)) |> 
+           .default = is_index_reg)) |>
+  group_by(crossreg_id) |>
+  mutate(n_index_reg = sum(is_index_reg) ) |> 
+  ungroup() |> 
   select(trial_id, crossreg_id, everything()) 
-  
-  sample_data_filtered |> 
+
+sample_data_filtered |> 
     write_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
+sample_data_filtered |> 
+  filter(!trial_id %in% incl_trials$trial_id) |> 
+  pull(trial_id)
+n_trials_plus_unlinked <- inex_combined |> 
+  filter(has_german_umc, has_completion_2018_2021, has_interventional,
+         !has_withdrawn_status,
+         in_results_clean) |> 
+  distinct(crossreg_id) |> 
+  nrow()
 
 n_crossreg_trials <- sample_data_filtered |> 
   distinct(crossreg_id, .keep_all = TRUE) |> 
@@ -62,9 +81,17 @@ fc_inex <- inex_combined |>
   fc_filter(in_results_clean,
             text_pattern = "{label}\n N = {n} registrations ({perc}%)",
             label = paste0("Resolved online\n(N = ",
-                           n_crossreg_trials$total,
+                           n_trials_plus_unlinked,
                            " trials)"
                            ),
+            show_exc = TRUE, offset_exc = 0.2,
+            round_digits = 1, text_padding = 0.3, text_padding_exc = 0.3) |>
+  fc_filter(!is_unlinked,
+            text_pattern = "{label}\n N = {n} registrations ({perc}%)",
+            label = paste0("Still included after manual review of some cross-registrations\n(N = ",
+                           n_crossreg_trials$total,
+                           " trials)"
+            ),
             show_exc = TRUE, offset_exc = 0.2,
             round_digits = 1, text_padding = 0.3, text_padding_exc = 0.3) |>
   fc_split(is_crossreg,
@@ -77,6 +104,16 @@ fc_inex <- inex_combined |>
                             " trials)")),
            text_padding = 0.5) |> # add n trials for crossreg
   fc_draw()
+
+### why n registrations not n trials for non-crossreg?
+qa_noncr <- inex_combined |> 
+  filter(has_german_umc, has_completion_2018_2021, has_interventional,
+         !has_withdrawn_status,
+         in_results_clean,
+         !is_unlinked,
+         !is_crossreg
+         ) |> 
+  janitor::get_dupes(crossreg_id)
 
 # n = 1794 trials
 # 
