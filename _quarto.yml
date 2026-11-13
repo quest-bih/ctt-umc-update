@@ -1,0 +1,35 @@
+project:
+  render: 
+    - "*.qmd"
+    - "!dev/"
+    - "!app/"
+  type: manuscript
+
+manuscript:
+  article: index.qmd
+prefer-html: true
+
+format:
+  html:
+    comments:
+      hypothesis: true
+    number-sections: true
+    # embed-resources: true
+  docx: 
+    number-sections: true
+  jats: default
+
+  # (other formats)
+  pdf:
+    number-sections: true
+
+# execute:
+#   freeze: true
+filters:
+  - abstract-section
+  # - flextable-qmd
+  # - at: post-render
+  #   path: _extensions/flextable-qmd/unwrap-float.lua
+
+editor: visual
+

@@ -29,3 +29,8 @@ data/.DS_Store
 data/raw/.DS_Store
 data/processed/.DS_Store
 data/umc_search_terms/.DS_Store
+
+# quarto ephemerals
+/.quarto/
+**/*.quarto_ipynb
+/_manuscript

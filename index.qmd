@@ -1,0 +1,222 @@
+---
+title: "Impact of clinical trials conducted at German University medical centers between 2009 and 2017 on the body of evidence and results in Cochrane Reviews: a bibliometric meta-research study"
+authors:
+  - name: Merle-Marie Pittelkow
+    orcid: 0000-0002-7487-7898
+    affiliations:
+      - name: Charité – University Medical Center Berlin, corporate member of Freie Universität Berlin and Humboldt-Universität zu Berlin, Institute of Clinical Nursing Science
+        city: Berlin
+        country: Germany
+      - id: quest
+        name: Berlin Institute of Health at Charité – Universitätsmedizin Berlin, QUEST Center for Responsible Research
+        city: Berlin
+        country: Germany
+    roles: [writing, conceptualization, investigation, methodology, visualization]
+    attributes:
+      equal-contributor: true
+  - name: Vladislav Nachev
+    orcid: 0000-0003-0521-6153
+    affiliations:
+      - ref: quest
+    roles: [editing, conceptualization, analysis, data curation, investigation, software, validation, visualization]
+    attributes:
+      equal-contributor: true
+  - name: Julian Hirt
+    orcid: 0000-0001-6589-3936
+    affiliations:
+      - id: stgallen
+        name: Department of Health, Eastern Switzerland University of Applied Sciences
+        city: St Gallen
+        country: Switzerland
+      - name: Research Center for Clinical Neuroimmunology and Neuroscience Basel (RC2NB), University Hospital Basel and University of Basel
+        city: Basel
+        country: Switzerland
+      - name: Institute of Health, Midwifery and Nursing Science, Medical Faculty, Martin Luther University Halle-Wittenberg
+        city: Halle (Saale)
+        country: Germany
+    roles: [editing, conceptualization, methodology]
+  - name: Lars G. Hemkens
+    orcid: 0000-0002-3444-1432
+    affiliations:
+      - ref: stgallen
+      - name: Meta-Research Innovation Center at Stanford, Stanford University
+        city: Stanford
+        state: CA
+        country: USA
+      - name: Pragmatic Evidence Lab, Department of Clinical Research, University of Bern
+        city: Bern
+        country: Switzerland
+    roles: [editing, conceptualization, methodology]
+  - name: Daniel Strech
+    orcid: 0000-0002-9153-079X
+    affiliations:
+      - ref: quest
+    roles: [editing, conceptualization, methodology]
+  - name: Susanne Gabriele Schorr
+    orcid: 0000-0003-2897-3608
+    affiliations:
+      - ref: quest
+    roles: [editing, conceptualization, investigation, methodology, project administration, supervision, validation]
+    corresponding: true
+bibliography: references.bib
+keywords: 
+  - citation analysis
+  - clinical impact
+  - clinical trials
+funding: The authors have not declared a specific grant for this research from any funding agency in the public, commercial or not-for-profit sectors.
+
+license: "CC BY"
+---
+
+```{r}
+#| include: false
+#| echo: false
+
+library(tidyverse)
+library(here)
+library(readxl)
+library(flowchart)
+library(pakret)
+library(flextable)
+library(glue)
+library(webshot)
+library(skimr)
+```
+
+## Key messages {.unnumbered}
+
+### **What is already known on this topic** {.unnumbered}
+
+Clinical trial impact can be assessed through citation-based approaches, including citations in systematic reviews and clinical practice guidelines, but citation alone may overestimate whether trial results actually inform evidence syntheses.
+
+### **What this study adds** {.unnumbered}
+
+Among 1,920 clinical trial result publications from trials conducted at German university medical centers and completed between 2009 and 2017, 385 (20.1%) were cited by at least one Cochrane Review and only 222 (11.6%) were included in the body of evidence. Trial uptake was more common for randomized, blinded, and multinational trials, and manual exploration of exploratory, citation-context showed that even included trials varied widely in their contribution to review results.
+
+### **How this study might affect research, practice or policy** {.unnumbered}
+
+Evaluations of clinical trial impact should move beyond simple citation counts and distinguish whether trials are included in evidence syntheses and how they contribute to review findings.
+
+## Background
+
+Clinical trials aim to compare the benefits and harms of decisions (e.g., treatment choices) to generate knowledge that advances research or impacts clinical practice. Given the resource-intensive nature of such trials, it is essential to evaluate their impact on clinical practice to ensure research funding is used effectively and efficiently [@grant_evaluating_2000; @kiparoglou_large_2021].
+
+One approach to evaluating this impact is to track whether clinical trial result publications (CTRPs) are referenced in clinical practice guidelines, as guidelines directly inform patient care decisions and clinical practice [@eriksson_new_2020; @kryl_tracking_2012; @sarli_beyond_2010; @turner_impact_2015]. Previous studies have explored this by examining citation counts and citation types to map the use of CTRPs in clinical practice guidelines. For example, @traylor_does_2023 performed backward citation analyses starting from German clinical practice guidelines and showed that guidelines predominantly cited original research articles, often eight or more years after publication. Similarly, @blumle_investigator_2021 conducted forward citation analyses to explore how frequently randomized controlled trials were cited in guidelines either via systematic reviews or directly. They found that only a minority of trials (26%) ultimately reached clinical guidelines, mostly through both systematic reviews and CTRPs (65% of cited trials). Smaller trials and commercial international trials were less likely to be cited. Together, these findings suggest that citation-based analyses offer valuable insight into the downstream influence of clinical trials and factors affecting the likelihood that trials are cited.
+
+Since CTRPs are often included in clinical practice guidelines via systematic reviews [@alderson_use_2011; @blumle_investigator_2021; @traylor_does_2023], examining citation practices within these reviews offers further insight into trial impact. For instance, a citation in the introduction of a systematic review is less informative about clinical impact than the inclusion in quantitative or qualitative synthesis. Similarly, systematic reviews may cite CTRPs excluded in the literature screening process. Thus, citation of a CTRP does not necessarily imply an impact on the findings or interpretation of the systematic review. To investigate this, @blumle_investigator_2021 assessed the citations of trial publication in over 2000 systematic reviews and manually categorized citations as included, mentioned, or excluded. In their sample, 69% of citations corresponded to included studies, whereas 6% referred to excluded studies and 25% were used in other contexts. These findings indicate that merely tracking trial impact through citations in systematic reviews would have resulted in misclassifying and overestimating impact in 31% of cases, underscoring the importance of distinguishing citation types when interpreting trial impact. However, the manual approach employed by @blumle_investigator_2021 was labor-intensive and not scalable.
+
+Cochrane Reviews are widely regarded as the gold standard methodology for systematic reviews of (most commonly) randomized trials and may be used to inform clinical practice guidelines [@korfitsen_usefulness_2022; @mckenzie_chapter_2024]. For example, @traylor_does_2023 showed that although systematic reviews were cited less frequently than original research articles in German clinical practice guidelines (2,523 vs. 27,481 citations), the *Cochrane Database of Systematic Reviews* alone accounted for 811 citations, making it the second most-cited source journal. Notably, Cochrane Reviews follow a standardized embedded citation structure that enables the distinction between included studies, excluded studies, and other referenced literature. This structure makes Cochrane Reviews particularly well-suited for developing automated approaches that can differentiate citation types at scale.
+
+### Objective
+
+We aimed to systematically identify and analyze the extent to which a sample of clinical trial results publications (CTRPs) from trials conducted at German university medical centers (UMCs) that were completed between 2009 and 2017 are cited in Cochrane Reviews. To this end, we developed code to automatically assess if a specific CTRP is cited by a Cochrane Review and if it was included in its body of evidence. We also aimed to compare identification methods across different bibliometric databases to explore discrepancies and ensure comprehensive coverage. In addition, for a purposively selected subsample of CTRPs included in the body of evidence, we manually examined the context of citations and their impact on the results of the Cochrane Reviews in more depth.
+
+## Methods
+
+We published a methodological outline of this project prior to data analysis:\
+<https://doi.org/10.17605/OSF.IO/4R35F>.
+
+Code is shared on Codeberg: <https://codeberg.org/quest-bih/discovRic> and data on Zenodo: <https://zenodo.org/records/20847713>.
+
+Since we only collected publicly available data and no individual health-related data, no ethical approval was required. Data processing and analysis were performed in `r pkrt("R")`. Reporting was adapted from the preliminary guideline for reporting bibliometric reviews of the biomedical literature (BIBLIO; @montazeri_preliminary_2023) and the Preferred Reporting Items for Systematic reviews and Meta-Analyses (PRISMA) statement [@page_prisma_2021].
+
+### Sample of clinical trial results publications
+
+#### Information sources
+
+We used a previously curated dataset of results publications linked to registered clinical trials conducted at German UMCs. The dataset is publicly available at: <https://doi.org/10.17605/OSF.IO/26DGX>. Trial identification and publication linking are described in detail elsewhere [@franzen2023; @riedel2022; @wieschowski2019]. In short, the dataset contained CTRPs linked (and manually validated) to a sample of trials registered in Deutsches Register Klinischer Studien (DRKS) and ClinicalTrials.gov. Trials were conducted at German UMCs and reported as completed between January 1, 2009, and December 31, 2017. Publication searches were conducted before 2021. We intentionally took this sample since it allowed sufficient time for CTRPs to be potentially included in systematic reviews, increasing the likelihood that their impact on evidence syntheses can be meaningfully assessed.
+
+#### Eligibility criteria
+
+For this analysis, we included only full journal publications that report clinical trial results and excluded publication types like abstract-only-publications, posters, preprints, dissertations, theses, final study reports, summary results reported in trial registries, and those for which we could not verify the link. A CTRP could be linked to more than one registration entry if trial results from multiple registrations were combined in a publication or if the same trial was registered in two different registries (cross-registration). We manually validated CTRPs linked to more than one registration entry and excluded those we could not verify as true matches. We excluded results publications with neither a PubMed Identifier (PMID) nor a Digital Objective Identifier (DOI) since the citation search relied on these identifiers.
+
+#### Data collection process
+
+To present the characteristics of our sample of CTRPs, we downloaded the raw data from the corresponding trial registrations in Clinicaltrials.gov and DRKS (both retrieved on May 13^th^, 2025). In cases of two registrations referring to one CTRP, we reported data from the most recently updated record if information for this variable was available in both records.
+
+### Sample of Cochrane reviews
+
+To identify publications citing CTRPs from our sample, we used forward citation searching in Open Alex (via `r pkrt("openalexR")`) and PubMed (via `r pkrt("rentrez")`), on September 10^th^ and 9^th^ 2025, respectively. These databases were chosen since they are openly accessible and enable a reproducible workflow [@aria_openalexr_2024]. For both databases, we applied custom search functions in `r pkrt("R")` to systematically retrieve citation links. We conducted two separate searches in these databases for all publications citing the respective CTRPs and compared the results. From this sample, we identified Cochrane publications based on their DOIs, which follow a standardized format (prefix "10.1002/14651858.cd") since all Cochrane publications are published by the same publisher (as documented in @maclehose_digital_2024). This step excluded for example Cochrane publications conducting reviews on methods (identified by the pattern "10.1002/14651858.mr00XXXX"). We included only those Cochrane publications included in PubMed as we used PubMed for assigning reference categories (see below).
+
+### Reference categories
+
+In Cochrane Reviews, all references *considered* during the systematic review process are listed in the reference section. This includes not only references to studies included in the body of evidence, but also, for example, references to excluded studies. PubMed displays reference categories. We developed code to assign these reference categories for all CTRPs being cited in Cochrane Reviews and grouped them as (a) included (included in the review), (b) excluded (excluded studies), (c) other (ongoing studies, awaiting assessment, additional references and other published versions), (d) unstructured references (if reference categories were not available on PubMed) and (e) not found (if the cited results publication was not found in the reference categories). For the analysis, we focused on references in category (a) "included in this review" since these references form the body of evidence and should impact the results of the Cochrane Review. We manually reviewed Cochrane Reviews with references in category (d) "unstructured references" or category (e) "not found", and references which had been included in a Cochrane Review, but not anymore in an updated version. The latter to identify potentially retracted or withdrawn CTRPs.
+
+### Data synthesis
+
+We analyzed the number of CTRPs (1) included (category a) in the evidence body in at least one Cochrane Review with a unique topic, (2) cited in a different section of a Cochrane Review (category c: "other"), (3) excluded (category b) and (4) not being cited in any Cochrane Review, per all CTRPs.
+
+#### Exploring impact through citation context
+
+Of all CTRPs included in the body of evidence of a Cochrane Review, we purposively selected a subset of ten to illustrate the heterogeneity of impact in Cochrane Reviews (i.e., based on the experience we gained during the review process, we selected reviews that we assume to reflect the spectrum of contexts of use of the trials within a Cochrane Review). We aimed to include a variety of different cases, ranging from low risk of bias to high risk of bias studies and from no inclusion in any quantitative synthesis to inclusion in all quantitative main analyses. Additionally, we selected examples of the same CTRP being cited in two different Cochrane Reviews and the same Cochrane Review citing two different CTRPs to illustrate how impact differs within and between publications. The number of cases was determined by feasibility. We examined this sub-sample on two levels: the Cochrane Review level and the meta-analysis level.
+
+At the **Cochrane Review level**, we examined how CTRPs impacted the *overall* results of the Cochrane Review. Specifically, we focused on (i) the number of participants included in the CTRP relative to the overall number of participants included in the Cochrane Review, (ii) the outcomes category (primary/secondary) to which the CTRP contributed, (iii) the number of meta-analyses including the CTRP relative to the total number of meta-analyses within the review, and (iv) the quality or risk of bias of the CTRP (if an overall risk of bias assessment was available). For iii), we counted all meta-analyses reporting an effect estimate, including single-study analyses. Analyses without a meta-analytic outcome (e.g., "Totals not selected") were not counted.
+
+At the **meta-analysis level**, we assessed the extent to which CTRPs contributed to quantitative syntheses. Specifically, we focused on the meta-analysis/es on the primary outcome(s) of the Cochrane Review by examining (i) the individual weight assigned to the CTRP in the meta-analysis about the primary outcome(s), and (ii) the quality or risk of bias of the CTRP (if an outcome-specific risk of bias assessment is available).
+
+## Results
+
+
+## Discussion
+
+In our analysis, approximately one in five CTRPs were cited by at least one Cochrane Review and only around one in ten was included in the body of evidence. Among those included in the body of evidence, contributions may vary considerably, as suggested by our exploratory analysis. CTRPs might contribute substantially to the primary outcome meta-analyses or might – even though included in the body of evidence - play no role in any quantitative or qualitative synthesis. These findings highlight that citations might overestimate the limited contributions to evidence syntheses. Contextualizing citations beyond section placement or reference categories is important, and a more nuanced approach to assessing impact is needed.
+
+### Interpretation of findings
+
+#### Trial impact through citation count
+
+A large proportion of CTRPs in our cohort did not appear in any Cochrane Review. The uptake reported here is lower than citation rates reported by @blumle_investigator_2021, who found that 45% of trials in their sample were included in the body of evidence of systematic reviews. Two aspects may contribute to this difference. First, Blümle and colleagues defined systematic reviews broadly, whereas we focused specifically on Cochrane Reviews, which represent a narrower subset of evidence syntheses but are often considered a central route through which trial results can inform clinical decision-making and guideline development [@bunn_impact_2015; @korfitsen_usefulness_2022]. Second, Blümle and colleagues included only multi-site RCTs, while we included also single site and non-RCT interventional trial. This interpretation is consistent with the descriptive differences we observed in our sample. With two exceptions, non-randomized CTRPs were never included in Cochrane Reviews, and included CTRPs were more frequently blinded and multinational. This aligns with the fact that Cochrane Reviews primarily synthesize randomized evidence.\
+Importantly, we caution against concluding that this means that non-cited CTRPs had no impact. First, Cochrane Reviews, while an important pathway [@bunn_impact_2015], represent only one pathway through which trial results may influence clinical practice and research. Trials may contribute to evidence-based decision-making via other systematic reviews published in journals or conducted as part of the guideline development or clinical decision process or by informing subsequent primary studies that are later incorporated into evidence syntheses [@bunn_impact_2015]. Second, there are plausible reasons why CTRPs were not cited in Cochrane Reviews. Most fundamentally, some CTRPs may not have been included because no relevant Cochrane Review addressed the clinical question, or because no update was conducted after the CTRP became available. Given the comparatively long follow-up period in our cohort, this may point less to a timing issue than to an issue with the availability or update status of a Cochrane Review. It also needs to be considered that CTRPs may be particularly valuable and relevant when they provide novel evidence in areas for which no Cochrane Review yet exists. At the same time, the fact that only one in five CTRPs were incorporated into a Cochrane synthesis does raise concerns from a knowledge-translation perspective. Cochrane Reviews are often considered a gold standard resource for consolidating evidence on clinical questions and frequently stimulate further research or inform national and international practice guidelines [@bunn_impact_2015; @korfitsen_usefulness_2022]. If a large proportion of trial results are not reflected in such syntheses, this may represent missed opportunities to integrate trial evidence into influential evidence summaries. This indicates a lack of alignment of primary research with healthcare questions raised in Cochrane Review as pointed out by [@starck_amount_2026], who analyzed amount and certainty of evidence over time and reported nearly unchanged scarcity of evidence for most PICO questions. However, our design does not allow us to determine whether non-cited CTRPs were irrelevant to existing reviews because of the topic or design, unavailable during review searches (i.e. there was no Cochrane Review update after CTRP publication), or primarily disseminated through other pathways.
+
+#### Citation context and heterogeneity of trial impact
+
+Our findings further support the notion that citation is not a binary indicator of impact [@blumle_investigator_2021; @bunn_impact_2015], and align with other work that has emphasized the need to contextualize citations to illustrate how individual trials contribute to evidence syntheses [@avenell_investigation_2019; @oconnell_trials_2023]. As highlighted by @blumle_investigator_2021, a reference mentioned in the background of a review is much less influential on review results than a reference contributing to the quantitative or qualitative evidence synthesis. In line with this, we observed that a substantial proportion of cited CTRPs were labelled as excluded or cited in another section. While documentation of excluded publications (with reasons for exclusion) is widely recommended to enhance transparency and reproducibility of systematic reviews [@page_prisma_2021; @shea_amstar_2017], the practice of citing excluded publications, to our knowledge, has historically been a particular feature of Cochrane Review. However, recent Cochrane guidance emphasizes that the excluded-studies list should be kept as brief as possible and should not enumerate all screened records but rather focus on studies that readers might reasonably expect to be included [@higgins_chapter_2024]. However, this has not yet been completely implemented.
+
+Moreover, our exploratory case analysis suggests that even among CTRPs included in the body of evidence, the degree of contribution can vary, for example, depending on whether a CTRP informs primary versus secondary outcomes, whether it is included in one versus several meta-analyses, and its relative weight in pooled estimates. While this exploratory component was limited in scope and not intended to be comprehensive, it illustrates that citation counts alone are unlikely to provide a sufficiently nuanced picture of trial impact on systematic reviews. A similar caution has been raised in the context of guidelines. For example, an evaluation of Cochrane impact in guidelines noted that the mere citation of a Cochrane Review in a guideline does not prove its influence on the recommendation, and some reviews may influence decisions even without being explicitly cited [@bunn_impact_2015]. The inclusion of a CTRP in the body of evidence does not automatically equate that it impacts the results of the Cochrane Review.
+
+### Methodological considerations in citation analysis
+
+Our study also highlights methodological challenges relevant for bibliometric analyses of trial uptake in Cochrane Reviews. We used a dual-database strategy querying OpenAlex for publications citing CTRPs via DOIs and PMIDs, and another querying PubMed via PMIDs. We identified a subset of Cochrane Reviews that were retrieved via OpenAlex citation links but not via PubMed-based forward citation tracking, despite being indexed in PubMed. These findings may reflect differences in citation indexing practices, limitations of PMID-based matching, incomplete linkage of citation relationships, or database-specific handling of review versions and metadata (e.g., DOI variants across updates). Moreover, we encountered discrepancies that required manual validation, illustrating that citation-links and metadata are not consistently represented across sources (for a related comparison of OpenAlex to Scopus and Web of Science see @culbert_reference_2025). Accordingly, triangulating across databases and incorporating targeted manual checks remains important when assessing trial impact in Cochrane Reviews, especially in the context of database updates, evolving reference practices, and review versioning. One implication is that setting a standard for greater interoperability for reference types in systematic reviews could substantially improve the reproducibility and scalability of this type of work by enabling more consistent identification of those included in the body of evidence.
+
+### Strengths and limitations
+
+This study has several strengths. First, our dataset of CTRPs was comprehensive and systematically assembled and enabled a prospective mapping from trial registration to CTRPs and forward citation into Cochrane Reviews. Second, we applied a dual-database approach and conducted extensive manual validation of ambiguous citations which increased the completeness and validity of our classification. Third, our analysis went beyond counting citations by differentiating citation types using Cochrane reference categories and even more by conducting an exploratory assessment of citation context. A naïve citation-based approach that treats all citations equivalently would not capture these distinctions, particularly given the frequent presence of excluded study-citations in Cochrane Reviews.
+
+Several limitations should be considered. First, by design, our scope was restricted to Cochrane Reviews and does not capture uptake of CTRPs in non-Cochrane systematic reviews, or clinical practice guidelines. Therefore, our findings should be interpreted as describing impact within one specific evidence-synthesis pathway rather than overall research impact. Second, our in-depth manual exploration of citation context was limited to a small purposively selected subsample. This exploratory component illustrates heterogeneity but does not allow conclusions about how frequently different types of contribution occur across all included CTRPs. A systematic evaluation across a larger number of Cochrane Reviews would be needed to quantify patterns of contribution and to develop more robust indicators of citation-based impact.
+
+### Conclusion
+
+Focusing on the impact of CTRPs via citation in Cochrane Reviews, we found that only one in five CTRPs from trials associated with German UMCs completed between 2009 and 2017 were cited and only one in ten included in the body of evidence of at least one Cochrane Review.
+
+At the same time, our findings illustrate the added value of moving beyond citation count alone when assessing trial uptake. Using Cochrane’s structured reference categories and complementing this with an exploratory assessment of citation context, we indicate a need for more nuanced assessment of the contribution of clinical trials – given that they were cited. This could lead to a more informative picture of citation-based impact.
+
+## Conflict of interest statement {.unnumbered}
+
+None declared.
+
+## Patient and public engagement {.unnumbered}
+
+Patients and/or the public were not involved in the design, conduct, reporting, or dissemination plans of this research.
+
+## Data and code availability {.unnumbered}
+
+We published a methodological outline of this project prior to data analysis:\
+<https://doi.org/10.17605/OSF.IO/4R35F>.
+
+Code is shared on Codeberg: <https://codeberg.org/quest-bih/discovRic> and data on Zenodo: <https://zenodo.org/records/20847713>.
+
+## CRediT statement {.unnumbered}
+
+Conceptualization: all authors. Methodology: all authors. Writing — original draft: MMP. Writing — review & editing: VN, JH, LH, DS, SS. Investigation: . MMP, VN, SS. Data curation: VN. Formal analysis: VN. Project administration: SS. Software: VN. Supervision: SS. Validation: VN, SS. Visualization: MMP, VN.
+
+## Abstract
+
+**Background:** Placeholder
+
+**Methods:** Placeholder
+
+**Results:** Placeholder
+
+**Discussion:** Placeholder
+
+## References
