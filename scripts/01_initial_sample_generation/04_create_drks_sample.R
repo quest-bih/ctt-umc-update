@@ -153,6 +153,8 @@ validation_umcs_drks_deduplicated <- validation_umcs_drks |>
 validation_umcs_drks_deduplicated |>
   write_excel_csv(here("data", "processed", "validation_umcs_drks.csv"))
 
+validation_umcs_ctgov_deduplicated <- read_csv(here("data", "processed", "validation_umcs_ctgov.csv"))
+
 combined_validations <- validation_umcs_ctgov_deduplicated |> 
   bind_rows(validation_umcs_drks_deduplicated) |> 
   arrange(umc, desc(n))
@@ -362,11 +364,13 @@ drks_recruitment_clean <- drks_recruitment |>
     is_multinational = str_detect(all_countries, ";"),
     is_multicentric = centricType == "MULTICENTRIC",
     start_date = case_when(
-      !is.na(actualStartDate) ~ actualStartDate,
-      .default = scheduledStartDate
-    )) |> 
+      !is.na(actualStartDate) ~ ymd(actualStartDate),
+      .default = ymd(scheduledStartDate)
+    ),
+    start_date_type = if_else(!is.na(actualStartDate), "ACTUAL", "ESTIMATED")) |> 
   select(trial_id = drksId, contains("actual"),
          start_date,
+         start_date_type,
          is_multinational, is_multicentric,
          actual_enrolment = totalParticipants,
          planned_enrolment = plannedParticipants)
@@ -377,8 +381,7 @@ drks_export <- drks_export |>
   left_join(drks_recruitment_clean, by = "trial_id") |>
   left_join(drks_study_characteristic, by = "trial_id") |>
   left_join(drks_results_reporting, by = "trial_id") |> 
-  mutate(across(contains("Date"), ymd),
-         primary_sponsor = if_else(sponsored == FALSE,
+  mutate(primary_sponsor = if_else(sponsored == FALSE,
                                    "Commercial", "Non-Commercial"),
          is_multinational = as.logical(is_multinational),
          is_randomized = as.logical(is_randomized),
@@ -405,5 +408,3 @@ drks_recruitment |>
   # filter(is_interventional, is_german_umc) |> 
   distinct(drksId, .keep_all = TRUE) |>
   count(is.na(actualCompletionDate), is.na(scheduledCompletionDate))
-
-drks_tib |> select(contains("class")) |> names()

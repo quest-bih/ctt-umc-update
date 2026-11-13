@@ -407,81 +407,11 @@ qa_na_excluded <- qa_excluded |>
   filter(is.na(umc),
          str_detect(raw_affil, umc_search_terms))
 
-setdiff(CTgov_sample_save$nct_id, ctgov_inex |> 
+setdiff(ctgov_export$trial_id, ctgov_inex |> 
           filter(is_interventional, is_completed_2018_2021, is_german_umc) |> 
           pull(trial_id))
 
 setdiff(ctgov_inex |> 
           filter(is_interventional, is_completed_2018_2021, is_german_umc) |> 
           pull(trial_id),
-        CTgov_sample_save$nct_id)
-
-######### In previous code now commented out (see below) only the first PI was taken
-# from each study, regardless if others may have been UMC-related or not?
-
-# get_city_per_NCT <- function(cities_nct_list, unique_ncts)
-# {
-#   cities_col <- vector("list", length(unique_ncts))
-#   names(cities_col) <- unique_ncts
-#   for (city in names(cities_nct_list)) {
-#     cities_col[cities_nct_list[[city]]] <-
-#       paste(cities_col[cities_nct_list[[city]]], city, sep = " ")
-#   }
-#   cities_col <- substring(cities_col, first = 6)
-#   names(cities_col) <- unique_ncts
-#   return(cities_col)
-# }
-# 
-# #create columns that list which cities are affiliated with the studies
-# nct_cities_lead <- get_city_per_NCT(affil_ncts_lead, unique_ncts_lead)
-# 
-# #prepare for joining with main table
-# nct_cities_lead_tbl <- tibble(nct_id = unique_ncts_lead, cities_lead = nct_cities_lead)
-# 
-# #add columns to main table
-# CTgov_sample <- CTgov_sample |>
-#   left_join(nct_cities_lead_tbl, by = "nct_id")
-
-
-#add PI affil info to main table
-#first get only affils of relevant PIs from full table
-# grep_PI_indices <- city_grep_indices(AACT_datasets$overall_officials, "affiliation", city_search_terms) |>
-#   unlist() |> unique() |> sort()
-# PI_affils_table_filtered <- AACT_datasets$overall_officials[grep_PI_indices,] |>
-#   distinct(nct_id, .keep_all = TRUE) #only take first relevant PI for each study to allow a clean join
-# CTgov_sample <- CTgov_sample |>
-#   left_join(PI_affils_table_filtered, by = "nct_id")
-
-#add intervention name
-# interventions_combined <- AACT_datasets$interventions |>
-#   group_by(nct_id) |>
-#   summarise(intervention_names_comb = paste(name, collapse=" | "))
-# 
-# CTgov_sample <- CTgov_sample |>
-#   left_join(interventions_combined, by = "nct_id")
-# 
-# #add calculated values
-# CTgov_sample <- CTgov_sample |>
-#   left_join(AACT_datasets$calculated_values, by = "nct_id")
-
-# 
-# CTgov_sample_save <- CTgov_sample |>
-#   # TODO: This code below is now broken.
-#   # decide which affil columns to keep/standardize for comparison with
-#   # data from other registries, in place of old PI_name and PI_affiliation 
-#   # variables here 
-#   rename(PI_name = name,
-#          PI_affiliation = affiliation,
-#          interventions = intervention_names_comb) |> 
-#   select(nct_id, cities_lead, brief_title, official_title,
-#          study_first_submitted_date, start_date, start_date_type,
-#          completion_date, completion_date_type, PI_name,
-#          PI_affiliation, interventions, overall_status,
-#          phase, enrollment, enrollment_type, were_results_reported)
-
-
-
-#save CT.gov trial sample
-#please be aware that not all associations of the trials to the cites are correct (there are still false positives)
-#such that the city associations had to be checked manually during publication search
-# write_excel_csv(CTgov_sample_save, here("data", "processed", "CTgov_sample.csv"), na = "")
+        ctgov_export$trial_id)

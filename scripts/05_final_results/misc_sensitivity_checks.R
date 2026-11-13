@@ -1,6 +1,7 @@
 library(tidyverse)
 library(janitor)
 library(here)
+library(testthat)
 
 source(here("scripts", "utils.R"))
 
@@ -227,3 +228,43 @@ qa_no_doi <- combined_data_enriched |>
 #   Were all cases where a cross-registration was missed, and both trials were independently extracted in the search, correctly combined? And in these cases, was the correct earliest eligible publication selected (based on the initial search, review, and determination of earliest publication date)?
 # TODO
 #   Were all trials involving an EUCTR record with euctr_is_no_enrolment == "Yes, the trial was withdrawn without enrolment" correctly labelled as withdrawn (in case of a cross-registration, withdrawn would extend to the full cluster).
+
+### 
+### the number of trials for which the pub search resulted in a publication that was not a journal article, letter, preprint (i.e., I primarily mean congress abstracts)
+### Some background for this: I'm trying to get an approx number for how many trials would need to be searched again to find the next best full publication. One complexity is that for quite a few trials fitting this description, I did document the next best full publication in the review dataset. But I don't know if you carried this forward in the analysis?
+
+
+
+qa_next_best_pubtype <- analysis_results |>
+  mutate(earliest_is_abstract = case_when(
+    str_detect(review_earliest_pubtype, regex("abstract", ignore_case = TRUE)) ~ TRUE,
+    str_detect(earliest_pub_type, regex("abstract", ignore_case = TRUE)) ~ TRUE,
+    .default = FALSE
+  ),
+  has_next_best = !is.na(review_next_best_doi))
+qa_next_best_pubtype |> 
+  count(has_next_best, earliest_is_abstract, review_next_best_pubtype)
+qa_next_best_pubtype |> 
+  filter(is.na(review_next_best_pubtype), has_next_best, earliest_is_abstract) |> 
+  select(contains("_id"), contains("doi"), contains("pubtype"))
+
+qa_next_best_pubtype |> 
+  filter(has_next_best == FALSE, earliest_is_abstract == TRUE) |>
+  distinct(crossreg_id) |>
+  nrow()
+
+
+
+combined_data_enriched |> 
+  count(registry, start_date_type)
+
+qa_start_date <- combined_data_enriched |> 
+  filter(is.na(start_date_type) | start_date_type == "ESTIMATED",
+         registry != "EUCTR",
+         !str_detect(crossreg_id, "-")) |> 
+  select(trial_id, crossreg_id, start_date, start_date_type, 
+         is_prospective,
+         has_prospective)
+
+
+is_

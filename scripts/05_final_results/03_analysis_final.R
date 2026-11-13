@@ -21,7 +21,6 @@ missed_pubs <- read_csv(here("data", "manual", "2026-10-07_iv3-second-review-enr
   filter(review == TRUE) |> 
   select(trial_id, crossreg_id, earliest_pub_matches_reg, earliest_pub_has_doi, earliest_pub_doi)
 
-
 resolution <- read_csv(here("data", "processed", "results_corrected_2026-10-27.csv")) |>
   filter(trial_id %in% combined_data_filtered$trial_id) |>
   rows_upsert(missed_pubs, by = c("trial_id", "crossreg_id")) |> 
@@ -63,8 +62,11 @@ pub_info_clean <- resolution |>
   select(trial_id, crossreg_id, review_has_pub, 
          review_earliest_doi,
          review_comments,
+         review_next_best_doi,
+         review_next_best_pubtype,
          sgs_review,
          contains("earliest_pub"),
+         results_search_end_date,
          cluster_results_search_end_date,
          is_pub_reglinked,
          earliest_pub_matches_reg)
@@ -79,10 +81,10 @@ pub_info_clean <- resolution |>
 #   pull(earliest_pub_doi) |> 
 #   na.omit() |> 
 #   unique()
-# 
+
 # doi_dates <- oa_fetch(doi = pub_dois, entity = "works",
 #                       mailto = Sys.getenv("EMAIL"),
-#                       verbose = TRUE) |> 
+#                       verbose = TRUE) |>
 #   saveRDS(here("data", "raw", "openalex_pubdates.rds"))
 
 doi_dates <- readRDS(here("data", "raw", "openalex_pubdates.rds"))
@@ -209,17 +211,18 @@ qa_drks_not_reviewed |>
 drks_enrichment_data <- drks_processed |> 
   semi_join(combined_data_filtered, by = "trial_id") |> 
   select(trial_id, start_date,
+         start_date_type,
          contains("umc"),
          primary_sponsor) |> 
   left_join(drks_pubsearch_data, by = "trial_id")
 setdiff(drks_pubsearch_data$trial_id, drks_enrichment_data$trial_id)
-# this trial was excluded
-
+# registration DRKS00014040 was excluded
 
 ctgov_enrichment_data <- ctgov_processed |> 
   rename(summary_results_date = results_first_submitted_date) |> 
   semi_join(combined_data_filtered, by = "trial_id") |>
   select(trial_id, start_date,
+         start_date_type,
          is_sumres = results_reporting,
          summary_results_date,
          contains("umc"),
@@ -265,7 +268,7 @@ euctr_enrichment_data |>
 
 #######
 # for manually added crossregistrations,
-# recalculate the hierarhical completion date
+# recalculate the hierarchical completion date
 #######
 manual_crossreg_info <- read_xlsx(here("data", "manual", "iv3_crossreg.xlsx"))
 crossreg_linked <- manual_crossreg_info |> 
@@ -293,6 +296,7 @@ new_crossregistrations <- combined_data_filtered |>
 # All dates on OpenAlex are full (no month-year format)
 combined_data_enriched <- combined_data_filtered |> 
   mutate(start_date = NA_Date_,
+         start_date_type = NA_character_,
          is_sumres = NA,
          is_sumres_manual = NA,
          summary_results_date = NA_Date_,
@@ -310,7 +314,13 @@ combined_data_enriched <- combined_data_filtered |>
   rows_upsert(new_crossregistrations, by = c("trial_id", "crossreg_id")) |> 
   left_join(query_dates, by = "registry") |> 
   group_by(crossreg_id) |>
-  mutate(cluster_summary_results_followup_date = min(registry_query_date, na.rm = TRUE),
+  mutate(summary_results_followup_date = if_else(
+    # DRKS without second review
+    registry == "DRKS" & !trial_id %in% drks_sumres$trial_id,
+    results_search_end_date, # date of the original publication search
+    registry_query_date # date of the second drks sumres review
+  ), 
+         cluster_summary_results_followup_date = min(summary_results_followup_date, na.rm = TRUE),
          cluster_summary_results_date = min(summary_results_date, na.rm = TRUE),
          earliest_pub_date = min(earliest_pub_date, na.rm = TRUE),
          nonindex_completion_earlier_than_sumres = any(
@@ -898,15 +908,137 @@ qa_sumres <- combined_data_enriched |>
 combined_data_enriched |> 
   count(is_summary_results_1y, has_sumres_all_1y)
 
+###########
+# comparison with IV2 dataset
+###########
 
-# qa_sumrs_dates <- 
-# km_any |> 
-#   rowwise() |> 
-#   mutate(result_date = min(cluster_summary_results_date, earliest_pub_date, na.rm = TRUE),
-#          has_result_later_than_ascert_date = result_date > min(query_dates$registry_query_date)) |> 
-#   ungroup() |> 
-#   select(crossreg_id, trial_id, has_result_later_than_ascert_date, has_results, result_date) |> 
-#   filter(has_results, has_result_later_than_ascert_date)
-  
-  
-  
+combined_data_enriched_iv2_comparator <- combined_data_filtered |> 
+  mutate(start_date = NA_Date_,
+         start_date_type = NA_character_,
+         is_sumres = NA,
+         is_sumres_manual = NA,
+         drks_is_sumres = NA_character_,
+         summary_results_date = NA_Date_,
+         umc = NA_character_,
+         umc_sponsor = NA_character_,
+         umc_pi = NA_character_,
+         umc_resp_party = NA_character_,
+         primary_sponsor = NA_character_) |> 
+  left_join(pub_info_enriched, by = c("trial_id", "crossreg_id")) |> 
+  rows_upsert(drks_enrichment_data |> 
+                select(-drks_comment_sumres), by = "trial_id") |> 
+  rows_upsert(ctgov_enrichment_data, by = "trial_id") |>
+  rows_upsert(new_crossregistrations, by = c("trial_id", "crossreg_id")) |> 
+  left_join(query_dates, by = "registry") |> 
+  filter(registry != "EUCTR") |> 
+  group_by(crossreg_id) |>
+  mutate(is_sumres_manual = str_detect(drks_is_sumres, "^Yes"),
+         summary_results_followup_date = if_else(
+    # DRKS without second review
+    registry == "DRKS" & !trial_id %in% drks_sumres$trial_id,
+    results_search_end_date, # date of the original publication search
+    registry_query_date # date of the second drks sumres review
+  ), 
+  cluster_summary_results_followup_date = min(summary_results_followup_date, na.rm = TRUE),
+  cluster_summary_results_date = min(summary_results_date, na.rm = TRUE),
+  earliest_pub_date = min(earliest_pub_date, na.rm = TRUE),
+  nonindex_completion_earlier_than_sumres = any(
+    completion_date <= cluster_summary_results_date &
+      is_index_reg == FALSE, na.rm = TRUE
+  )) |> 
+  ungroup() |> 
+  mutate(
+    status_raw = status,
+    status = recode_status(status_raw),
+    is_sumres_combined = coalesce(is_sumres_manual, is_sumres),
+    is_prospective = case_when(
+      registry == "EUCTR" ~ TRUE,
+      .default = floor_date(start_date, "month") >=
+        floor_date(registration_date, "month")
+    ),
+    cluster_completion_date =
+      if_else(!is.na(hierarchical_completion_date),
+              hierarchical_completion_date,
+              completion_date),
+    days_cd_to_publication = duration_days(cluster_completion_date, earliest_pub_date),
+    days_reg_to_publication = duration_days(registration_date, earliest_pub_date),
+    # makes sense to calculate sumres separately for each registry but followup across registries
+    days_cd_to_cluster_summary = duration_days(cluster_completion_date, cluster_summary_results_date),
+    days_cd_to_registry_summary = duration_days(cluster_completion_date, summary_results_date),
+    # Using registry download date for reporting as summary results
+    results_followup_sumres = duration_days(cluster_completion_date,
+                                            cluster_summary_results_followup_date),
+    # case_when(
+    #### if DRKS sumres
+    # is_sumres_manual != "No" & registry == "DRKS" ~ duration_days(cluster_completion_date, drks_manual_sumres_date),
+    ### if no DRKS sumres
+    # is_sumres_manual == "No" ~ duration_days(cluster_completion_date,
+    #               cluster_results_search_end_date),
+    # .default = duration_days(cluster_completion_date, cluster_summary_results_followup_date)
+    
+    is_followup_2y_sumres = results_followup_sumres >= 365*2,
+
+    is_summary_results_2y = days_cd_to_registry_summary < 365*2,
+
+    
+    # Using end of search period for reporting as publication
+    results_followup_pub = duration_days(cluster_completion_date,
+                                         cluster_results_search_end_date),
+    
+    is_followup_2y_pub = results_followup_pub >= 365*2,
+    
+    is_publication_2y = days_cd_to_publication < 365*2,
+    across(contains("is_summary_results_"),
+           \(x) if_else(is.na(x), FALSE, x)) # consider this for survival analysis
+  ) |> 
+  group_by(crossreg_id) |> 
+  mutate(umc_pi = deduplicate_collapsed(umc_pi),
+         umc_sponsor = deduplicate_collapsed(umc_sponsor),
+         umc = deduplicate_collapsed(umc),
+         has_sumres = any(is_sumres_combined, na.rm = TRUE),
+         has_sumres_all = all(is_sumres_combined),
+         has_summary_results_2y = any(is_summary_results_2y,
+                                      na.rm = TRUE),
+         has_sumres_all_2y = all(is_summary_results_2y, na.rm = TRUE),
+         pre_completion_summary_flag = has_sumres == TRUE & days_cd_to_cluster_summary < 0,
+         negative_censor_time_sumres_flag = has_sumres == FALSE & results_followup_sumres < 0,
+         # sumres_pre_completion_class = case_when(
+         #   pre_completion_summary_flag == TRUE & ~ "before index completion date but on/after another registry completion date",
+         #   pre_completion_summary_flag == TRUE ~ "before index completion date but on/after another registry completion date",
+         #   
+         #   .default = NA_character_
+         # ),
+         has_pub = any(!is.na(earliest_pub_date) & !is.infinite(earliest_pub_date)),
+         has_publication_2y = any(is_publication_2y,
+                                  na.rm = TRUE),
+         pre_completion_publication_flag = has_pub == TRUE & days_cd_to_publication < 0,
+         negative_censor_time_publication_flag = has_pub == FALSE & results_followup_pub < 0,
+         has_prospective = any(is_prospective, na.rm = TRUE),
+         has_pub_reglinked = any(str_detect(is_pub_reglinked, "Yes"),
+                                 na.rm = TRUE),
+         has_earliest_match = 
+           any(str_detect(earliest_pub_matches_reg, "Yes"), na.rm = TRUE),
+         has_commercial = any(str_detect(primary_sponsor, "^Comm"), na.rm = TRUE)
+  ) |> 
+  ungroup()
+
+
+combined_data_enriched_iv2_comparator |> 
+  count(has_summary_results_2y) |> 
+  mutate(perc = n / sum(n) * 100)
+
+# combined_data_enriched_iv2_comparator |> 
+#   count(has_sumres_all_2y) |> 
+#   mutate(perc = n / sum(n) * 100)
+
+combined_data_enriched_iv2_comparator |> 
+  count(has_publication_2y) |> 
+  mutate(perc = n / sum(n) * 100)
+
+combined_data_enriched_iv2_comparator |>
+  mutate(has_any_results_2y = has_publication_2y | has_summary_results_2y) |> 
+  count(has_any_results_2y) |> 
+  mutate(perc = n / sum(n) * 100)
+
+qa_is_sumres_iv2_comparator <- combined_data_enriched_iv2_comparator |> 
+  select(trial_id, crossreg_id, contains("is_s"), everything())

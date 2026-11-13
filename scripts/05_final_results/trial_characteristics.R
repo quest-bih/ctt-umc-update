@@ -16,18 +16,18 @@ source(here("scripts", "utils.R"))
 # filtered_crossreg_ids <- read_csv(here("data", "processed", "crossreg_filtered.csv"))
 drks_export <- read_csv(here("data", "processed", "DRKS_sample.csv"))
 ctgov_export <- read_csv(here("data", "processed", "CTgov_sample.csv")) 
-euctr_combined <- readRDS(here("data", "raw", "euctr_combined.rds"))
+euctr_processed <- readRDS(here("data", "processed", "euctr_processed.rds"))
 # euctr_export <- read_csv(here("data", "processed", "EUCTR_sample.csv"))
 # clean_pub_search_results <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
-combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
-
+# combined_data_filtered <- read_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
+analysis_results <- read_csv(here("data", "processed", "analysis_results.csv"))
 
 excluded_ct <- ctgov_export |> 
-  filter(!trial_id %in% combined_data_filtered$trial_id)
+  filter(!trial_id %in% analysis_results$trial_id)
 
-euctr_combined_deduped <- euctr_combined |>
+euctr_deduped <- euctr_processed |>
   rename(trial_id = eudract_number) |> 
-  filter(trial_id %in% combined_data_filtered$trial_id) |> 
+  filter(trial_id %in% analysis_results$trial_id) |> 
   group_by(trial_id) |>
   mutate(is_trial_de_protocol = str_detect(eudract_number_with_country, "DE")) |>
   arrange(desc(is_trial_de_protocol)) |>
@@ -35,10 +35,10 @@ euctr_combined_deduped <- euctr_combined |>
   select(-eudract_number_with_country) |> 
   ungroup()
 
-euctr_combined_deduped |> 
+euctr_deduped |> 
   write_csv(here("data", "processed", "export_euctr_deduped.csv"))
 
-euctr_trial_characteristics <- euctr_combined_deduped |> 
+euctr_trial_characteristics <- euctr_deduped |> 
   mutate(trial_id,
          is_randomized = trial_randomised,
          is_blinded = trial_single_blind | trial_double_blind,
@@ -78,8 +78,8 @@ trial_characteristics <- drks_export |>
   bind_rows(euctr_trial_characteristics) |> 
   # left_join(combined_inex_plus_crossreg |> select(trial_id, is_index_reg,
   # crossreg_id)) |>
-  right_join(combined_data_filtered |> select(trial_id, is_index_reg,
-                                              crossreg_id)) |>
+  right_join(analysis_results |> select(trial_id, is_index_reg,
+                                              crossreg_id, cluster_status)) |>
   # mutate(is_index_reg = if_else(is_crossreg == FALSE, TRUE, is_index_reg)) |>
   select(trial_id, crossreg_id, is_index_reg, contains("has_"), everything()) |> 
   # filter(is.na(is_index_reg))
@@ -93,7 +93,8 @@ trial_characteristics <- drks_export |>
          `Primary sponsor` = primary_sponsor |> 
            str_to_sentence(),
          Phase = phase,
-         Status = recode_status(status),
+         Status = cluster_status,
+           # recode_status(cluster_status),
          Enrolment = actual_enrolment,
          `Completion year` = year(completion_date) |> factor()
   ) 
@@ -106,12 +107,18 @@ trial_characteristics |>
   ) |> 
   summarizor() |> 
   as_flextable() |>
+  footnote(i = 1, j = 4, value = as_paragraph("based on the index registration, except for status"),
+           part = "header",
+           ref_symbols = "a") |> 
   footnote(i = c(1,2,3), j = 2,
            value = as_paragraph("may also be cross-registered in another registry"),
-           ref_symbols = "a") |> 
+           ref_symbols = "b") |> 
   footnote(i = c(28, 32), j = 1,
            value = as_paragraph("actual or anticipated, if actual not available"),
-           ref_symbols = "b")
+           ref_symbols = "c") |> 
+  footnote(i = c(37), j = 1,
+           value = as_paragraph("based on a systematic reconciliation"),
+           ref_symbols = "d")
 
 
 in_table_not_fc <- drks_export |> 
@@ -138,7 +145,7 @@ umc_info_drks <- drks_export |>
 umc_info_ctgov <- ctgov_export |> 
   select(trial_id, contains("umc"))
 
-umc_euctr <- euctr_combined_deduped |> 
+umc_euctr <- euctr_deduped |> 
   select(trial_id, umc)
 
 umc_info <- bind_rows(umc_info_drks, 
