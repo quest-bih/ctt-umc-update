@@ -69,6 +69,7 @@ pub_info_clean <- resolution |>
          results_search_end_date,
          cluster_results_search_end_date,
          is_pub_reglinked,
+         contains("google"),
          earliest_pub_matches_reg)
 # qa_earliest <- pub_info_clean |> select(trial_id, crossreg_id, review_has_pub,
 #                                         review_earliest_doi,
@@ -349,14 +350,6 @@ combined_data_enriched <- combined_data_filtered |>
     # Using registry download date for reporting as summary results
     results_followup_sumres = duration_days(cluster_completion_date,
                                             cluster_summary_results_followup_date),
-      # case_when(
-      #### if DRKS sumres
-      # is_sumres_manual != "No" & registry == "DRKS" ~ duration_days(cluster_completion_date, drks_manual_sumres_date),
-      ### if no DRKS sumres
-      # is_sumres_manual == "No" ~ duration_days(cluster_completion_date,
-      #               cluster_results_search_end_date),
-      # .default = duration_days(cluster_completion_date, cluster_summary_results_followup_date)
-    
     is_followup_2y_sumres = results_followup_sumres >= 365*2,
     is_followup_5y_sumres = results_followup_sumres >= 365*5,
     
@@ -394,14 +387,16 @@ combined_data_enriched <- combined_data_filtered |>
          has_sumres_all_2y = all(is_summary_results_2y, na.rm = TRUE),
          has_sumres_all_5y = all(is_summary_results_5y, na.rm = TRUE),
          has_followup_sumres_all_5y = all(is_followup_5y_sumres, na.rm = TRUE),
-         pre_completion_summary_flag = has_sumres == TRUE & days_cd_to_cluster_summary < 0,
+         pre_completion_summary_flag = has_sumres == TRUE & days_cd_to_registry_summary < 0,
+         has_pre_completion_summary_flag = any(pre_completion_summary_flag, na.rm = TRUE),
          negative_censor_time_sumres_flag = has_sumres == FALSE & results_followup_sumres < 0,
-         # sumres_pre_completion_class = case_when(
-         #   pre_completion_summary_flag == TRUE & ~ "before index completion date but on/after another registry completion date",
-         #   pre_completion_summary_flag == TRUE ~ "before index completion date but on/after another registry completion date",
-         #   
-         #   .default = NA_character_
-         # ),
+         sumres_pre_completion_class = case_when(
+           has_pre_completion_summary_flag == TRUE & any(days_cd_to_registry_summary > 0, na.rm = TRUE) ~ 
+             "before index completion date but on/after another registry completion date",
+           has_pre_completion_summary_flag == TRUE & all(days_cd_to_registry_summary < 0, na.rm = TRUE) ~ 
+             "before all available completion dates",
+           .default = NA_character_
+         ),
          has_pub = any(!is.na(earliest_pub_date) & !is.infinite(earliest_pub_date)),
          has_publication_2y = any(is_publication_2y,
                                       na.rm = TRUE),
@@ -419,6 +414,9 @@ combined_data_enriched <- combined_data_filtered |>
          has_commercial = any(str_detect(primary_sponsor, "^Comm"), na.rm = TRUE)
          ) |> 
   ungroup()
+
+combined_data_enriched |> 
+  count(has_pre_completion_summary_flag, pre_completion_summary_flag, sumres_pre_completion_class)
 
 qa_km <- combined_data_enriched |> 
   select(crossreg_id, trial_id, earliest_pub_date, has_pub,
@@ -548,9 +546,10 @@ visualize_iv_km <- function(trials) {
 
 # combined_data_trial_level |> select(contains("results_search_end_date"))
 km_pub <- combined_data_trial_level |> 
-  mutate(days_cd_to_result_censored = case_when(
-    has_pub & earliest_pub_date <= cluster_results_search_end_date ~ days_cd_to_publication,
-    .default = results_followup_pub
+  mutate(days_cd_to_result_censored = if_else(
+    has_pub & earliest_pub_date <= cluster_results_search_end_date,
+    days_cd_to_publication,
+    results_followup_pub
   ),
   days_cd_to_result_censored = if_else(days_cd_to_result_censored < 0,
                                        0, days_cd_to_result_censored),
@@ -575,7 +574,7 @@ qa_km |>
 
 km_pub |> 
   # filter(status %in% c("Completed", "Ongoing")) |> 
-  visualize_iv_km()
+  visualize_iv_km() 
 
 # prop no results
 km_pub |> 
@@ -645,15 +644,15 @@ km_any <- combined_data_trial_level |>
              .default = NA
              
            ),
-         days_cd_to_result_censored = case_when(
-           is.infinite(days_cd_to_result_censored) ~ NA,
-           days_cd_to_result_censored < 0 ~ 0,
-           .default = days_cd_to_result_censored),
          pre_completion_any_flag = (has_sumres == TRUE | has_pub == TRUE) &
            days_cd_to_result_censored < 0,
          # the following was always FALSE, so drop in future
          negative_censor_time_any_flag = has_sumres == FALSE & has_pub == FALSE &
            days_cd_to_result_censored < 0,
+         days_cd_to_result_censored = case_when(
+           is.infinite(days_cd_to_result_censored) ~ NA,
+           days_cd_to_result_censored < 0 ~ 0,
+           .default = days_cd_to_result_censored),
          # days_cd_to_result_censored = case_when(
          #   days_cd_to_result_censored < 0 ~ 0,
          #   is.infinite(days_cd_to_result_censored) ~ NA,
@@ -726,78 +725,95 @@ pubs_ctgov_or_drks_only |>
   mutate(total = sum(n),
          perc = n / total * 100)
 
-# corrections_reglinked_url <- tibble(
-#   trial_id = c("2013-001294-24",
-#                "NCT00278408",
-#                "DRKS00009323",
-#                "DRKS00011876",
-#                "NCT03264222",
-#                "NCT03290157",
-#                "NCT03720665",
-#                "NCT03128528",
-#                "DRKS00012329",
-#                "DRKS00025281",
-#                "NCT03838211"),
-#   pub_reglinked_url_clean = c("10.1136/bmj.m3734",
-#                               "10.1097/hs9.0000000000000904",
-#                               "10.2196/15361",
-#                               "10.3233/nre-201583",
-#                               "10.1016/j.jacc.2020.01.012",
-#                               "10.1016/j.cgh.2020.03.051",
-#                               "10.1016/j.clinph.2021.01.024",
-#                               "10.1007/s00392-022-02119-7",
-#                               "10.3238/arztebl.2020.0833",
-#                               "10.1016/j.kint.2021.10.029",
-#                               "10.1038/s41467-023-38910-x")
-# )
+corrections_reglinked_url <- tibble(
+  trial_id = c("2013-001294-24",
+               "NCT00278408",
+               "DRKS00009323",
+               "DRKS00011876",
+               "NCT03264222",
+               "NCT03290157",
+               "NCT03720665",
+               "NCT03128528",
+               "DRKS00012329",
+               "DRKS00025281",
+               "NCT03838211"),
+  pub_reglinked_url_clean = c("10.1136/bmj.m3734",
+                              "10.1097/hs9.0000000000000904",
+                              "10.2196/15361",
+                              "10.3233/nre-201583",
+                              "10.1016/j.jacc.2020.01.012",
+                              "10.1016/j.cgh.2020.03.051",
+                              "10.1016/j.clinph.2021.01.024",
+                              "10.1007/s00392-022-02119-7",
+                              "10.3238/arztebl.2020.0833",
+                              "10.1016/j.kint.2021.10.029",
+                              "10.1038/s41467-023-38910-x")
+)
 # 
-# corrections_earliest_pub_url <- tibble(
-#   trial_id = c("NCT01477606",
-#                "NCT04053829",
-#                "2014-003647-34",
-#                "DRKS00009323",
-#                "DRKS00024830",
-#                "DRKS00028561",
-#                "DRKS00011562",
-#                "NCT02326428"),
-#   earliest_pub_url_clean = c("10.1182/blood.v126.23.322.322", 
-#                              "10.2196/37229",
-#                              "10.1097/hs9.0000000000000877",
-#                              "10.2196/15361",
-#                              "10.2196/56514",
-#                              "10.2196/33733",
-#                              "10.2196/15312",
-#                              "10.1161/strokeaha.120.031031")
-# )
+corrections_earliest_pub_url <- tibble(
+  trial_id = c("NCT01477606",
+               "NCT04053829",
+               "2014-003647-34",
+               "DRKS00009323",
+               "DRKS00024830",
+               "DRKS00028561",
+               "DRKS00011562",
+               "NCT02326428"),
+  earliest_pub_url_clean = c("10.1182/blood.v126.23.322.322",
+                             "10.2196/37229",
+                             "10.1097/hs9.0000000000000877",
+                             "10.2196/15361",
+                             "10.2196/56514",
+                             "10.2196/33733",
+                             "10.2196/15312",
+                             "10.1161/strokeaha.120.031031")
+)
 
 # Linking of the earliest results publication in ClinicalTrials.gov and DRKS: Among trials/trial clusters with at least one eligible results publication identified during the manual search – and for which publication information did not require correction during data review – we will report the number and proportion where the earliest eligible results publication was linked in at least one ClinicalTrials.gov or DRKS record. EUCTR-only registrations will be excluded for this outcome because EUCTR does not provide a dedicated section for linked results publications. Note: For cross-registered trials, all relevant registrations were screened manually. However, after identifying the first registration containing an eligible results publication, subsequent registrations were assessed only to determine whether they contained an earlier eligible publication, and not whether the already identified earliest publication was linked. Therefore, we may underestimate the proportion of trials for which the earliest results publication was linked in at least one registry record. 
-# qa_reglinked <- read_csv(here("data", "processed", "qa_reglinked.csv")) |> 
-#   rows_upsert(corrections_reglinked_url, by = "trial_id") |> 
-#   rows_upsert(corrections_earliest_pub_url, by = "trial_id") |> 
-#   rowwise() |> 
-#   mutate(earliest_pub_doi = str_remove(earliest_pub_doi, "preprints\\."),
-#          earliest_matching_reglinked = any(c(pub_reglinked_url_clean == earliest_pub_url_clean,
-#                                             pub_reglinked_url_clean == earliest_pub_doi),
-#                                           na.rm = TRUE)
-#            ) |> 
-#   ungroup()
-# 
-# qa_reglinked |> 
-#   group_by(crossreg_id) |>
-#   mutate(has_earliest_matching_reglinked = any(earliest_matching_reglinked,
-#                                                na.rm = TRUE),
-#          is_crossreg = str_detect(crossreg_id, "_")) |> 
-#   ungroup() |> 
-#   filter(is_crossreg | !str_detect(trial_id, "-"),
-#          !is.na(earliest_pub_url_clean) | !is.na(earliest_pub_doi)) |> 
-#   distinct(crossreg_id, .keep_all = TRUE) |> 
-#   count(has_earliest_matching_reglinked) |> 
-#   mutate(total = sum(n),
-#          perc = n / total * 100)
-
+qa_reglinked <- read_csv(here("data", "processed", "qa_reglinked.csv")) |>
+  filter(crossreg_id %in% analysis_results$crossreg_id) |> 
+  rows_upsert(corrections_reglinked_url, by = "trial_id") |>
+  rows_upsert(corrections_earliest_pub_url, by = "trial_id") |>
+  rowwise() |>
+  mutate(earliest_pub_doi = str_remove(earliest_pub_doi, "preprints\\."),
+         earliest_matching_reglinked = any(c(pub_reglinked_url_clean == earliest_pub_url_clean,
+                                            pub_reglinked_url_clean == earliest_pub_doi),
+                                          na.rm = TRUE)
+           ) |>
+  ungroup()
 
 ## Linking of the earliest results publication 
 # is_pub_reglinked  vs earliest_pub_doi but in registry (not search engine)
+qa_reglinked |>
+  group_by(crossreg_id) |>
+  mutate(has_earliest_matching_reglinked = any(earliest_matching_reglinked,
+                                               na.rm = TRUE),
+         is_crossreg = str_detect(crossreg_id, "_")) |>
+  ungroup() |>
+  filter(is_crossreg | !str_detect(trial_id, "-"),
+         !is.na(earliest_pub_url_clean) | !is.na(earliest_pub_doi)) |>
+  distinct(crossreg_id, .keep_all = TRUE) |>
+  count(has_earliest_matching_reglinked) |>
+  mutate(total = sum(n),
+         perc = n / total * 100)
+
+##### Contribution of web search in identifying the earliest publication
+
+# which did not require review???
+qa_websearch_earliest <- analysis_results |> 
+  filter(crossreg_id %in% analysis_results$crossreg_id,
+         has_pub) |> 
+  select(contains("_id"), contains("google"), contains("earlie")) |>  
+  group_by(crossreg_id) |> 
+  mutate(has_websearch_earliest = any(is_earlier_pub_google == "Yes", na.rm = TRUE)) |> 
+  ungroup()
+  
+qa_websearch_earliest |> 
+  # filter(is.na(review_earliest_doi)) |>
+  distinct(crossreg_id, .keep_all = TRUE) |> 
+  count(has_websearch_earliest) |> 
+  mutate(perc = n / sum(n) * 100)
+
 combined_data_trial_level |> count(status)
 
 
@@ -1042,3 +1058,7 @@ combined_data_enriched_iv2_comparator |>
 
 qa_is_sumres_iv2_comparator <- combined_data_enriched_iv2_comparator |> 
   select(trial_id, crossreg_id, contains("is_s"), everything())
+
+# websearch contribution test
+#    Contribution of Google search in identifying the earliest publication: Among trials with an identified eligible results publication (and not requiring correction during data review), we will report the number and proportion for which the Google search contributed to identifying an earlier eligible results publication than would otherwise have been identified based on registry-linked publications alone, either in the first registry record reviewed or during review of subsequent registry records within cross-registered clusters. 
+

@@ -8,7 +8,7 @@ source(here("scripts", "utils.R"))
 
 euctr_withdrawn_exclusions <- read_csv(here("data", "processed", "euctr_withdrawn_exclusions.csv"))
 
-results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
+results_clean <- read_csv(here("data", "processed", "results_clean_2026-06-24.csv"))
 
 manual_crossreg_info <- read_xlsx(here("data", "manual", "iv3_crossreg.xlsx"))
 
@@ -43,9 +43,7 @@ sample_data_filtered <- inex_combined |>
 
 sample_data_filtered |> 
     write_csv(here("data", "processed", "harmonized_data_filtered_after_pub_search.csv"))
-sample_data_filtered |> 
-  filter(!trial_id %in% incl_trials$trial_id) |> 
-  pull(trial_id)
+
 n_trials_plus_unlinked <- inex_combined |> 
   filter(has_german_umc, has_completion_2018_2021, has_interventional,
          !has_withdrawn_status,
@@ -162,7 +160,7 @@ falling_clusters |>
 gumc <- falling_clusters |> 
   filter(!has_german_umc)
 
-setdiff(names(combined_inex), names(falling_clusters))
+setdiff(names(inex_combined), names(falling_clusters))
 
-setdiff(names(falling_clusters), names(combined_inex))
+setdiff(names(falling_clusters), names(inex_combined))
 

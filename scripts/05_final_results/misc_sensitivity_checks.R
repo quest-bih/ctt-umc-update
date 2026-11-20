@@ -2,6 +2,7 @@ library(tidyverse)
 library(janitor)
 library(here)
 library(testthat)
+library(flextable)
 
 source(here("scripts", "utils.R"))
 
@@ -38,12 +39,22 @@ withdrawn_cases <- inex_combined |>
 complete_validations_inconclusive <- complete_validations |> 
   filter(raw_affil %in% unclear_cases$raw_affil,
          !id %in% analysis_results$trial_id,
-         !id %in% withdrawn_cases$trial_id) 
-
-complete_validations_inconclusive |> 
+         !id %in% withdrawn_cases$trial_id) |> 
   left_join(inex_combined, by = c("id" = "trial_id")) |> 
+  filter(!crossreg_id %in% analysis_results$crossreg_id,
+         has_interventional,
+         has_completion_2018_2021) |> 
+  mutate(rescued_via_crossreg = has_german_umc)
+
+
+complete_validations_inconclusive |>
+  filter(!rescued_via_crossreg) |> 
   distinct(crossreg_id) |>
   nrow()
+
+complete_validations_inconclusive |>
+  distinct(crossreg_id, .keep_all = TRUE) |>
+  count(is_crossreg)
 
 qa_inconcl_fields <- 
 complete_validations_inconclusive |> 
@@ -78,7 +89,9 @@ inconclusive_sponsors <- complete_validations |>
             by = "trial_id")
 
 qa_umc_inconclusive_sponsors <- analysis_results |> 
-  filter(crossreg_id %in% c(inconclusive_sponsors$crossreg_id)) |> 
+  filter(crossreg_id %in% c(inconclusive_sponsors$crossreg_id),
+         has_interventional,
+         has_completion_2018_2021) |> 
   select(trial_id, crossreg_id, contains("umc")) |> 
   group_by(crossreg_id) |> 
   mutate(rescued_via_crossreg = any(!is.na(umc_sponsor))) |> 
@@ -86,7 +99,7 @@ qa_umc_inconclusive_sponsors <- analysis_results |>
 
 qa_umc_inconclusive_sponsors |> 
   filter(rescued_via_crossreg == FALSE) |> 
-  distinct(crossreg_id) |> 
+  distinct(crossreg_id) |>
   nrow()
 
 qa_umc_inconclusive_sponsors |> 
@@ -103,7 +116,9 @@ inconclusive_pi <- complete_validations |>
             by = "trial_id")
 
 qa_umc_inconclusive_pi <- analysis_results |> 
-  filter(crossreg_id %in% c(inconclusive_pi$crossreg_id)) |> 
+  filter(crossreg_id %in% c(inconclusive_pi$crossreg_id),
+         has_interventional,
+         has_completion_2018_2021) |> 
   select(trial_id, crossreg_id, contains("umc")) |> 
   group_by(crossreg_id) |> 
   mutate(rescued_via_crossreg = any(!is.na(umc_pi))) |> 
@@ -234,7 +249,6 @@ qa_no_doi <- combined_data_enriched |>
 ### Some background for this: I'm trying to get an approx number for how many trials would need to be searched again to find the next best full publication. One complexity is that for quite a few trials fitting this description, I did document the next best full publication in the review dataset. But I don't know if you carried this forward in the analysis?
 
 
-
 qa_next_best_pubtype <- analysis_results |>
   mutate(earliest_is_abstract = case_when(
     str_detect(review_earliest_pubtype, regex("abstract", ignore_case = TRUE)) ~ TRUE,
@@ -267,4 +281,10 @@ qa_start_date <- combined_data_enriched |>
          has_prospective)
 
 
-is_
+combined_data_enriched |>
+  filter(registry == "ClinicalTrials.gov") |> 
+  mutate(start_year = year(start_date)) |> 
+  select(start_year,
+         start_date_type) |> 
+  summarizor(by = "start_date_type") |> 
+  flextable()

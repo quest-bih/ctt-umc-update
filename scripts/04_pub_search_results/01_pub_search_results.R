@@ -883,8 +883,8 @@ results_clean <- extractions_filtered_enriched_cleaned_google |>
          trial_id != "2012-003604-13") |> 
   select(-contains("s_withdrawn")) |> 
   mutate(earliest_pub_doi = tolower(earliest_pub_doi)) |> 
-  left_join(oa_pubtype, by = "earliest_pub_doi") |> 
-  left_join(pmid_pubtype, by = "earliest_pub_doi") |> 
+  left_join(oa_pubtype, by = "earliest_pub_doi") |>
+  left_join(pmid_pubtype, by = "earliest_pub_doi") |>
   left_join(urls_to_check |>
               select(trial_id, earliest_pub_url,
                      earliest_pub_doi_clean = earliest_pub_doi),
@@ -895,7 +895,7 @@ results_clean <- extractions_filtered_enriched_cleaned_google |>
 error_logs |> 
   write_csv(here("data", "processed", paste0("error_logs_", today(), ".csv")))
 
-results_clean <- read_csv(here("data", "processed", "results_clean_2026-04-09.csv"))
+results_clean <- read_csv(here("data", "processed", "results_clean_2026-06-24.csv"))
   
 extractions_filtered_enriched |> 
   filter(!trial_id %in% pub_search_table$trial_id)
@@ -963,4 +963,4 @@ resolution <- reviews_integrated |>
 #          is.na(earliest_pub_date))
 
 resolution |> 
-  write_csv(here("data", "processed", "results_corrected_2026-10-27.csv"))
+  write_csv(here("data", "processed", "results_corrected_2026-11-20.csv"))
